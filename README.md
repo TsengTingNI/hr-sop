@@ -1,1 +1,1390 @@
-# hr-sop
+[index.html.html](https://github.com/user-attachments/files/27786180/index.html.html)
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR 流程管理系統（同步版）</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1917;
+    --text2: #5a5955;
+    --text3: #9a9894;
+    --green: #1a7a55;
+    --green-bg: #e3f5ed;
+    --blue: #1a4f8a;
+    --blue-bg: #e3eef8;
+    --amber: #7a4f0a;
+    --amber-bg: #fdf0d9;
+    --red: #8a1a1a;
+    --red-bg: #fde8e8;
+    --pink: #8a1a55;
+    --pink-bg: #fde8f2;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 10;
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .logo-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  .sidebar-nav {
+    padding: 16px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .nav-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    padding: 0 8px;
+    margin: 12px 0 4px;
+    text-transform: uppercase;
+  }
+
+  .nav-label:first-child { margin-top: 0; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text2);
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+
+  .nav-item.active {
+    background: var(--text);
+    color: #fff;
+  }
+
+  .nav-icon { width: 18px; text-align: center; font-size: 14px; }
+
+  .nav-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.25);
+    padding: 1px 7px;
+    border-radius: 99px;
+    line-height: 1.6;
+  }
+
+  .nav-item:not(.active) .nav-badge {
+    background: var(--surface2);
+    color: var(--text2);
+  }
+
+  /* Main content */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  .topbar-left h1 { font-size: 17px; font-weight: 700; }
+  .topbar-left p { font-size: 13px; color: var(--text3); margin-top: 1px; }
+
+  .topbar-right { display: flex; gap: 10px; align-items: center; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+    text-decoration: none;
+  }
+
+  .btn:hover { background: var(--surface2); }
+
+  .btn-primary {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+  }
+
+  .btn-primary:hover { opacity: 0.85; background: var(--text); }
+
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .btn-green {
+    background: var(--green-bg);
+    color: var(--green);
+    border-color: transparent;
+  }
+
+  .btn-green:hover { background: #cceedd; }
+
+  /* Content area */
+  .content { padding: 28px 32px; max-width: 900px; }
+
+  /* Panel */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Alert */
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 20px;
+    border-left: 3px solid;
+    line-height: 1.6;
+  }
+
+  .alert-info { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+  .alert-warn { background: var(--amber-bg); color: var(--amber); border-color: var(--amber); }
+  .alert-danger { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+  .alert strong { font-weight: 700; }
+
+  /* Progress */
+  .prog-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 8px;
+  }
+
+  .prog-pct { font-weight: 700; color: var(--text); }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 3px;
+    transition: width 0.35s ease;
+  }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .stat-num { font-size: 26px; font-weight: 700; line-height: 1; }
+  .stat-lbl { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  /* Section title */
+  .sec-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin: 24px 0 10px;
+  }
+
+  .sec-title:first-child { margin-top: 0; }
+
+  /* Checklist */
+  .checklist { display: flex; flex-direction: column; gap: 6px; }
+
+  .item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+  }
+
+  .item:hover { border-color: var(--border2); background: #fafaf8; }
+
+  .item.done {
+    opacity: 0.5;
+    background: var(--surface2);
+  }
+
+  .item.done .item-label { text-decoration: line-through; color: var(--text3); }
+
+  .checkbox {
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid var(--border2);
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .item.done .checkbox {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .check-mark {
+    display: none;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .item.done .check-mark { display: block; }
+
+  .item-body { flex: 1; }
+  .item-label { font-size: 14px; line-height: 1.5; }
+  .item-note { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  .tag {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 99px;
+    white-space: nowrap;
+    font-weight: 500;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  .tag-hr { background: var(--green-bg); color: var(--green); }
+  .tag-it { background: var(--blue-bg); color: var(--blue); }
+  .tag-mgr { background: var(--amber-bg); color: var(--amber); }
+  .tag-fin { background: var(--pink-bg); color: var(--pink); }
+  .tag-legal { background: var(--red-bg); color: var(--red); }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+
+  /* Employee input */
+  .emp-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .emp-bar input, .emp-bar select {
+    flex: 1;
+    min-width: 180px;
+    padding: 9px 12px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+  }
+
+  .emp-bar input:focus, .emp-bar select:focus {
+    border-color: var(--text);
+  }
+
+  /* Timeline */
+  .timeline { display: flex; flex-direction: column; }
+
+  .tl-item {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 20px;
+    position: relative;
+  }
+
+  .tl-item:last-child { padding-bottom: 0; }
+
+  .tl-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 24px;
+    flex-shrink: 0;
+  }
+
+  .tl-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .tl-dot.pending { background: var(--border2); }
+
+  .tl-line {
+    flex: 1;
+    width: 1px;
+    background: var(--border);
+    margin-top: 4px;
+  }
+
+  .tl-content { flex: 1; }
+  .tl-date { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+  .tl-title { font-size: 14px; font-weight: 500; }
+  .tl-desc { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  /* Info box */
+  .info-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+
+  .info-card-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 0.5px solid var(--border);
+    gap: 8px;
+  }
+
+  .info-row:last-child { border: none; padding-bottom: 0; }
+  .info-key { color: var(--text2); }
+  .info-val { font-weight: 500; text-align: right; }
+  .info-val.green { color: var(--green); }
+  .info-val.amber { color: var(--amber); }
+
+  /* Saved notice */
+  .save-notice {
+    font-size: 12px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .save-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .sidebar { width: 60px; }
+    .sidebar-logo, .nav-label, .nav-item span:not(.nav-icon) { display: none; }
+    .main { margin-left: 60px; }
+    .content { padding: 20px 16px; }
+    .topbar { padding: 14px 16px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-title">HR SOP</div>
+      <div class="logo-sub">流程管理系統</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">總覽</div>
+      <button class="nav-item active" onclick="nav('overview',this)">
+        <span class="nav-icon">◈</span><span>儀表板</span>
+      </button>
+
+      <div class="nav-label">HR 流程</div>
+      <button class="nav-item" onclick="nav('onboard',this)">
+        <span class="nav-icon">↗</span><span>入職流程</span>
+        <span class="nav-badge" id="badge-onboard">0</span>
+      </button>
+      <button class="nav-item" onclick="nav('offboard',this)">
+        <span class="nav-icon">↙</span><span>離職流程</span>
+        <span class="nav-badge" id="badge-offboard">0</span>
+      </button>
+      <button class="nav-item" onclick="nav('layoff',this)">
+        <span class="nav-icon">⚠</span><span>資遣流程</span>
+        <span class="nav-badge" id="badge-layoff">0</span>
+      </button>
+
+      <div class="nav-label">工具</div>
+      <button class="nav-item" onclick="nav('calc',this)">
+        <span class="nav-icon">$</span><span>資遣費試算</span>
+      </button>
+      <button class="nav-item" onclick="nav('docs',this)">
+        <span class="nav-icon">▤</span><span>文件範本</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 id="page-title">儀表板</h1>
+        <p id="page-sub">所有 HR 案件總覽</p>
+      </div>
+      <div class="topbar-right">
+        <div class="save-notice" id="sync-status"><div class="save-dot" id="sync-dot"></div><span id="sync-text">連線中...</span></div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- 總覽 -->
+      <div id="panel-overview" class="panel active">
+        <div class="stats">
+          <div class="stat"><div class="stat-num" style="color:var(--green)" id="ov-active">0</div><div class="stat-lbl">進行中案件</div></div>
+          <div class="stat"><div class="stat-num" id="ov-done">0</div><div class="stat-lbl">已完成項目</div></div>
+          <div class="stat"><div class="stat-num" style="color:var(--amber)" id="ov-pending">0</div><div class="stat-lbl">待辦項目</div></div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-title">進行中案件</div>
+          <div class="info-row">
+            <span class="info-key">入職清單</span>
+            <span class="info-val green" id="ov-on-prog">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">離職清單</span>
+            <span class="info-val amber" id="ov-off-prog">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">資遣清單</span>
+            <span class="info-val" id="ov-lay-prog">—</span>
+          </div>
+        </div>
+
+        <div class="sec-title">近期必辦時間軸</div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-date">到職前 10 天</div>
+              <div class="tl-title">啟動入職準備流程</div>
+              <div class="tl-desc">HR 開立帳號、IT 備妥設備、通知主管</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-date">提離職當天</div>
+              <div class="tl-title">啟動離職流程</div>
+              <div class="tl-desc">確認最後上班日、安排移交、面談</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot pending"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-date">離職後 2 天內</div>
+              <div class="tl-title">勞健保退保</div>
+              <div class="tl-desc">HR 辦理勞保健保異動（法定期限）</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot pending"></div></div>
+            <div class="tl-content">
+              <div class="tl-date">試用期 30 / 60 / 90 天</div>
+              <div class="tl-title">新人追蹤面談</div>
+              <div class="tl-desc">HR 與主管定期確認新人適應狀況</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="nav('onboard', document.querySelector('[onclick*=onboard]'))">開始入職流程</button>
+          <button class="btn" onclick="nav('offboard', document.querySelector('[onclick*=offboard]'))">開始離職流程</button>
+          <button class="btn" onclick="nav('layoff', document.querySelector('[onclick*=layoff]'))">開始資遣流程</button>
+        </div>
+      </div>
+
+      <!-- 入職 -->
+      <div id="panel-onboard" class="panel">
+        <div class="alert alert-info"><strong>提醒：</strong>請在員工到職日 <strong>前 10 天</strong>啟動此流程，確保所有準備完成。</div>
+        <div class="emp-bar">
+          <input type="text" id="emp-name-onboard" placeholder="員工姓名" oninput="saveEmpName('onboard')">
+          <input type="date" id="emp-date-onboard" oninput="saveEmpName('onboard')">
+        </div>
+        <div class="prog-meta">
+          <span id="prog-label-onboard">進度：0 / 0 項</span>
+          <span class="prog-pct" id="prog-pct-onboard">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill-onboard" style="width:0%"></div></div>
+        <div class="stats">
+          <div class="stat"><div class="stat-num" id="s-on-done">0</div><div class="stat-lbl">已完成</div></div>
+          <div class="stat"><div class="stat-num" id="s-on-todo">0</div><div class="stat-lbl">待處理</div></div>
+          <div class="stat"><div class="stat-num" style="color:var(--green)" id="s-on-pct">0%</div><div class="stat-lbl">完成率</div></div>
+        </div>
+        <div class="sec-title">到職前準備</div>
+        <div class="checklist" id="cl-onboard-pre"></div>
+        <div class="sec-title">到職當天</div>
+        <div class="checklist" id="cl-onboard-day"></div>
+        <div class="sec-title">試用期追蹤</div>
+        <div class="checklist" id="cl-onboard-trial"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="resetFlow('onboard')">重置此清單</button>
+          <button class="btn btn-green" onclick="printFlow('onboard')">列印 / 存成 PDF</button>
+        </div>
+      </div>
+
+      <!-- 離職 -->
+      <div id="panel-offboard" class="panel">
+        <div class="alert alert-warn"><strong>提醒：</strong>員工提出離職後，請<strong>立即</strong>啟動本流程，確保知識移交與系統權限回收。</div>
+        <div class="emp-bar">
+          <input type="text" id="emp-name-offboard" placeholder="員工姓名" oninput="saveEmpName('offboard')">
+          <input type="date" id="emp-date-offboard" oninput="saveEmpName('offboard')">
+        </div>
+        <div class="prog-meta">
+          <span id="prog-label-offboard">進度：0 / 0 項</span>
+          <span class="prog-pct" id="prog-pct-offboard">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill-offboard" style="width:0%"></div></div>
+        <div class="stats">
+          <div class="stat"><div class="stat-num" id="s-off-done">0</div><div class="stat-lbl">已完成</div></div>
+          <div class="stat"><div class="stat-num" id="s-off-todo">0</div><div class="stat-lbl">待處理</div></div>
+          <div class="stat"><div class="stat-num" style="color:var(--green)" id="s-off-pct">0%</div><div class="stat-lbl">完成率</div></div>
+        </div>
+        <div class="sec-title">提離後立即執行</div>
+        <div class="checklist" id="cl-offboard-imm"></div>
+        <div class="sec-title">離職前兩週</div>
+        <div class="checklist" id="cl-offboard-2w"></div>
+        <div class="sec-title">最後上班日</div>
+        <div class="checklist" id="cl-offboard-last"></div>
+        <div class="sec-title">離職後結算</div>
+        <div class="checklist" id="cl-offboard-after"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="resetFlow('offboard')">重置此清單</button>
+          <button class="btn btn-green" onclick="printFlow('offboard')">列印 / 存成 PDF</button>
+        </div>
+      </div>
+
+      <!-- 資遣 -->
+      <div id="panel-layoff" class="panel">
+        <div class="alert alert-danger"><strong>資遣屬法律程序，每一步驟請務必確認合規，並全程保留書面紀錄。</strong></div>
+        <div class="emp-bar">
+          <input type="text" id="emp-name-layoff" placeholder="員工姓名" oninput="saveEmpName('layoff')">
+          <input type="date" id="emp-date-layoff" oninput="saveEmpName('layoff')">
+        </div>
+        <div class="prog-meta">
+          <span id="prog-label-layoff">進度：0 / 0 項</span>
+          <span class="prog-pct" id="prog-pct-layoff">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill-layoff" style="width:0%"></div></div>
+        <div class="stats">
+          <div class="stat"><div class="stat-num" id="s-lay-done">0</div><div class="stat-lbl">已完成</div></div>
+          <div class="stat"><div class="stat-num" id="s-lay-todo">0</div><div class="stat-lbl">待處理</div></div>
+          <div class="stat"><div class="stat-num" style="color:var(--red)" id="s-lay-legal">0</div><div class="stat-lbl">法規關鍵項</div></div>
+        </div>
+        <div class="sec-title">法規確認與準備</div>
+        <div class="checklist" id="cl-layoff-pre"></div>
+        <div class="sec-title">預告期與通知</div>
+        <div class="checklist" id="cl-layoff-notice"></div>
+        <div class="sec-title">資遣費與結算</div>
+        <div class="checklist" id="cl-layoff-comp"></div>
+        <div class="sec-title">離職手續</div>
+        <div class="checklist" id="cl-layoff-exit"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="resetFlow('layoff')">重置此清單</button>
+          <button class="btn" onclick="nav('calc', document.querySelector('[onclick*=calc]'))">前往資遣費試算</button>
+          <button class="btn btn-green" onclick="printFlow('layoff')">列印 / 存成 PDF</button>
+        </div>
+      </div>
+
+      <!-- 資遣費試算 -->
+      <div id="panel-calc" class="panel">
+        <div class="alert alert-info">依台灣勞基法，<strong>2012/2/4 後</strong>適用新制：每滿一年給付 0.5 個月平均工資，最高 6 個月。未滿一年者按比例計算。</div>
+
+        <div class="info-card" style="margin-bottom:20px">
+          <div class="info-card-title">輸入員工資訊</div>
+          <div style="display:grid;gap:12px;margin-top:4px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:5px">到職日</div>
+                <input type="date" id="calc-start" style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none">
+              </div>
+              <div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:5px">離職日</div>
+                <input type="date" id="calc-end" style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none">
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:5px">平均月薪（元）</div>
+              <input type="number" id="calc-salary" placeholder="例：45000" style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none">
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:5px">制度選擇</div>
+              <select id="calc-type" style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none">
+                <option value="new">新制（2012/2/4 後）</option>
+                <option value="old">舊制（2012/2/3 前）</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="calcSeverance()" style="justify-content:center">計算資遣費</button>
+          </div>
+        </div>
+
+        <div id="calc-result" style="display:none">
+          <div class="info-card">
+            <div class="info-card-title">計算結果</div>
+            <div class="info-row"><span class="info-key">年資</span><span class="info-val" id="cr-years">—</span></div>
+            <div class="info-row"><span class="info-key">平均月薪</span><span class="info-val" id="cr-salary">—</span></div>
+            <div class="info-row"><span class="info-key">應給付月數</span><span class="info-val" id="cr-months">—</span></div>
+            <div class="info-row"><span class="info-key" style="font-weight:700">資遣費合計</span><span class="info-val green" id="cr-total" style="font-size:18px;font-weight:700">—</span></div>
+          </div>
+          <div class="alert alert-warn" id="calc-note" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- 文件範本 -->
+      <div id="panel-docs" class="panel">
+        <p style="font-size:14px;color:var(--text2);margin-bottom:20px">以下為常用 HR 文件範本，點擊複製內容後貼入 Word 或 Google 文件使用。</p>
+
+        <div class="sec-title">入職相關</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div style="font-size:14px;font-weight:500">錄取通知書</div>
+              <button class="btn btn-sm" onclick="copyTemplate('offer')">複製範本</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">包含：職稱、薪資、到職日、試用期條款</div>
+          </div>
+          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div style="font-size:14px;font-weight:500">新人入職清單（員工版）</div>
+              <button class="btn btn-sm" onclick="copyTemplate('checkin')">複製範本</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">給員工帶走的報到前準備清單</div>
+          </div>
+          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div style="font-size:14px;font-weight:500">試用期考核表</div>
+              <button class="btn btn-sm" onclick="copyTemplate('trial')">複製範本</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">30 / 60 / 90 天主管評核表格</div>
+          </div>
+        </div>
+
+        <div class="sec-title">離職相關</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div style="font-size:14px;font-weight:500">離職申請書</div>
+              <button class="btn btn-sm" onclick="copyTemplate('resign')">複製範本</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">員工自填離職原因、最後上班日</div>
+          </div>
+          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div style="font-size:14px;font-weight:500">工作移交清單</div>
+              <button class="btn btn-sm" onclick="copyTemplate('handover')">複製範本</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">業務、文件、密碼、客戶移交記錄表</div>
+          </div>
+          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div style="font-size:14px;font-weight:500">離職證明書</div>
+              <button class="btn btn-sm" onclick="copyTemplate('cert')">複製範本</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">公司開立之服務年資證明</div>
+          </div>
+        </div>
+
+        <div class="sec-title">資遣相關</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div style="font-size:14px;font-weight:500">資遣通知書（符合勞基法第11條）</div>
+              <button class="btn btn-sm" onclick="copyTemplate('layoff_letter')">複製範本</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">含預告期、資遣費金額、事由說明</div>
+          </div>
+          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div style="font-size:14px;font-weight:500">資遣費計算明細表</div>
+              <button class="btn btn-sm" onclick="copyTemplate('layoff_calc')">複製範本</button>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">年資、月數、金額逐年計算附件</div>
+          </div>
+        </div>
+
+        <div id="template-output" style="display:none;margin-top:20px">
+          <div class="sec-title">範本內容（全選後複製）</div>
+          <textarea id="template-text" style="width:100%;height:280px;padding:14px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:monospace;background:var(--surface);color:var(--text);outline:none;resize:vertical;line-height:1.7"></textarea>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="copyToClipboard()">一鍵複製</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  Firebase 設定區 — 請將下方填入您自己的 Firebase 專案資訊
+//  設定方法請見同目錄的「Firebase設定說明.txt」
+// ============================================================
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDcHaiqww1ZL0YsPcFP-aqVJJl2HTs6bFA",
+  authDomain:        "isec-hr.firebaseapp.com",
+  databaseURL:       "https://isec-hr-default-rtdb.firebasedatabase.app",
+  projectId:         "isec-hr",
+  storageBucket:     "isec-hr.firebasestorage.app",
+  messagingSenderId: "766057940291",
+  appId:             "1:766057940291:web:e2118ff9032814b8a81bf6"
+};
+// ============================================================
+
+let db = null;
+let firebaseReady = false;
+
+function initFirebase() {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    firebaseReady = true;
+    setSyncStatus('已連線，即時同步中', true);
+
+    // 監聽雲端資料變化，自動更新畫面
+    db.ref('hr_sop').on('value', snapshot => {
+      const val = snapshot.val();
+      if(val) {
+        state = val;
+        ['onboard','offboard','layoff'].forEach(flow => {
+          if(state[flow]) {
+            Object.keys(FLOW_DATA[flow]).forEach(sec => renderChecklist(flow, sec));
+            updateProgress(flow);
+          }
+        });
+      }
+    });
+  } catch(e) {
+    setSyncStatus('未設定 Firebase，使用本機儲存', false);
+    loadLocalState();
+  }
+}
+
+function setSyncStatus(text, ok) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-text');
+  if(dot) dot.style.background = ok ? 'var(--green)' : 'var(--amber)';
+  if(txt) txt.textContent = text;
+}
+
+function loadLocalState() {
+  try {
+    const s = localStorage.getItem('hr_sop_state');
+    if(s) state = JSON.parse(s);
+  } catch(e) { state = {}; }
+}
+
+function saveState() {
+  if(firebaseReady && db) {
+    db.ref('hr_sop').set(state).catch(() => {
+      setSyncStatus('同步失敗，請檢查網路', false);
+    });
+  } else {
+    try { localStorage.setItem('hr_sop_state', JSON.stringify(state)); } catch(e) {}
+  }
+}
+
+const FLOW_DATA = {
+  onboard: {
+    pre: [
+      {label:'寄送錄取通知書與勞動契約（含薪資、職稱、到職日）', tag:'hr'},
+      {label:'建立員工基本資料（身分證、學歷、緊急聯絡人）', tag:'hr'},
+      {label:'申請員工帳號（Email、內部系統、通訊軟體）', tag:'it', note:'建議到職日前 3 天完成'},
+      {label:'準備電腦設備、門禁卡、辦公用品', tag:'it'},
+      {label:'通知部門主管安排新人引導計畫', tag:'mgr'},
+      {label:'準備新人訓練資料（員工手冊、公司介紹）', tag:'hr'},
+      {label:'投保勞保、健保（到職日前完成）', tag:'hr', note:'法定義務，不可延遲'},
+      {label:'設定薪資帳號與出勤系統', tag:'fin'},
+    ],
+    day: [
+      {label:'報到確認、簽署勞動契約與保密協議', tag:'hr'},
+      {label:'辦公室導覽、介紹同事與部門主管', tag:'mgr'},
+      {label:'交付設備並簽署財產清單', tag:'it'},
+      {label:'說明公司規章、出勤、請假制度', tag:'hr'},
+      {label:'開通系統帳號並確認可正常登入', tag:'it'},
+      {label:'安排第一週工作計畫說明（主管負責）', tag:'mgr'},
+    ],
+    trial: [
+      {label:'第 30 天 — HR 與新人進行適應狀況面談', tag:'hr'},
+      {label:'第 30 天 — 主管完成第一月工作表現評估表', tag:'mgr'},
+      {label:'第 60 天 — 確認工作目標設定完成', tag:'mgr'},
+      {label:'第 90 天 — 試用期考核（通過 / 延長 / 不通過）', tag:'hr'},
+      {label:'考核通過 — 更新員工狀態為正式員工，通知財務調薪', tag:'hr'},
+    ]
+  },
+  offboard: {
+    imm: [
+      {label:'收到辭呈，確認最後上班日（注意預告期規定）', tag:'hr', note:'勞基法第16條：年資1年以上需10天前通知'},
+      {label:'通知部門主管啟動工作移交計畫', tag:'mgr'},
+      {label:'確認離職原因（自願/非自願），影響後續失業給付', tag:'hr'},
+      {label:'安排離職面談（HR 主持，了解離職原因）', tag:'hr'},
+    ],
+    '2w': [
+      {label:'完成工作交接文件與業務移交清單', tag:'mgr'},
+      {label:'知識文件存檔（操作手冊、客戶資料、密碼清單）', tag:'mgr'},
+      {label:'確認未休特休天數，計算補償金額', tag:'hr'},
+      {label:'確認借款、備用金或公司財物是否清償', tag:'fin'},
+    ],
+    last: [
+      {label:'回收門禁卡、識別證、設備、制服', tag:'hr'},
+      {label:'IT 停用所有帳號（Email、系統、VPN、雲端）', tag:'it', note:'最後上班日下班後立即執行'},
+      {label:'簽署離職確認書與保密協議再確認', tag:'legal'},
+      {label:'進行最後一次面談，確認無勞資糾紛', tag:'hr'},
+    ],
+    after: [
+      {label:'辦理勞保、健保退保（離職日起 2 天內）', tag:'hr', note:'法定期限，逾期罰鍰'},
+      {label:'開立離職證明書', tag:'hr'},
+      {label:'結算最後薪資（含加班費、未休假補償）', tag:'fin'},
+      {label:'開立薪資扣繳憑單', tag:'fin'},
+      {label:'歸檔員工完整資料（依法保存至少 5 年）', tag:'hr'},
+    ]
+  },
+  layoff: {
+    pre: [
+      {label:'確認資遣事由（勞基法第11條：業務緊縮/虧損/轉讓/技術更新等）', tag:'legal'},
+      {label:'確認是否有不得資遣之員工（育嬰假中、職業災害未痊癒）', tag:'legal', note:'違法資遣可申訴撤銷'},
+      {label:'計算預告天數（年資不滿3月：0天；3月~1年：10天；1~3年：20天；3年以上：30天）', tag:'legal'},
+      {label:'計算資遣費（新制：每年 0.5 個月，最高 6 個月）', tag:'fin'},
+      {label:'諮詢法律顧問確認程序合規', tag:'legal'},
+    ],
+    notice: [
+      {label:'大量解僱（10人以上）需於 60 天前向勞動局申報', tag:'legal', note:'大量解僱勞工保護法'},
+      {label:'書面通知員工資遣（含事由、最後上班日、資遣費金額）', tag:'legal'},
+      {label:'提供就業服務資訊（失業給付、職訓局資源）', tag:'hr'},
+      {label:'向勞動局申報資遣通報', tag:'legal', note:'10 天內完成通報'},
+    ],
+    comp: [
+      {label:'計算並確認資遣費金額，留存計算明細', tag:'fin'},
+      {label:'確認非自願離職認定，協助員工申請失業給付', tag:'hr'},
+      {label:'結算未休特休天數', tag:'hr'},
+      {label:'結算最終薪資（含預告期薪資或代通知金）', tag:'fin'},
+    ],
+    exit: [
+      {label:'回收設備、門禁卡，停用所有帳號', tag:'it'},
+      {label:'簽署資遣同意書（留存正本）', tag:'legal'},
+      {label:'開立服務證明書（非自願離職）', tag:'hr'},
+      {label:'辦理勞保、健保退保', tag:'hr'},
+      {label:'歸檔資遣全案書面紀錄', tag:'legal'},
+    ]
+  }
+};
+
+const TAG_CLASS = {hr:'tag-hr',it:'tag-it',mgr:'tag-mgr',fin:'tag-fin',legal:'tag-legal'};
+const TAG_LABEL = {hr:'HR',it:'IT',mgr:'主管',fin:'財務',legal:'法務'};
+
+let state = {};
+
+function loadState() { loadLocalState(); }
+
+
+function ensureState(flow) {
+  if(!state[flow]) state[flow] = {};
+  Object.keys(FLOW_DATA[flow]).forEach(sec => {
+    if(!state[flow][sec]) state[flow][sec] = new Array(FLOW_DATA[flow][sec].length).fill(false);
+  });
+}
+
+function renderChecklist(flow, sec) {
+  const el = document.getElementById('cl-'+flow+'-'+sec);
+  if(!el) return;
+  ensureState(flow);
+  const items = FLOW_DATA[flow][sec];
+  el.innerHTML = '';
+  items.forEach((item, i) => {
+    const done = state[flow][sec][i];
+    const div = document.createElement('div');
+    div.className = 'item' + (done ? ' done' : '');
+    div.onclick = () => toggleItem(flow, sec, i);
+    div.innerHTML =
+      '<div class="checkbox"><span class="check-mark">✓</span></div>' +
+      '<div class="item-body">' +
+        '<div class="item-label">' + item.label + '</div>' +
+        (item.note ? '<div class="item-note">' + item.note + '</div>' : '') +
+      '</div>' +
+      '<span class="tag ' + TAG_CLASS[item.tag] + '">' + TAG_LABEL[item.tag] + '</span>';
+    el.appendChild(div);
+  });
+}
+
+function toggleItem(flow, sec, i) {
+  ensureState(flow);
+  state[flow][sec][i] = !state[flow][sec][i];
+  renderChecklist(flow, sec);
+  updateProgress(flow);
+  saveState();
+}
+
+function updateProgress(flow) {
+  let total = 0, done = 0;
+  Object.keys(FLOW_DATA[flow]).forEach(sec => {
+    ensureState(flow);
+    total += FLOW_DATA[flow][sec].length;
+    done += state[flow][sec].filter(Boolean).length;
+  });
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  const fill = document.getElementById('prog-fill-' + flow);
+  const label = document.getElementById('prog-label-' + flow);
+  const pctEl = document.getElementById('prog-pct-' + flow);
+  if(fill) fill.style.width = pct + '%';
+  if(label) label.textContent = '進度：' + done + ' / ' + total + ' 項';
+  if(pctEl) pctEl.textContent = pct + '%';
+
+  const short = flow === 'onboard' ? 'on' : flow === 'offboard' ? 'off' : 'lay';
+  const doneEl = document.getElementById('s-'+short+'-done');
+  const todoEl = document.getElementById('s-'+short+'-todo');
+  const pctEl2 = document.getElementById('s-'+short+'-pct');
+  if(doneEl) doneEl.textContent = done;
+  if(todoEl) todoEl.textContent = total - done;
+  if(pctEl2) pctEl2.textContent = pct + '%';
+
+  const badge = document.getElementById('badge-' + flow);
+  if(badge) badge.textContent = (total - done);
+
+  updateOverview();
+}
+
+function updateOverview() {
+  let totalDone = 0, totalPending = 0;
+  ['onboard','offboard','layoff'].forEach(flow => {
+    let d = 0, t = 0;
+    Object.keys(FLOW_DATA[flow]).forEach(sec => {
+      ensureState(flow);
+      t += FLOW_DATA[flow][sec].length;
+      d += state[flow][sec].filter(Boolean).length;
+    });
+    totalDone += d;
+    totalPending += (t - d);
+    const pct = t ? Math.round(d/t*100) : 0;
+    const labels = {onboard:'ov-on-prog', offboard:'ov-off-prog', layoff:'ov-lay-prog'};
+    const el = document.getElementById(labels[flow]);
+    if(el) el.textContent = d + ' / ' + t + ' 項完成（' + pct + '%）';
+  });
+
+  const activeEl = document.getElementById('ov-active');
+  const doneEl = document.getElementById('ov-done');
+  const pendingEl = document.getElementById('ov-pending');
+  if(activeEl) activeEl.textContent = 3;
+  if(doneEl) doneEl.textContent = totalDone;
+  if(pendingEl) pendingEl.textContent = totalPending;
+}
+
+function resetFlow(flow) {
+  if(!confirm('確定要重置「' + {onboard:'入職',offboard:'離職',layoff:'資遣'}[flow] + '」的所有勾選記錄？')) return;
+  state[flow] = {};
+  Object.keys(FLOW_DATA[flow]).forEach(sec => renderChecklist(flow, sec));
+  updateProgress(flow);
+  saveState();
+}
+
+function saveEmpName(flow) {}
+
+function nav(name, btn) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  if(panel) panel.classList.add('active');
+  const titles = {
+    overview:['儀表板','所有 HR 案件總覽'],
+    onboard:['入職流程','新員工到職 SOP 追蹤'],
+    offboard:['離職流程','員工離職 SOP 追蹤'],
+    layoff:['資遣流程','資遣 SOP 與法規確認'],
+    calc:['資遣費試算','依勞基法自動計算'],
+    docs:['文件範本','常用 HR 文件快速複製'],
+  };
+  const t = titles[name] || ['HR系統',''];
+  document.getElementById('page-title').textContent = t[0];
+  document.getElementById('page-sub').textContent = t[1];
+}
+
+function calcSeverance() {
+  const start = document.getElementById('calc-start').value;
+  const end = document.getElementById('calc-end').value;
+  const salary = parseFloat(document.getElementById('calc-salary').value);
+  const type = document.getElementById('calc-type').value;
+
+  if(!start || !end || !salary) { alert('請填寫所有欄位'); return; }
+
+  const s = new Date(start), e = new Date(end);
+  if(e <= s) { alert('離職日必須晚於到職日'); return; }
+
+  const totalDays = (e - s) / (1000 * 60 * 60 * 24);
+  const years = totalDays / 365.25;
+  const wholeYears = Math.floor(years);
+  const fraction = years - wholeYears;
+
+  let months = 0;
+  if(type === 'new') {
+    months = wholeYears * 0.5 + fraction * 0.5;
+    months = Math.min(months, 6);
+  } else {
+    months = wholeYears * 1 + fraction;
+    months = Math.min(months, 45);
+  }
+
+  months = Math.round(months * 100) / 100;
+  const total = Math.round(salary * months);
+
+  document.getElementById('cr-years').textContent =
+    wholeYears + ' 年 ' + Math.round(fraction * 12) + ' 個月';
+  document.getElementById('cr-salary').textContent =
+    'NT$ ' + salary.toLocaleString();
+  document.getElementById('cr-months').textContent = months.toFixed(2) + ' 個月';
+  document.getElementById('cr-total').textContent = 'NT$ ' + total.toLocaleString();
+
+  const note = type === 'new'
+    ? '新制上限 6 個月。如員工有 2012/2/3 前年資，需另計舊制部分，建議請專業人資或律師確認。'
+    : '舊制上限 45 個月。此為估算，實際金額請依勞資雙方確認之平均工資計算。';
+  document.getElementById('calc-note').textContent = note;
+  document.getElementById('calc-result').style.display = 'block';
+}
+
+const TEMPLATES = {
+  offer: `【錄取通知書】
+
+親愛的 ＿＿＿＿ 先生/女士，您好：
+
+感謝您參與本公司的徵才面試。經審慎評估後，我們很高興通知您錄取以下職位：
+
+■ 職　稱：＿＿＿＿
+■ 所屬部門：＿＿＿＿
+■ 試用期：自到職日起 ＿＿ 個月
+■ 試用期月薪：新台幣 ＿＿＿＿ 元整
+■ 正式月薪：新台幣 ＿＿＿＿ 元整
+■ 薪資結構：本薪 ＿＿＿ 元 / 伙食津貼 ＿＿＿ 元
+■ 預定到職日：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
+■ 工作地點：＿＿＿＿
+
+請於 ＿＿＿＿ 年 ＿＿ 月 ＿＿ 日前確認是否接受此職位，並回覆本通知。
+如有任何問題，歡迎聯繫 HR 部門：＿＿＿＿
+
+                                        ＿＿＿＿ 公司  HR 部門
+                                        日期：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日`,
+
+  checkin: `【新人入職準備清單（員工版）】
+
+親愛的新同仁，歡迎加入！請於到職日前備妥以下資料：
+
+□ 身分證正本（供驗證後歸還）
+□ 健保卡正本（供加保使用）
+□ 銀行存摺封面影本（薪資轉帳帳號）
+□ 學歷證書影本（最高學歷）
+□ 緊急聯絡人資料（姓名、關係、電話）
+□ 個人印章（若有）
+□ 2吋彩色照片 2 張
+
+到職當天請於 ＿＿:＿＿ 前至 ＿＿＿＿（地址）辦理報到手續。
+聯絡窗口：＿＿＿＿  電話：＿＿＿＿
+
+期待與您共事！`,
+
+  trial: `【試用期考核表】
+
+員工姓名：＿＿＿＿　部門：＿＿＿＿　職稱：＿＿＿＿
+到職日：＿＿＿＿　考核日期：＿＿＿＿　考核階段：□ 30天 □ 60天 □ 90天
+
+一、工作表現評估（請勾選）
+
+項目              優秀  良好  尚可  待改善
+工作品質          □     □     □     □
+工作效率          □     □     □     □
+學習能力          □     □     □     □
+團隊合作          □     □     □     □
+出勤狀況          □     □     □     □
+主動積極程度      □     □     □     □
+
+二、主管評語：
+____________________________________________________
+____________________________________________________
+
+三、建議改善事項：
+____________________________________________________
+
+四、考核結果：
+□ 通過試用期，轉為正式員工（生效日：＿＿＿＿）
+□ 延長試用期至 ＿＿＿＿
+□ 不通過，終止勞動契約
+
+主管簽名：＿＿＿＿　日期：＿＿＿＿
+HR確認：＿＿＿＿　　日期：＿＿＿＿
+員工簽名：＿＿＿＿　日期：＿＿＿＿`,
+
+  resign: `【離職申請書】
+
+茲申請離職，相關資料如下：
+
+姓　　名：＿＿＿＿
+員工編號：＿＿＿＿
+部　　門：＿＿＿＿
+職　　稱：＿＿＿＿
+到　職　日：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
+申請離職日：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
+最後上班日：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
+
+離職原因：
+□ 個人因素（家庭/健康/出國等）
+□ 生涯規劃（轉換跑道/進修）
+□ 工作內容/環境因素
+□ 薪資福利因素
+□ 其他：＿＿＿＿
+
+說明：____________________________________________________
+
+本人確認已瞭解離職相關規定，將依規定完成工作移交。
+
+申請人簽名：＿＿＿＿　日期：＿＿＿＿
+主管核准：＿＿＿＿　　日期：＿＿＿＿
+HR 確認：＿＿＿＿　　日期：＿＿＿＿`,
+
+  handover: `【工作移交清單】
+
+交接人：＿＿＿＿　部門：＿＿＿＿　最後上班日：＿＿＿＿
+承接人：＿＿＿＿　主管：＿＿＿＿
+
+一、工作項目移交
+項目名稱              說明               狀態      承接人確認
+＿＿＿＿＿＿＿＿    ＿＿＿＿＿＿    □完成     ＿＿＿＿
+＿＿＿＿＿＿＿＿    ＿＿＿＿＿＿    □完成     ＿＿＿＿
+＿＿＿＿＿＿＿＿    ＿＿＿＿＿＿    □完成     ＿＿＿＿
+
+二、文件/資料移交
+□ 客戶資料（清單附件）
+□ 操作手冊/SOP文件
+□ 專案進度報告
+□ 其他重要文件：＿＿＿＿
+
+三、系統帳號/密碼移交
+系統名稱    帳號    備注
+＿＿＿＿    ＿＿    ＿＿
+（注意：移交後 IT 需立即變更密碼）
+
+四、公司財物歸還
+□ 電腦/筆電  □ 手機  □ 門禁卡  □ 識別證  □ 制服  □ 其他：＿＿
+
+交接人確認：＿＿＿＿　日期：＿＿＿＿
+承接人確認：＿＿＿＿　日期：＿＿＿＿
+主管確認：＿＿＿＿　　日期：＿＿＿＿`,
+
+  cert: `【離職證明書】
+
+茲證明 ＿＿＿＿ 先生/女士（身分證字號：＿＿＿＿）
+自 ＿＿＿＿ 年 ＿＿ 月 ＿＿ 日起至 ＿＿＿＿ 年 ＿＿ 月 ＿＿ 日止
+任職於本公司，職稱為 ＿＿＿＿，服務年資共 ＿＿ 年 ＿＿ 月。
+
+離職原因：□ 自願離職　□ 非自願離職（資遣）　□ 合約到期
+
+特此證明。
+
+                                        ＿＿＿＿ 股份有限公司
+                                        代表人：＿＿＿＿
+                                        統一編號：＿＿＿＿
+                                        地　　址：＿＿＿＿
+                                        日　　期：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
+                                        （公司大小章）`,
+
+  layoff_letter: `【資遣通知書】
+
+受文者：＿＿＿＿ 先生/女士
+
+主旨：依勞動基準法第十一條規定，通知終止勞動契約事宜。
+
+說明：
+一、本公司因 □業務緊縮 □虧損 □業務性質變更 □技術更新，
+    有減少勞工之必要，依勞動基準法第十一條第＿款規定，
+    終止與貴方之勞動契約。
+
+二、貴方任職期間：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日 至 ＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
+    服務年資：＿＿ 年 ＿＿ 月
+
+三、預告期間：自本通知日起算 ＿＿ 日為預告期。
+    預定終止日（最後上班日）：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
+
+四、資遣費：新台幣 ＿＿＿＿ 元整
+    （計算基礎：平均工資 NT$＿＿＿＿ × ＿＿ 個月）
+    發放方式：於最後上班日或 ＿＿＿＿ 日前匯入薪資帳戶
+
+五、本公司將協助提供非自願離職證明，供申請失業給付使用。
+
+                                        ＿＿＿＿ 股份有限公司（公章）
+                                        代表人：＿＿＿＿（簽章）
+                                        日期：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
+
+受通知人簽名：＿＿＿＿　日期：＿＿＿＿`,
+
+  layoff_calc: `【資遣費計算明細表】
+
+員工姓名：＿＿＿＿　到職日：＿＿＿＿　終止日：＿＿＿＿
+計算基準月薪（最近6個月平均工資）：NT$ ＿＿＿＿
+
+適用制度：□ 新制（勞退新制，2005/7/1 後）
+          □ 舊制（勞基法，2005/7/1 前）
+          □ 新舊制並計
+
+一、新制資遣費（每年 0.5 個月，上限 6 個月）
+年度         計算期間             月數
+＿＿         ＿＿＿＿~＿＿＿＿    ＿＿ 月
+＿＿         ＿＿＿＿~＿＿＿＿    ＿＿ 月
+小計：＿＿ 個月 × NT$ ＿＿＿＿ = NT$ ＿＿＿＿
+
+二、其他結算項目
+未休特休天數：＿＿ 天 × 日薪 NT$＿＿＿＿ = NT$ ＿＿＿＿
+代通知金（如適用）：NT$ ＿＿＿＿
+最後月份薪資（按比例）：NT$ ＿＿＿＿
+
+三、合計應給付金額：NT$ ＿＿＿＿
+
+計算人：＿＿＿＿　確認主管：＿＿＿＿　日期：＿＿＿＿
+員工確認：＿＿＿＿　日期：＿＿＿＿`
+};
+
+function copyTemplate(key) {
+  const text = TEMPLATES[key];
+  const out = document.getElementById('template-output');
+  const ta = document.getElementById('template-text');
+  ta.value = text;
+  out.style.display = 'block';
+  out.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function copyToClipboard() {
+  const ta = document.getElementById('template-text');
+  ta.select();
+  try {
+    document.execCommand('copy');
+    alert('已複製到剪貼簿！可貼入 Word 或 Google 文件使用。');
+  } catch(e) {
+    alert('請手動全選（Ctrl+A）後複製（Ctrl+C）');
+  }
+}
+
+function printFlow(flow) {
+  window.print();
+}
+
+function initAll() {
+  initFirebase();
+  const flows = ['onboard','offboard','layoff'];
+  flows.forEach(flow => {
+    Object.keys(FLOW_DATA[flow]).forEach(sec => {
+      ensureState(flow);
+      renderChecklist(flow, sec);
+    });
+    updateProgress(flow);
+  });
+  updateOverview();
+  const legalCount = FLOW_DATA.layoff.pre.filter(i=>i.tag==='legal').length +
+    FLOW_DATA.layoff.notice.filter(i=>i.tag==='legal').length +
+    FLOW_DATA.layoff.exit.filter(i=>i.tag==='legal').length;
+  const lel = document.getElementById('s-lay-legal');
+  if(lel) lel.textContent = legalCount;
+}
+
+initAll();
+</script>
+</body>
+</html>
