@@ -259,12 +259,18 @@ let currentKey = null; // key for current employee in Firebase
 
 function initFirebase() {
   try {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    db = firebase.database();
+    // If already initialized, reuse existing app
+    if(firebase.apps && firebase.apps.length > 0){
+      db = firebase.database();
+    } else {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.database();
+    }
     fbReady = true;
     setSyncDot(true, '已連線');
   } catch(e) {
-    setSyncDot(false, '離線模式');
+    console.error('Firebase init error:', e);
+    setSyncDot(false, '離線：' + e.message.slice(0,20));
   }
 }
 
@@ -911,6 +917,44 @@ const OB_CHECKS = [
   {id:'bday', step:'試用期通過後', label:'NUEIP 匯入生日假'},
 ];
 
+// ── Step-to-checks mapping ──────────────────────────────────
+const STEP_CHECK_MAP = {
+  onboard: {
+    2:  ['it_all_done'],
+    3:  ['c0','c1'],
+    4:  ['n0','n1','n2','n3'],
+    5:  ['ins3','ins4'],
+    6:  ['i0','i1','i2'],
+    7:  ['estelle_done'],
+    8:  ['o0','o1','o2','o3'],
+    9:  ['t0','t1','t2'],
+    10: ['bday'],
+  },
+  offboard: {
+    3: ['r0','r1','r2'],
+    5: ['d0','d1','d2','d3','d4','d5'],
+  },
+  layoff: {
+    2: ['ly0','ly1'],
+    3: ['lr0','lr1','lr2'],
+  },
+};
+
+function countPendingChecks(record, type){
+  const checks = (record.emp && record.emp._checks) || {};
+  const defs = PENDING_CHECKS[type] || {};
+  return Object.keys(defs).filter(id => !checks[id]).length;
+}
+
+function isStepTrulyDone(record, type, stepIdx){
+  const doneArr = record[DONE_KEYS[type]] || [];
+  if(!doneArr[stepIdx]) return false;
+  const checks = (record.emp && record.emp._checks) || {};
+  const childIds = (STEP_CHECK_MAP[type] && STEP_CHECK_MAP[type][stepIdx]) || [];
+  return childIds.every(id => checks[id]);
+}
+// ────────────────────────────────────────────────────────────
+
 function printObSummary(){
   const start=new Date(emp.startDate);
   const d30=nextWorkdayFrom(addDays(start,30));
@@ -1041,7 +1085,8 @@ let dashData = {};
 // ============================================================
 // DASHBOARD - 未完成事項追蹤
 // ============================================================
-let allEmpRecords = {};  // All records from Firebase
+let allEmpRecords = {};
+  // All records from Firebase
 let selectedEmpKey = null;
 let selectedEmpType = null;
 
@@ -1049,6 +1094,8 @@ function openDashboard(){
   currentFlow = 'dashboard';
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('app-dashboard').classList.add('active');
+  // Make sure Firebase is initialized before loading
+  if(!fbReady || !db) initFirebase();
   loadAllEmployees();
 }
 
