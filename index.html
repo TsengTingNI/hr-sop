@@ -3,1391 +3,1476 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HR 流程管理系統（同步版）</title>
+<title>艾爾斯 HR 自動化系統</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3ef;color:#1a1917;min-height:100vh;font-size:15px}
+.welcome{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:32px;padding:32px}
+.welcome-logo{font-size:28px;font-weight:700;letter-spacing:0.04em;text-align:center}
+.welcome-sub{font-size:15px;color:#6b6966;margin-top:6px;text-align:center}
+.flow-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:700px;width:100%} .flow-cards .flow-card:last-child{grid-column:1/-1}
+.flow-card{background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:14px;padding:28px 20px;cursor:pointer;transition:all 0.15s;text-align:center}
+.flow-card:hover{border-color:rgba(0,0,0,0.25);transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+.flow-card-icon{font-size:32px;margin-bottom:12px}
+.flow-card-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.flow-card-desc{font-size:13px;color:#6b6966;line-height:1.5}
+.app{display:none;min-height:100vh;flex-direction:column}
+.app.active{display:flex}
+.header{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.1);padding:14px 28px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100}
+.header-back{cursor:pointer;font-size:13px;color:#6b6966;display:flex;align-items:center;gap:4px;padding:6px 10px;border-radius:8px;border:0.5px solid rgba(0,0,0,0.12);background:transparent;font-family:inherit;transition:background 0.1s}
+.header-back:hover{background:#f4f3ef}
+.header-title{font-size:16px;font-weight:700}
+.header-badge{font-size:11px;padding:3px 10px;border-radius:99px;font-weight:600}
+.badge-green{background:#e3f5ed;color:#0f6e56}
+.badge-amber{background:#fdf0d9;color:#7a4f0a}
+.badge-red{background:#fde8e8;color:#8a1a1a}
+.progress-wrap{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.08);padding:12px 28px;display:flex;align-items:center;gap:16px}
+.progress-bar{flex:1;height:5px;background:#ebe9e3;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width 0.3s ease}
+.fill-green{background:#1a7a55}.fill-amber{background:#c97a0a}.fill-red{background:#c72c2c}
+.progress-text{font-size:12px;color:#6b6966;white-space:nowrap}
+.main{display:flex;flex:1}
+.sidebar{width:240px;background:#fff;border-right:0.5px solid rgba(0,0,0,0.08);padding:20px 0;flex-shrink:0;position:sticky;top:72px;height:calc(100vh - 72px);overflow-y:auto}
+.step-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background 0.1s;border-left:3px solid transparent}
+.step-item:hover{background:#f8f7f3}
+.step-item.active{background:#f0efe9;border-left-color:#1a1917}
+.step-item.done .step-num{background:#1a7a55;color:#fff;border-color:#1a7a55}
+.step-num{width:24px;height:24px;border-radius:50%;border:1.5px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:#6b6966}
+.step-label{font-size:13px;color:#3a3937;line-height:1.4}
+.step-item.active .step-label{font-weight:600;color:#1a1917}
+.content{flex:1;padding:28px 32px;max-width:820px}
+.section-card{background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:14px;padding:24px;margin-bottom:16px}
+.section-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.section-desc{font-size:13px;color:#6b6966;margin-bottom:20px;line-height:1.6}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:12px;font-weight:600;color:#3a3937;letter-spacing:0.02em}
+.form-required{color:#c72c2c;margin-left:2px}
+.form-input,.form-select{padding:9px 12px;border:0.5px solid rgba(0,0,0,0.18);border-radius:9px;font-size:14px;font-family:inherit;background:#fff;color:#1a1917;outline:none;transition:border 0.1s}
+.form-input:focus,.form-select:focus{border-color:#1a1917}
+.alert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;border-left:3px solid;line-height:1.6}
+.alert-info{background:#e3eef8;color:#1a4f8a;border-color:#1a4f8a}
+.alert-warn{background:#fdf0d9;color:#7a4f0a;border-color:#c97a0a}
+.alert-danger{background:#fde8e8;color:#8a1a1a;border-color:#c72c2c}
+.alert-success{background:#e3f5ed;color:#0f6e56;border-color:#1a7a55}
+.alert strong{font-weight:700}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;border:0.5px solid rgba(0,0,0,0.15);background:transparent;font-size:13px;font-weight:600;color:#1a1917;cursor:pointer;font-family:inherit;transition:all 0.12s;text-decoration:none}
+.btn:hover{background:#f4f3ef}
+.btn-primary{background:#1a1917;color:#fff;border-color:#1a1917}
+.btn-primary:hover{opacity:0.85;background:#1a1917}
+.btn-green{background:#e3f5ed;color:#0f6e56;border-color:transparent}
+.btn-green:hover{background:#cceedd}
+.btn-amber{background:#fdf0d9;color:#7a4f0a;border-color:transparent}
+.btn-red{background:#fde8e8;color:#8a1a1a;border-color:transparent}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.text-output{background:#f8f7f3;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-all;margin-bottom:12px;max-height:400px;overflow-y:auto}
+.checklist{display:flex;flex-direction:column;gap:8px}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;background:#fff;cursor:pointer;transition:all 0.1s}
+.check-item:hover{border-color:rgba(0,0,0,0.2)}
+.check-item.done{opacity:0.5;background:#f8f7f3}
+.check-item.done .check-label{text-decoration:line-through;color:#9a9894}
+.checkbox{width:20px;height:20px;border:1.5px solid #ccc;border-radius:5px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.1s;font-size:12px}
+.check-item.done .checkbox{background:#1a7a55;border-color:#1a7a55;color:#fff}
+.check-label{font-size:14px;line-height:1.5;flex:1}
+.check-note{font-size:12px;color:#9a9894;margin-top:2px}
+.info-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+.info-table td{padding:8px 12px;border-bottom:0.5px solid rgba(0,0,0,0.08)}
+.info-table td:first-child{color:#6b6966;width:40%;font-weight:500}
+.info-table td:last-child{font-weight:600}
+.cal-link{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#f8f7f3;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;margin-bottom:8px;text-decoration:none;color:#1a1917;transition:background 0.1s}
+.cal-link:hover{background:#ebe9e3}
+.cal-icon{font-size:20px}
+.cal-info{flex:1}
+.cal-title{font-size:13px;font-weight:600}
+.cal-date{font-size:12px;color:#6b6966;margin-top:2px}
+.calc-result{background:#f0efe9;border-radius:10px;padding:16px;margin-top:16px}
+.calc-total{font-size:22px;font-weight:700;color:#1a7a55;margin-top:8px}
+.nav-buttons{display:flex;justify-content:space-between;margin-top:28px;padding-top:20px;border-top:0.5px solid rgba(0,0,0,0.08)}
+.cred-box{background:#f8f7f3;border-radius:10px;padding:14px;margin:12px 0;font-size:13px}
 
-  :root {
-    --bg: #f5f4f0;
-    --surface: #ffffff;
-    --surface2: #f0efe9;
-    --border: rgba(0,0,0,0.1);
-    --border2: rgba(0,0,0,0.18);
-    --text: #1a1917;
-    --text2: #5a5955;
-    --text3: #9a9894;
-    --green: #1a7a55;
-    --green-bg: #e3f5ed;
-    --blue: #1a4f8a;
-    --blue-bg: #e3eef8;
-    --amber: #7a4f0a;
-    --amber-bg: #fdf0d9;
-    --red: #8a1a1a;
-    --red-bg: #fde8e8;
-    --pink: #8a1a55;
-    --pink-bg: #fde8f2;
-    --radius: 10px;
-    --radius-lg: 14px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Noto Sans TC', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 15px;
-    line-height: 1.6;
-  }
-
-  /* Layout */
-  .layout { display: flex; min-height: 100vh; }
-
-  /* Sidebar */
-  .sidebar {
-    width: 220px;
-    background: var(--surface);
-    border-right: 0.5px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    top: 0; left: 0; bottom: 0;
-    z-index: 10;
-  }
-
-  .sidebar-logo {
-    padding: 24px 20px 20px;
-    border-bottom: 0.5px solid var(--border);
-  }
-
-  .logo-title {
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    color: var(--text);
-  }
-
-  .logo-sub {
-    font-size: 11px;
-    color: var(--text3);
-    margin-top: 2px;
-  }
-
-  .sidebar-nav {
-    padding: 16px 12px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .nav-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: var(--text3);
-    padding: 0 8px;
-    margin: 12px 0 4px;
-    text-transform: uppercase;
-  }
-
-  .nav-label:first-child { margin-top: 0; }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text2);
-    border: none;
-    background: transparent;
+/* PDF Print Styles */
+@media print {
+  * { margin: 0; padding: 0; }
+  body * { visibility: hidden; }
+  #print-area, #print-area * { visibility: visible; }
+  #print-area {
+    position: absolute;
+    left: 0; top: 0;
     width: 100%;
-    text-align: left;
-    transition: all 0.15s;
-    position: relative;
+    height: auto;
+    overflow: visible;
+    page-break-inside: avoid;
   }
+  @page { margin: 10mm; size: A4; }
+}
 
-  .nav-item:hover { background: var(--surface2); color: var(--text); }
+/* PDF Document Styles */
+.pdf-doc{font-family:'Microsoft JhengHei',sans-serif;padding:40px;max-width:680px;margin:0 auto;line-height:1.8;font-size:14px}
+.pdf-title{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px;letter-spacing:0.1em}
+.pdf-company{text-align:center;font-size:16px;font-weight:700;margin-bottom:20px}
+.pdf-subtitle{text-align:center;font-size:14px;color:#555;margin-bottom:24px}
+.pdf-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+.pdf-table td,.pdf-table th{border:1px solid #333;padding:8px 12px;font-size:13px;vertical-align:top}
+.pdf-table th{background:#f0f0f0;font-weight:600;text-align:center}
+.pdf-section{font-weight:700;margin:16px 0 8px;font-size:14px}
+.pdf-sign-row{display:flex;justify-content:space-around;margin-top:40px}
+.pdf-sign-col{text-align:center;min-width:120px}
+.pdf-sign-line{border-top:1px solid #333;margin-top:40px;padding-top:6px;font-size:12px}
+.pdf-date-row{text-align:right;font-size:13px;margin-bottom:16px}
+.pdf-field{display:inline-block;min-width:120px;border-bottom:1px solid #333;margin:0 4px}
+.pdf-check-row{margin:6px 0;font-size:13px}
+.pdf-body{font-size:13px;line-height:2;margin-bottom:12px}
 
-  .nav-item.active {
-    background: var(--text);
-    color: #fff;
-  }
-
-  .nav-icon { width: 18px; text-align: center; font-size: 14px; }
-
-  .nav-badge {
-    margin-left: auto;
-    font-size: 11px;
-    font-weight: 700;
-    background: rgba(255,255,255,0.25);
-    padding: 1px 7px;
-    border-radius: 99px;
-    line-height: 1.6;
-  }
-
-  .nav-item:not(.active) .nav-badge {
-    background: var(--surface2);
-    color: var(--text2);
-  }
-
-  /* Main content */
-  .main {
-    margin-left: 220px;
-    flex: 1;
-    min-height: 100vh;
-  }
-
-  /* Header */
-  .topbar {
-    background: var(--surface);
-    border-bottom: 0.5px solid var(--border);
-    padding: 16px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 5;
-  }
-
-  .topbar-left h1 { font-size: 17px; font-weight: 700; }
-  .topbar-left p { font-size: 13px; color: var(--text3); margin-top: 1px; }
-
-  .topbar-right { display: flex; gap: 10px; align-items: center; }
-
-  /* Buttons */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: var(--radius);
-    border: 0.5px solid var(--border2);
-    background: transparent;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.12s;
-    text-decoration: none;
-  }
-
-  .btn:hover { background: var(--surface2); }
-
-  .btn-primary {
-    background: var(--text);
-    color: #fff;
-    border-color: var(--text);
-  }
-
-  .btn-primary:hover { opacity: 0.85; background: var(--text); }
-
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
-
-  .btn-green {
-    background: var(--green-bg);
-    color: var(--green);
-    border-color: transparent;
-  }
-
-  .btn-green:hover { background: #cceedd; }
-
-  /* Content area */
-  .content { padding: 28px 32px; max-width: 900px; }
-
-  /* Panel */
-  .panel { display: none; }
-  .panel.active { display: block; }
-
-  /* Alert */
-  .alert {
-    padding: 12px 16px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    margin-bottom: 20px;
-    border-left: 3px solid;
-    line-height: 1.6;
-  }
-
-  .alert-info { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
-  .alert-warn { background: var(--amber-bg); color: var(--amber); border-color: var(--amber); }
-  .alert-danger { background: var(--red-bg); color: var(--red); border-color: var(--red); }
-  .alert strong { font-weight: 700; }
-
-  /* Progress */
-  .prog-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    color: var(--text2);
-    margin-bottom: 8px;
-  }
-
-  .prog-pct { font-weight: 700; color: var(--text); }
-
-  .progress-bar {
-    height: 6px;
-    background: var(--surface2);
-    border-radius: 3px;
-    margin-bottom: 20px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--green);
-    border-radius: 3px;
-    transition: width 0.35s ease;
-  }
-
-  /* Stats */
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 24px;
-  }
-
-  .stat {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-  }
-
-  .stat-num { font-size: 26px; font-weight: 700; line-height: 1; }
-  .stat-lbl { font-size: 12px; color: var(--text3); margin-top: 4px; }
-
-  /* Section title */
-  .sec-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text3);
-    margin: 24px 0 10px;
-  }
-
-  .sec-title:first-child { margin-top: 0; }
-
-  /* Checklist */
-  .checklist { display: flex; flex-direction: column; gap: 6px; }
-
-  .item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px 14px;
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
-    cursor: pointer;
-    transition: all 0.12s;
-    user-select: none;
-  }
-
-  .item:hover { border-color: var(--border2); background: #fafaf8; }
-
-  .item.done {
-    opacity: 0.5;
-    background: var(--surface2);
-  }
-
-  .item.done .item-label { text-decoration: line-through; color: var(--text3); }
-
-  .checkbox {
-    width: 20px;
-    height: 20px;
-    border: 1.5px solid var(--border2);
-    border-radius: 5px;
-    flex-shrink: 0;
-    margin-top: 1px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-  }
-
-  .item.done .checkbox {
-    background: var(--green);
-    border-color: var(--green);
-  }
-
-  .check-mark {
-    display: none;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1;
-  }
-
-  .item.done .check-mark { display: block; }
-
-  .item-body { flex: 1; }
-  .item-label { font-size: 14px; line-height: 1.5; }
-  .item-note { font-size: 12px; color: var(--text3); margin-top: 2px; }
-
-  .tag {
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: 99px;
-    white-space: nowrap;
-    font-weight: 500;
-    align-self: flex-start;
-    margin-top: 2px;
-  }
-
-  .tag-hr { background: var(--green-bg); color: var(--green); }
-  .tag-it { background: var(--blue-bg); color: var(--blue); }
-  .tag-mgr { background: var(--amber-bg); color: var(--amber); }
-  .tag-fin { background: var(--pink-bg); color: var(--pink); }
-  .tag-legal { background: var(--red-bg); color: var(--red); }
-
-  .btn-row { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
-
-  /* Employee input */
-  .emp-bar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-
-  .emp-bar input, .emp-bar select {
-    flex: 1;
-    min-width: 180px;
-    padding: 9px 12px;
-    border: 0.5px solid var(--border2);
-    border-radius: var(--radius);
-    font-size: 14px;
-    font-family: inherit;
-    background: var(--surface);
-    color: var(--text);
-    outline: none;
-  }
-
-  .emp-bar input:focus, .emp-bar select:focus {
-    border-color: var(--text);
-  }
-
-  /* Timeline */
-  .timeline { display: flex; flex-direction: column; }
-
-  .tl-item {
-    display: flex;
-    gap: 16px;
-    padding-bottom: 20px;
-    position: relative;
-  }
-
-  .tl-item:last-child { padding-bottom: 0; }
-
-  .tl-left {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 24px;
-    flex-shrink: 0;
-  }
-
-  .tl-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--green);
-    flex-shrink: 0;
-    margin-top: 4px;
-  }
-
-  .tl-dot.pending { background: var(--border2); }
-
-  .tl-line {
-    flex: 1;
-    width: 1px;
-    background: var(--border);
-    margin-top: 4px;
-  }
-
-  .tl-content { flex: 1; }
-  .tl-date { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
-  .tl-title { font-size: 14px; font-weight: 500; }
-  .tl-desc { font-size: 13px; color: var(--text2); margin-top: 2px; }
-
-  /* Info box */
-  .info-card {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 16px 18px;
-    margin-bottom: 16px;
-  }
-
-  .info-card-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
-
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    padding: 6px 0;
-    border-bottom: 0.5px solid var(--border);
-    gap: 8px;
-  }
-
-  .info-row:last-child { border: none; padding-bottom: 0; }
-  .info-key { color: var(--text2); }
-  .info-val { font-weight: 500; text-align: right; }
-  .info-val.green { color: var(--green); }
-  .info-val.amber { color: var(--amber); }
-
-  /* Saved notice */
-  .save-notice {
-    font-size: 12px;
-    color: var(--text3);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .save-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-  }
-
-  /* Responsive */
-  @media (max-width: 640px) {
-    .sidebar { width: 60px; }
-    .sidebar-logo, .nav-label, .nav-item span:not(.nav-icon) { display: none; }
-    .main { margin-left: 60px; }
-    .content { padding: 20px 16px; }
-    .topbar { padding: 14px 16px; }
-    .stats { grid-template-columns: 1fr 1fr; }
-  }
+@media(max-width:640px){
+  .flow-cards{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .content{padding:20px 16px}
+}
 </style>
 </head>
 <body>
-<div class="layout">
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-title">HR SOP</div>
-      <div class="logo-sub">流程管理系統</div>
+<div id="print-area" style="display:none"></div>
+
+<!-- Welcome -->
+<div class="welcome" id="welcome">
+  <div>
+    <div class="welcome-logo">🏢 艾爾斯 HR 自動化系統</div>
+    <div class="welcome-sub">請選擇要進行的流程</div>
+  </div>
+  <div class="flow-cards">
+    <div class="flow-card" onclick="startFlow('onboard')">
+      <div class="flow-card-icon">🎉</div>
+      <div class="flow-card-title">員工入職</div>
+      <div class="flow-card-desc">錄取通知 → 加保 → 到職當天 → 試用期追蹤</div>
     </div>
-    <nav class="sidebar-nav">
-      <div class="nav-label">總覽</div>
-      <button class="nav-item active" onclick="nav('overview',this)">
-        <span class="nav-icon">◈</span><span>儀表板</span>
-      </button>
+    <div class="flow-card" onclick="startFlow('offboard')">
+      <div class="flow-card-icon">👋</div>
+      <div class="flow-card-title">員工離職</div>
+      <div class="flow-card-desc">離職申請 → 移交 → 退保 → 離職證明</div>
+    </div>
+    <div class="flow-card" onclick="startFlow('layoff')">
+      <div class="flow-card-icon">⚖️</div>
+      <div class="flow-card-title">資遣</div>
+      <div class="flow-card-desc">資遣費試算 → 通報政府 → 資遣證明</div>
+    </div>
+    <div class="flow-card" onclick="openDashboard()" style="grid-column:1/-1;background:#f0efe9">
+      <div class="flow-card-icon">📋</div>
+      <div class="flow-card-title">員工資料總覽</div>
+      <div class="flow-card-desc">查看所有入職、離職、資遣案件紀錄</div>
+    </div>
+  </div>
+</div>
 
-      <div class="nav-label">HR 流程</div>
-      <button class="nav-item" onclick="nav('onboard',this)">
-        <span class="nav-icon">↗</span><span>入職流程</span>
-        <span class="nav-badge" id="badge-onboard">0</span>
-      </button>
-      <button class="nav-item" onclick="nav('offboard',this)">
-        <span class="nav-icon">↙</span><span>離職流程</span>
-        <span class="nav-badge" id="badge-offboard">0</span>
-      </button>
-      <button class="nav-item" onclick="nav('layoff',this)">
-        <span class="nav-icon">⚠</span><span>資遣流程</span>
-        <span class="nav-badge" id="badge-layoff">0</span>
-      </button>
+<!-- Dashboard -->
+<div class="app" id="app-dashboard">
+  <div class="header">
+    <button class="header-back" onclick="goHome()">← 返回</button>
+    <div class="header-title">⚠️ 未完成事項追蹤</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6966;margin-left:auto">
+      <div id="dash-sync-dot" style="width:7px;height:7px;border-radius:50%;background:#c97a0a;flex-shrink:0"></div>
+      <span id="dash-sync-label">請先進行各流程</span>
+    </div>
+  </div>
+  <div style="padding:24px 32px;max-width:900px">
+    <div class="alert alert-info" style="margin-bottom:20px">
+      此頁面顯示<strong>本裝置</strong>所有流程中尚未完成的大步驟和細項，已完成的不顯示。
+    </div>
+    <div id="dash-content"></div>
+  </div>
+</div>
 
-      <div class="nav-label">工具</div>
-      <button class="nav-item" onclick="nav('calc',this)">
-        <span class="nav-icon">$</span><span>資遣費試算</span>
-      </button>
-      <button class="nav-item" onclick="nav('docs',this)">
-        <span class="nav-icon">▤</span><span>文件範本</span>
-      </button>
-    </nav>
-  </aside>
-
-  <!-- Main -->
+<!-- Onboard App -->
+<div class="app" id="app-onboard">
+  <div class="header">
+    <button class="header-back" onclick="goHome()">← 返回</button>
+    <div class="header-title">員工入職流程</div>
+    <span class="header-badge badge-green" id="ob-badge">0 / 11</span>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6966;margin-left:auto"><div id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#c97a0a;flex-shrink:0"></div><span id="sync-label">連線中...</span></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill fill-green" id="ob-fill" style="width:0%"></div></div>
+    <div class="progress-text" id="ob-pct">0%</div>
+  </div>
   <div class="main">
-    <header class="topbar">
-      <div class="topbar-left">
-        <h1 id="page-title">儀表板</h1>
-        <p id="page-sub">所有 HR 案件總覽</p>
-      </div>
-      <div class="topbar-right">
-        <div class="save-notice" id="sync-status"><div class="save-dot" id="sync-dot"></div><span id="sync-text">連線中...</span></div>
-      </div>
-    </header>
+    <div class="sidebar" id="ob-sidebar"></div>
+    <div class="content" id="ob-content"></div>
+  </div>
+</div>
 
-    <div class="content">
+<!-- Offboard App -->
+<div class="app" id="app-offboard">
+  <div class="header">
+    <button class="header-back" onclick="goHome()">← 返回</button>
+    <div class="header-title">員工離職流程</div>
+    <span class="header-badge badge-amber" id="off-badge">0 / 6</span>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill fill-amber" id="off-fill" style="width:0%"></div></div>
+    <div class="progress-text" id="off-pct">0%</div>
+  </div>
+  <div class="main">
+    <div class="sidebar" id="off-sidebar"></div>
+    <div class="content" id="off-content"></div>
+  </div>
+</div>
 
-      <!-- 總覽 -->
-      <div id="panel-overview" class="panel active">
-        <div class="stats">
-          <div class="stat"><div class="stat-num" style="color:var(--green)" id="ov-active">0</div><div class="stat-lbl">進行中案件</div></div>
-          <div class="stat"><div class="stat-num" id="ov-done">0</div><div class="stat-lbl">已完成項目</div></div>
-          <div class="stat"><div class="stat-num" style="color:var(--amber)" id="ov-pending">0</div><div class="stat-lbl">待辦項目</div></div>
-        </div>
-
-        <div class="info-card">
-          <div class="info-card-title">進行中案件</div>
-          <div class="info-row">
-            <span class="info-key">入職清單</span>
-            <span class="info-val green" id="ov-on-prog">—</span>
-          </div>
-          <div class="info-row">
-            <span class="info-key">離職清單</span>
-            <span class="info-val amber" id="ov-off-prog">—</span>
-          </div>
-          <div class="info-row">
-            <span class="info-key">資遣清單</span>
-            <span class="info-val" id="ov-lay-prog">—</span>
-          </div>
-        </div>
-
-        <div class="sec-title">近期必辦時間軸</div>
-        <div class="timeline">
-          <div class="tl-item">
-            <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
-            <div class="tl-content">
-              <div class="tl-date">到職前 10 天</div>
-              <div class="tl-title">啟動入職準備流程</div>
-              <div class="tl-desc">HR 開立帳號、IT 備妥設備、通知主管</div>
-            </div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
-            <div class="tl-content">
-              <div class="tl-date">提離職當天</div>
-              <div class="tl-title">啟動離職流程</div>
-              <div class="tl-desc">確認最後上班日、安排移交、面談</div>
-            </div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-left"><div class="tl-dot pending"></div><div class="tl-line"></div></div>
-            <div class="tl-content">
-              <div class="tl-date">離職後 2 天內</div>
-              <div class="tl-title">勞健保退保</div>
-              <div class="tl-desc">HR 辦理勞保健保異動（法定期限）</div>
-            </div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-left"><div class="tl-dot pending"></div></div>
-            <div class="tl-content">
-              <div class="tl-date">試用期 30 / 60 / 90 天</div>
-              <div class="tl-title">新人追蹤面談</div>
-              <div class="tl-desc">HR 與主管定期確認新人適應狀況</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="nav('onboard', document.querySelector('[onclick*=onboard]'))">開始入職流程</button>
-          <button class="btn" onclick="nav('offboard', document.querySelector('[onclick*=offboard]'))">開始離職流程</button>
-          <button class="btn" onclick="nav('layoff', document.querySelector('[onclick*=layoff]'))">開始資遣流程</button>
-        </div>
-      </div>
-
-      <!-- 入職 -->
-      <div id="panel-onboard" class="panel">
-        <div class="alert alert-info"><strong>提醒：</strong>請在員工到職日 <strong>前 10 天</strong>啟動此流程，確保所有準備完成。</div>
-        <div class="emp-bar">
-          <input type="text" id="emp-name-onboard" placeholder="員工姓名" oninput="saveEmpName('onboard')">
-          <input type="date" id="emp-date-onboard" oninput="saveEmpName('onboard')">
-        </div>
-        <div class="prog-meta">
-          <span id="prog-label-onboard">進度：0 / 0 項</span>
-          <span class="prog-pct" id="prog-pct-onboard">0%</span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="prog-fill-onboard" style="width:0%"></div></div>
-        <div class="stats">
-          <div class="stat"><div class="stat-num" id="s-on-done">0</div><div class="stat-lbl">已完成</div></div>
-          <div class="stat"><div class="stat-num" id="s-on-todo">0</div><div class="stat-lbl">待處理</div></div>
-          <div class="stat"><div class="stat-num" style="color:var(--green)" id="s-on-pct">0%</div><div class="stat-lbl">完成率</div></div>
-        </div>
-        <div class="sec-title">到職前準備</div>
-        <div class="checklist" id="cl-onboard-pre"></div>
-        <div class="sec-title">到職當天</div>
-        <div class="checklist" id="cl-onboard-day"></div>
-        <div class="sec-title">試用期追蹤</div>
-        <div class="checklist" id="cl-onboard-trial"></div>
-        <div class="btn-row">
-          <button class="btn" onclick="resetFlow('onboard')">重置此清單</button>
-          <button class="btn btn-green" onclick="printFlow('onboard')">列印 / 存成 PDF</button>
-        </div>
-      </div>
-
-      <!-- 離職 -->
-      <div id="panel-offboard" class="panel">
-        <div class="alert alert-warn"><strong>提醒：</strong>員工提出離職後，請<strong>立即</strong>啟動本流程，確保知識移交與系統權限回收。</div>
-        <div class="emp-bar">
-          <input type="text" id="emp-name-offboard" placeholder="員工姓名" oninput="saveEmpName('offboard')">
-          <input type="date" id="emp-date-offboard" oninput="saveEmpName('offboard')">
-        </div>
-        <div class="prog-meta">
-          <span id="prog-label-offboard">進度：0 / 0 項</span>
-          <span class="prog-pct" id="prog-pct-offboard">0%</span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="prog-fill-offboard" style="width:0%"></div></div>
-        <div class="stats">
-          <div class="stat"><div class="stat-num" id="s-off-done">0</div><div class="stat-lbl">已完成</div></div>
-          <div class="stat"><div class="stat-num" id="s-off-todo">0</div><div class="stat-lbl">待處理</div></div>
-          <div class="stat"><div class="stat-num" style="color:var(--green)" id="s-off-pct">0%</div><div class="stat-lbl">完成率</div></div>
-        </div>
-        <div class="sec-title">提離後立即執行</div>
-        <div class="checklist" id="cl-offboard-imm"></div>
-        <div class="sec-title">離職前兩週</div>
-        <div class="checklist" id="cl-offboard-2w"></div>
-        <div class="sec-title">最後上班日</div>
-        <div class="checklist" id="cl-offboard-last"></div>
-        <div class="sec-title">離職後結算</div>
-        <div class="checklist" id="cl-offboard-after"></div>
-        <div class="btn-row">
-          <button class="btn" onclick="resetFlow('offboard')">重置此清單</button>
-          <button class="btn btn-green" onclick="printFlow('offboard')">列印 / 存成 PDF</button>
-        </div>
-      </div>
-
-      <!-- 資遣 -->
-      <div id="panel-layoff" class="panel">
-        <div class="alert alert-danger"><strong>資遣屬法律程序，每一步驟請務必確認合規，並全程保留書面紀錄。</strong></div>
-        <div class="emp-bar">
-          <input type="text" id="emp-name-layoff" placeholder="員工姓名" oninput="saveEmpName('layoff')">
-          <input type="date" id="emp-date-layoff" oninput="saveEmpName('layoff')">
-        </div>
-        <div class="prog-meta">
-          <span id="prog-label-layoff">進度：0 / 0 項</span>
-          <span class="prog-pct" id="prog-pct-layoff">0%</span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="prog-fill-layoff" style="width:0%"></div></div>
-        <div class="stats">
-          <div class="stat"><div class="stat-num" id="s-lay-done">0</div><div class="stat-lbl">已完成</div></div>
-          <div class="stat"><div class="stat-num" id="s-lay-todo">0</div><div class="stat-lbl">待處理</div></div>
-          <div class="stat"><div class="stat-num" style="color:var(--red)" id="s-lay-legal">0</div><div class="stat-lbl">法規關鍵項</div></div>
-        </div>
-        <div class="sec-title">法規確認與準備</div>
-        <div class="checklist" id="cl-layoff-pre"></div>
-        <div class="sec-title">預告期與通知</div>
-        <div class="checklist" id="cl-layoff-notice"></div>
-        <div class="sec-title">資遣費與結算</div>
-        <div class="checklist" id="cl-layoff-comp"></div>
-        <div class="sec-title">離職手續</div>
-        <div class="checklist" id="cl-layoff-exit"></div>
-        <div class="btn-row">
-          <button class="btn" onclick="resetFlow('layoff')">重置此清單</button>
-          <button class="btn" onclick="nav('calc', document.querySelector('[onclick*=calc]'))">前往資遣費試算</button>
-          <button class="btn btn-green" onclick="printFlow('layoff')">列印 / 存成 PDF</button>
-        </div>
-      </div>
-
-      <!-- 資遣費試算 -->
-      <div id="panel-calc" class="panel">
-        <div class="alert alert-info">依台灣勞基法，<strong>2012/2/4 後</strong>適用新制：每滿一年給付 0.5 個月平均工資，最高 6 個月。未滿一年者按比例計算。</div>
-
-        <div class="info-card" style="margin-bottom:20px">
-          <div class="info-card-title">輸入員工資訊</div>
-          <div style="display:grid;gap:12px;margin-top:4px">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div>
-                <div style="font-size:12px;color:var(--text2);margin-bottom:5px">到職日</div>
-                <input type="date" id="calc-start" style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none">
-              </div>
-              <div>
-                <div style="font-size:12px;color:var(--text2);margin-bottom:5px">離職日</div>
-                <input type="date" id="calc-end" style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none">
-              </div>
-            </div>
-            <div>
-              <div style="font-size:12px;color:var(--text2);margin-bottom:5px">平均月薪（元）</div>
-              <input type="number" id="calc-salary" placeholder="例：45000" style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none">
-            </div>
-            <div>
-              <div style="font-size:12px;color:var(--text2);margin-bottom:5px">制度選擇</div>
-              <select id="calc-type" style="width:100%;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none">
-                <option value="new">新制（2012/2/4 後）</option>
-                <option value="old">舊制（2012/2/3 前）</option>
-              </select>
-            </div>
-            <button class="btn btn-primary" onclick="calcSeverance()" style="justify-content:center">計算資遣費</button>
-          </div>
-        </div>
-
-        <div id="calc-result" style="display:none">
-          <div class="info-card">
-            <div class="info-card-title">計算結果</div>
-            <div class="info-row"><span class="info-key">年資</span><span class="info-val" id="cr-years">—</span></div>
-            <div class="info-row"><span class="info-key">平均月薪</span><span class="info-val" id="cr-salary">—</span></div>
-            <div class="info-row"><span class="info-key">應給付月數</span><span class="info-val" id="cr-months">—</span></div>
-            <div class="info-row"><span class="info-key" style="font-weight:700">資遣費合計</span><span class="info-val green" id="cr-total" style="font-size:18px;font-weight:700">—</span></div>
-          </div>
-          <div class="alert alert-warn" id="calc-note" style="margin-top:12px"></div>
-        </div>
-      </div>
-
-      <!-- 文件範本 -->
-      <div id="panel-docs" class="panel">
-        <p style="font-size:14px;color:var(--text2);margin-bottom:20px">以下為常用 HR 文件範本，點擊複製內容後貼入 Word 或 Google 文件使用。</p>
-
-        <div class="sec-title">入職相關</div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
-          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div style="font-size:14px;font-weight:500">錄取通知書</div>
-              <button class="btn btn-sm" onclick="copyTemplate('offer')">複製範本</button>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">包含：職稱、薪資、到職日、試用期條款</div>
-          </div>
-          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div style="font-size:14px;font-weight:500">新人入職清單（員工版）</div>
-              <button class="btn btn-sm" onclick="copyTemplate('checkin')">複製範本</button>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">給員工帶走的報到前準備清單</div>
-          </div>
-          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div style="font-size:14px;font-weight:500">試用期考核表</div>
-              <button class="btn btn-sm" onclick="copyTemplate('trial')">複製範本</button>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">30 / 60 / 90 天主管評核表格</div>
-          </div>
-        </div>
-
-        <div class="sec-title">離職相關</div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
-          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div style="font-size:14px;font-weight:500">離職申請書</div>
-              <button class="btn btn-sm" onclick="copyTemplate('resign')">複製範本</button>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">員工自填離職原因、最後上班日</div>
-          </div>
-          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div style="font-size:14px;font-weight:500">工作移交清單</div>
-              <button class="btn btn-sm" onclick="copyTemplate('handover')">複製範本</button>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">業務、文件、密碼、客戶移交記錄表</div>
-          </div>
-          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div style="font-size:14px;font-weight:500">離職證明書</div>
-              <button class="btn btn-sm" onclick="copyTemplate('cert')">複製範本</button>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">公司開立之服務年資證明</div>
-          </div>
-        </div>
-
-        <div class="sec-title">資遣相關</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div style="font-size:14px;font-weight:500">資遣通知書（符合勞基法第11條）</div>
-              <button class="btn btn-sm" onclick="copyTemplate('layoff_letter')">複製範本</button>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">含預告期、資遣費金額、事由說明</div>
-          </div>
-          <div class="item" style="cursor:default;flex-direction:column;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-              <div style="font-size:14px;font-weight:500">資遣費計算明細表</div>
-              <button class="btn btn-sm" onclick="copyTemplate('layoff_calc')">複製範本</button>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">年資、月數、金額逐年計算附件</div>
-          </div>
-        </div>
-
-        <div id="template-output" style="display:none;margin-top:20px">
-          <div class="sec-title">範本內容（全選後複製）</div>
-          <textarea id="template-text" style="width:100%;height:280px;padding:14px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:monospace;background:var(--surface);color:var(--text);outline:none;resize:vertical;line-height:1.7"></textarea>
-          <div class="btn-row">
-            <button class="btn btn-primary" onclick="copyToClipboard()">一鍵複製</button>
-          </div>
-        </div>
-      </div>
-
-    </div>
+<!-- Layoff App -->
+<div class="app" id="app-layoff">
+  <div class="header">
+    <button class="header-back" onclick="goHome()">← 返回</button>
+    <div class="header-title">資遣流程</div>
+    <span class="header-badge badge-red" id="lay-badge">0 / 5</span>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill fill-red" id="lay-fill" style="width:0%"></div></div>
+    <div class="progress-text" id="lay-pct">0%</div>
+  </div>
+  <div class="main">
+    <div class="sidebar" id="lay-sidebar"></div>
+    <div class="content" id="lay-content"></div>
   </div>
 </div>
 
 <script>
 // ============================================================
-//  Firebase 設定區 — 請將下方填入您自己的 Firebase 專案資訊
-//  設定方法請見同目錄的「Firebase設定說明.txt」
-// ============================================================
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyDcHaiqww1ZL0YsPcFP-aqVJJl2HTs6bFA",
-  authDomain:        "isec-hr.firebaseapp.com",
-  databaseURL:       "https://isec-hr-default-rtdb.firebasedatabase.app",
-  projectId:         "isec-hr",
-  storageBucket:     "isec-hr.firebasestorage.app",
-  messagingSenderId: "766057940291",
-  appId:             "1:766057940291:web:e2118ff9032814b8a81bf6"
-};
+// CONSTANTS
 // ============================================================
 
+// ── Firebase 同步設定 ──────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCiBIhDi_mshJIRISjABXEp2aQzFUxJjWk",
+  authDomain:        "isec-hr-2.firebaseapp.com",
+  databaseURL:       "https://isec-hr-2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "isec-hr-2",
+  storageBucket:     "isec-hr-2.firebasestorage.app",
+  messagingSenderId: "217885162451",
+  appId:             "1:217885162451:web:c80f40d3762081ef9ecd26"
+};
+
 let db = null;
-let firebaseReady = false;
+let fbReady = false;
+let currentKey = null; // key for current employee in Firebase
 
 function initFirebase() {
   try {
-    if(FIREBASE_CONFIG.apiKey.includes('請填入')) throw new Error('未設定');
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.database();
-
-    db.ref('hr_sop').on('value', snapshot => {
-      firebaseReady = true;
-      setSyncStatus('已連線，即時同步中', true);
-      const val = snapshot.val();
-      if(val) state = val;
-      ['onboard','offboard','layoff'].forEach(flow => {
-        ensureState(flow);
-        Object.keys(FLOW_DATA[flow]).forEach(sec => renderChecklist(flow, sec));
-        updateProgress(flow);
-      });
-      updateOverview();
-    }, err => {
-      setSyncStatus('同步失敗', false);
-      loadLocalState();
-      renderAll();
-    });
-
+    fbReady = true;
+    setSyncDot(true, '已連線');
   } catch(e) {
-    setSyncStatus('未設定 Firebase，使用本機儲存', false);
-    loadLocalState();
-    renderAll();
+    setSyncDot(false, '離線模式');
   }
 }
 
-function renderAll() {
-  ['onboard','offboard','layoff'].forEach(flow => {
-    ensureState(flow);
-    Object.keys(FLOW_DATA[flow]).forEach(sec => renderChecklist(flow, sec));
-    updateProgress(flow);
-  });
-  updateOverview();
-}
-
-function setSyncStatus(text, ok) {
+function setSyncDot(ok, txt) {
   const dot = document.getElementById('sync-dot');
-  const txt = document.getElementById('sync-text');
-  if(dot) dot.style.background = ok ? 'var(--green)' : 'var(--amber)';
-  if(txt) txt.textContent = text;
+  const label = document.getElementById('sync-label');
+  if(dot) dot.style.background = ok ? '#1a7a55' : '#c97a0a';
+  if(label) label.textContent = txt;
 }
 
-function loadLocalState() {
-  try {
-    const s = localStorage.getItem('hr_sop_state');
-    if(s) state = JSON.parse(s);
-  } catch(e) { state = {}; }
+function saveFirebase() {
+  if(!fbReady || !db || !currentKey) return;
+  db.ref('hr_ob/' + currentKey).set({emp, obDone, offDone, layDone, flowType: currentFlow||'onboard'}).catch(()=>setSyncDot(false,'同步失敗'));
 }
 
-function saveState() {
-  if(firebaseReady && db) {
-    db.ref('hr_sop').set(state).catch(() => {
-      setSyncStatus('同步失敗，請檢查網路', false);
-    });
-  } else {
-    try { localStorage.setItem('hr_sop_state', JSON.stringify(state)); } catch(e) {}
+function loadFirebase(key) {
+  if(!fbReady || !db) return;
+  currentKey = key;
+  db.ref('hr_ob/' + key).on('value', snap => {
+    const val = snap.val();
+    if(val) {
+      if(val.emp) emp = val.emp;
+      if(val.obDone) obDone = val.obDone;
+      if(val.offDone) offDone = val.offDone;
+      if(val.layDone) layDone = val.layDone;
+      // Render the current active flow
+      if(currentFlow==='onboard') renderOb();
+      else if(currentFlow==='offboard') renderOff();
+      else if(currentFlow==='layoff') renderLay();
+    }
+    setSyncDot(true, '已同步');
+  });
+}
+// ─────────────────────────────────────────────────────────────
+
+const COMPANIES = [
+  {id:'isec',   name:'艾爾斯國際文教有限公司',              tax:'50875301', logo:'isec',    addr:'台北市大安區忠孝東路四段176-1號三樓'},
+  {id:'isec2',  name:'艾爾斯國際諮詢顧問有限公司',          tax:'25132247', logo:'isec',    addr:'台北市大安區忠孝東路四段176-1號三樓'},
+  {id:'joyce',  name:'喬伊斯國際諮詢顧問有限公司',          tax:'54892963', logo:'isec',    addr:'台中市西屯區台灣大道三段32號5樓'},
+  {id:'jsi',    name:'集思留遊學顧問有限公司',              tax:'42929108', logo:'isec',    addr:'台南市中西區西門路一段660號六樓'},
+  {id:'isec_ks',name:'艾爾斯國際諮詢顧問有限公司高雄分公司', tax:'54343138', logo:'isec',    addr:'高雄市新興區中正三路2號四樓'},
+  {id:'stanley',name:'史丹利英語教育有限公司',              tax:'85023996', logo:'stanley', addr:'台北市大安區忠孝東路四段176-1號三樓'},
+  {id:'joyce_e',name:'喬伊斯英語教育有限公司',              tax:'90687776', logo:'stanley', addr:'台中市西屯區台灣大道三段32號6樓'},
+  {id:'travel', name:'學旅探索國際旅行社有限公司',           tax:'60385742', logo:'isec',    addr:'台北市大安區忠孝東路四段176-1號三樓'},
+];
+const ISEC_LOGO='data:image/png;base64,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';
+const STANLEY_LOGO='data:image/png;base64,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';
+function getLogo(cid){return(['stanley','joyce_e'].includes(cid))?STANLEY_LOGO:ISEC_LOGO;}
+function getAddr(cid){const c=COMPANIES.find(x=>x.id===cid);return c?c.addr:'';}
+
+const DEPARTMENTS = [
+  '辦公室留學教育顧問 Branch Counsellor Department',
+  '辦公室行政顧問 Branch Administration Department',
+  '總管理部 General Management Department',
+  '整合行銷部 Integrated Marketing Department',
+  '財務與人力資源部 Finance & HR Department',
+  '市場開發部 Business Development Department',
+  '遊學團事業體 Study Tour Division',
+  '教學務部 Academic Department',
+  '招生部 Recruitment Department',
+];
+
+const DEPT_COMP = {
+  '辦公室留學教育顧問 Branch Counsellor Department': ['留學諮詢專業知識','個案管理與追蹤能力','跨部門協調溝通'],
+  '辦公室行政顧問 Branch Administration Department': ['行政作業流程熟悉度','文件管理與歸檔效率','客戶服務應對能力'],
+  '總管理部 General Management Department': ['跨部門專案協調','策略規劃與執行','管理報告撰寫能力'],
+  '整合行銷部 Integrated Marketing Department': ['數位行銷操作能力','內容企劃與執行','數據分析與報告'],
+  '財務與人力資源部 Finance & HR Department': ['財務帳務處理正確性','人資法規與作業熟悉度','薪資與保險作業能力'],
+  '市場開發部 Business Development Department': ['市場開發與開拓能力','客戶關係建立與維護','業績目標達成率'],
+  '遊學團事業體 Study Tour Division': ['遊學產品專業知識','行程規劃與執行能力','緊急事件處理能力'],
+  '教學務部 Academic Department': ['教學設計與課程規劃','學生學習成效追蹤','教材開發與更新能力'],
+  '招生部 Recruitment Department': ['招生業績達成率','家長與學生溝通技巧','招生活動企劃執行'],
+};
+const GEN_COMP = ['工作態度與責任感','團隊合作與溝通協調','時間管理與工作效率'];
+
+// TW public holidays 2025-2026 (YYYY-MM-DD)
+const TW_HOLIDAYS = new Set([
+  '2025-01-01','2025-01-27','2025-01-28','2025-01-29','2025-01-30','2025-01-31',
+  '2025-02-28','2025-04-03','2025-04-04','2025-05-01','2025-05-31',
+  '2025-06-07','2025-09-28','2025-10-10',
+  '2026-01-01','2026-02-16','2026-02-17','2026-02-18','2026-02-19','2026-02-20',
+  '2026-02-28','2026-04-03','2026-04-04','2026-05-01','2026-06-19',
+  '2026-09-17','2026-10-09','2026-10-10',
+]);
+
+function nextWorkday(d) {
+  let dt = new Date(d);
+  dt.setDate(dt.getDate()+1);
+  while(dt.getDay()===0 || dt.getDay()===6 || TW_HOLIDAYS.has(fmtDate(dt))) {
+    dt.setDate(dt.getDate()+1);
   }
+  return dt;
 }
 
-const FLOW_DATA = {
+function addDays(d, n) {
+  let dt = new Date(d); dt.setDate(dt.getDate()+n); return dt;
+}
+
+function nextWorkdayFrom(d) {
+  let dt = new Date(d);
+  while(dt.getDay()===0 || dt.getDay()===6 || TW_HOLIDAYS.has(fmtDate(dt))) {
+    dt.setDate(dt.getDate()+1);
+  }
+  return dt;
+}
+
+function fmtDate(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function fmtDateZH(d) {
+  const wd = ['日','一','二','三','四','五','六'];
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd[d.getDay()]}）`;
+}
+
+function fmtDateFormal(d) {
+  return `${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日`;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let currentFlow = null;
+let emp = {};
+let obStep=0, offStep=0, layStep=0;
+let obDone=[], offDone=[], layDone=[];
+
+const OB_STEPS = ['填寫員工基本資料','發出錄取通知 Email','IT 設定（Stanley）','僱用合約','NUEIP 帳號設定','發報到須知 + 詢問團險','加保（勞健退）','人臉辨識、指紋、EVOX 分機（Estelle 設定）','到職當天：就職訓練','HR 更新項目','試用期三次面談'];
+const OFF_STEPS = ['填寫員工資料','離職申請書','移交會辦單','退保作業（勞健退＋團險）','離職證明書','完成離職'];
+const LAY_STEPS = ['填寫員工資料','資遣費試算','資遣通知書','退保作業（勞健退＋團險）','非自願離職證明書'];
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function goHome() {
+  document.getElementById('welcome').style.display='flex';
+  ['onboard','offboard','layoff','dashboard'].forEach(f=>{
+    const el=document.getElementById('app-'+f);
+    if(el) el.classList.remove('active');
+  });
+  currentFlow=null;
+}
+
+function startFlow(flow) {
+  currentFlow=flow; emp={};
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('app-'+flow).classList.add('active');
+  if(flow==='onboard'){
+    obStep=0;obDone=new Array(11).fill(false);
+    if(!fbReady) initFirebase();
+    // Ask for sync key (employee name or ID to share across devices)
+    const key = prompt('請輸入員工姓名作為同步識別碼（例：童雲晞），相同識別碼的裝置會自動同步：');
+    if(key && key.trim()) {
+      const safeKey = key.trim().replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
+      currentKey = safeKey;
+      loadFirebase(safeKey);
+    } else {
+      currentKey = null;
+      renderOb();
+    }
+  }
+  if(flow==='offboard'){offStep=0;offDone=new Array(6).fill(false);renderOff();}
+  if(flow==='layoff'){layStep=0;layDone=new Array(5).fill(false);renderLay();}
+}
+
+// ============================================================
+// SIDEBAR + PROGRESS
+// ============================================================
+function renderSidebar(prefix, steps, cur, done) {
+  const fnMap={ob:'goOb',off:'goOff',lay:'goLay'};
+  const fn=fnMap[prefix];
+  document.getElementById(prefix+'-sidebar').innerHTML=steps.map((s,i)=>`
+    <div class="step-item ${i===cur?'active':''} ${done[i]?'done':''}" onclick="${fn}(${i})">
+      <div class="step-num">${done[i]?'✓':(i+1)}</div>
+      <div class="step-label">${s}</div>
+    </div>`).join('');
+}
+
+function updateProgress(prefix, done, total) {
+  const d=done.filter(Boolean).length;
+  const pct=Math.round(d/total*100);
+  document.getElementById(prefix+'-fill').style.width=pct+'%';
+  document.getElementById(prefix+'-pct').textContent=pct+'%';
+  document.getElementById(prefix+'-badge').textContent=d+' / '+total;
+}
+
+// ============================================================
+// ONBOARD
+// ============================================================
+function renderOb(){renderSidebar('ob',OB_STEPS,obStep,obDone);document.getElementById('ob-content').innerHTML=OB_RENDER[obStep]();updateProgress('ob',obDone,11);window.scrollTo(0,0);setTimeout(restoreChecks,0);}
+function goOb(s){obStep=s;renderOb();}
+function obNext(){obDone[obStep]=true;if(obStep<10)obStep++;saveFirebase();renderOb();}
+function obPrev(){if(obStep>0){obStep--;renderOb();}}
+
+const OB_RENDER = [    // 0: Employee data (no empId, add personalEmail)
+  function(){
+    const cos=COMPANIES.map(c=>`<option value="${c.id}" ${emp.cid===c.id?'selected':''}>${c.name}</option>`).join('');
+    const deps=DEPARTMENTS.map(d=>`<option value="${d}" ${emp.dept===d?'selected':''}>${d}</option>`).join('');
+    return `<div class="section-card">
+    <div class="section-title">👤 填寫員工基本資料</div>
+    <div class="section-desc">所有後續文件與訊息都會自動帶入此資料。</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">中文姓名<span class="form-required">*</span></label><input class="form-input" id="f0" placeholder="例：童雲晞" value="${emp.nameZh||''}"></div>
+      <div class="form-group"><label class="form-label">英文姓名<span class="form-required">*</span></label><input class="form-input" id="f1" placeholder="例：Bessy Tung" value="${emp.nameEn||''}"></div>
+      <div class="form-group"><label class="form-label">到職日<span class="form-required">*</span></label><input class="form-input" type="date" id="f3" value="${emp.startDate||''}"></div>
+      <div class="form-group"><label class="form-label">所屬公司<span class="form-required">*</span></label><select class="form-select" id="f4"><option value="">— 請選擇 —</option>${cos}</select></div>
+      <div class="form-group"><label class="form-label">職系<span class="form-required">*</span></label><select class="form-select" id="f5"><option value="">— 請選擇 —</option>${deps}</select></div>
+      <div class="form-group"><label class="form-label">職稱<span class="form-required">*</span></label><input class="form-input" id="f6" placeholder="例：留學顧問" value="${emp.title||''}"></div>
+      <div class="form-group"><label class="form-label">公司 Email<span class="form-required">*</span></label><input class="form-input" id="f7" placeholder="例：bessy.tung@isec.com.tw" value="${emp.email||''}"></div>
+      <div class="form-group"><label class="form-label">員工個人 Email<span class="form-required">*</span></label><input class="form-input" id="f8" placeholder="例：bessy@gmail.com（寄錄取通知用）" value="${emp.personalEmail||''}"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="saveObEmp()">儲存並繼續 →</button></div>
+  </div>`;
+  },
+  // Offer email
+  function(){
+    if(!emp.nameZh) return needData('goOb(0)');
+    const txt=`主旨：【艾爾斯】錄用通知書 - ${emp.nameZh}
+
+Dear ${emp.nameZh} 您好：
+
+我是艾爾斯的人資 Sharon。
+
+非常高興通知您，經過團隊的審慎評估，我們誠摯地邀請您加入艾爾斯，擔任 ${emp.title} 一職！在面試過程中，您的專業能力與特質給我們留下了深刻的印象。
+
+有關本次錄取的薪資福利及相關權益，請參閱附件之「錄用通知書」。
+
+若您同意接受本公司的職缺邀約，請您協助於收到錄取通知後的兩日內，詳閱合約內容並於通知書上【簽名並掃描回傳】。
+
+為利後續行政與建檔作業，也請您將下列「第一階段：事先備齊文件」的電子檔，連同已簽名的錄用通知書一併回覆給我們；其餘「第二階段：到職日繳交文件」則請於到職當天攜帶紙本提交即可。
+
+【第一階段：事先備齊文件】
+1. 身分證正反面影印本
+2. 最高學歷證件影本
+3. 員工履歷表 104版本
+4. 人事資料卡（有附件）
+5. 年薪資受領人申報表（有附件）
+
+【第二階段：請於到職當日現場繳交】
+1. 中國信託銀行帳戶存摺封面影本 1 份
+2. 一吋照片 1 張（請直接貼於人事資料卡上）
+3. 良民證正本 1 份
+
+我們在收到您的簽回確認後，將會隨即為您寄發「第二階段：報到須知 Mail」，內含確定的報到時間、地點以及相關資訊。
+
+再次代表艾爾斯全體團隊，熱烈歡迎您的加入！若對通知書內容有任何疑問，歡迎隨時與我聯繫。
+
+祝 順心，
+
+Sharon Tseng
+艾爾斯人資部`;
+    return `<div class="section-card">
+    <div class="section-title">📧 發出錄取通知 Email</div>
+    <div class="alert alert-success">📨 收件人（員工個人信箱）：<strong>${emp.personalEmail||'（未填寫）'}</strong></div>
+    <div class="alert alert-info">📎 附件：錄用通知書、人事資料卡、年薪資受領人申報表</div>
+    <div class="text-output" id="oe">${txt}</div>
+    <div class="btn-row">
+      <button class="btn" onclick="copyEl('oe')">📋 複製內容</button>
+    </div>
+    ${obNav()}
+  </div>`;
+  },
+  // IT 設定 Stanley (NAS + Mail + LineWork + CRM, with password input)
+  function(){
+    if(!emp.nameZh) return needData('goOb(0)');
+    const eu=emp.email?emp.email.split('@')[0]:'';
+    const enFirst=emp.nameEn?emp.nameEn.split(' ')[0].toLowerCase():eu;
+    const msg=`嗨～Stanley，再麻煩您協助設定新進員工的系統帳號，員工資訊如下，謝謝您。
+
+員工姓名：${emp.nameZh}（${emp.nameEn}）
+職稱：${emp.title}
+公司 Email：${emp.email}
+到職日：${emp.startDate}
+
+需要設定的項目：
+1. Google Mail 帳號（${emp.email}）
+2. LINE WORK 帳號（${emp.email.replace('.com.tw','')}）
+3. CRM 學生系統帳號（帳號：${eu.split('.')[0]}）
+4. NAS 公司雲端硬碟帳號（帳號：isec.${enFirst}）
+
+請設定完成後回覆帳號密碼，謝謝！`;
+    return `<div class="section-card">
+    <div class="section-title">💻 IT 設定（Stanley）</div>
+    <div class="section-desc">傳送訊息給 <strong>Stanley</strong>，並等待他回覆密碼後填入下方。</div>
+    <div class="text-output" id="nm">${msg}</div>
+    <div class="btn-row"><button class="btn" onclick="copyEl('nm')">📋 複製訊息給 Stanley</button></div>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.08)">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">🔗 訓練 SOP 網址（主管提供後填入）</div>
+      <div class="form-group" style="margin-bottom:14px">
+        <input class="form-input" id="it-sopurl" placeholder="請貼上主管提供的訓練 SOP 網址" value="${emp.sopUrl||''}"
+          oninput="emp.sopUrl=this.value;saveFirebase()">
+      </div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">📥 Stanley 回覆後填入密碼</div>
+      <div style="font-size:12px;color:#6b6966;margin-bottom:12px">填寫完畢即代表完成，密碼將自動帶入報到須知 Email。</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Google Mail 密碼</label>
+          <input class="form-input" id="it-gmailpwd" placeholder="例：isis70887" value="${emp.gmailPwd||''}" oninput="emp.gmailPwd=this.value;saveFirebase()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">LINE WORK 密碼</label>
+          <input class="form-input" id="it-linepwd" placeholder="例：isis70887" value="${emp.linePwd||''}" oninput="emp.linePwd=this.value;saveFirebase()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CRM 學生系統密碼</label>
+          <input class="form-input" id="it-crmpwd" placeholder="例：isis70887" value="${emp.crmPwd||''}" oninput="emp.crmPwd=this.value;saveFirebase()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">NAS 雲端硬碟密碼</label>
+          <input class="form-input" id="it-naspwd" placeholder="例：isec2024" value="${emp.nasPwd||''}" oninput="emp.nasPwd=this.value;saveFirebase()">
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#1a7a55" id="it-status">
+        ${(emp.gmailPwd&&emp.linePwd&&emp.crmPwd&&emp.nasPwd)?'✅ 所有密碼已填入，Stanley 設定完成！':'⬜ 請填入所有密碼'}
+      </div>
+      <div style="margin-top:10px" class="checklist">
+        ${ci('it_all_done','已設定完成')}
+      </div>
+    </div>
+    ${obNav()}
+  </div>`;
+  },
+  // Contract
+  function(){
+    return `<div class="section-card">
+    <div class="section-title">📄 僱用合約</div>
+    <div class="checklist">
+      ${ci('c0','至僱用合約系統產生合約')}
+      ${ci('c1','列印兩份（公司及員工各一）')}
+    </div>
+    <div class="btn-row"><a href="https://isg-hragreement.manus.space/" target="_blank" class="btn btn-primary">🔗 前往僱用合約系統</a></div>
+    ${obNav()}
+  </div>`;
+  },
+  // NUEIP (moved here, with empId input)
+  function(){
+    if(!emp.nameZh) return needData('goOb(0)');
+    return `<div class="section-card">
+    <div class="section-title">🖥️ NUEIP 帳號設定</div>
+    <div class="section-desc">登入 NUEIP，依序完成設定。員工編號在此階段填入。</div>
+    <div class="form-grid" style="margin-bottom:16px">
+      <div class="form-group">
+        <label class="form-label">NUEIP 員工編號<span class="form-required">*</span></label>
+        <input class="form-input" id="nueip-empid" placeholder="例：TC-006" value="${emp.empId||''}"
+          oninput="emp.empId=this.value;saveFirebase()">
+      </div>
+    </div>
+    <div class="checklist">
+      ${ci('n0','建立員工帳號（填入上方員工編號）')}
+      ${ci('n1','設定員工薪資管理（薪資結構、發薪日）')}
+      ${ci('n2','員工與眷屬健保作業')}
+      ${ci('n3','設定出勤班別與排班')}
+    </div>
+    <div class="btn-row"><a href="https://portal.nueip.com/home" target="_blank" class="btn btn-primary">🔗 前往 NUEIP</a></div>
+    ${obNav()}
+  </div>`;
+  },
+  // Onboarding notice + 團險 (passwords now auto-filled from Stanley step)
+  function(){
+    if(!emp.nameZh) return needData('goOb(0)');
+    const eu=emp.email?emp.email.split('@')[0]:'';
+    const enFirst=emp.nameEn?emp.nameEn.split(' ')[0].toLowerCase():eu;
+    const gmailPwd=emp.gmailPwd||'（請先至步驟3填入 Stanley 設定的密碼）';
+    const linePwd=emp.linePwd||'（請先至步驟3填入 Stanley 設定的密碼）';
+    const crmPwd=emp.crmPwd||'（請先至步驟3填入 Stanley 設定的密碼）';
+    const nasPwd=emp.nasPwd||'（請先至步驟3填入 Stanley 設定的密碼）';
+    const txt=`主旨：【到職須知】歡迎 ${emp.nameZh} / ${emp.nameEn} 加入艾爾斯團隊
+
+Dear ${emp.nameZh},
+
+您好！我是艾爾斯負責人事與出納的 Sharon，非常歡迎你加入艾爾斯/史丹利的大家庭。期待接下來與你的合作！
+
+📅 報到日期：${emp.startDate}
+📍 報到地點：${getAddr(emp.cid)}
+
+到職當天請直接找我報到，我會協助您辦理入職流程，包含：核對入職文件、打卡系統教學，以及帶您認識公司環境和同事。接著，您的主管會開始帶您熟悉工作內容及流程。
+
+為了協助您順利完成人事入職手續，請於報到當天攜帶錄用通知內提到的所有應備文件。
+
+💻 系統帳密設定須知
+
+1. 筆電開機密碼為 7088
+
+2. 公司SOP請參考網址：https://www.evernote.com/u/0/client/web#/note/a8c24f9b-b392-4998-bfe6-ebaf13d8b7d2
+
+3. NUEIP 打卡系統（https://portal.nueip.com/home）
+公司代碼：isec
+員工編號：${emp.empId||'（待確認）'}
+預設登入密碼：0000
+備註：登入後請記得修改「登入密碼」與「認證密碼」。
+
+4. Google 帳號
+E-mail：${emp.email}
+密碼：${gmailPwd}
+Gmail 簽名檔：請找設計部 Tanisha 協助設定
+
+5. LINE WORK 帳號
+帳號：${emp.email.replace('.com.tw','')}
+密碼：${linePwd}
+
+6. CRM 學生系統（https://www.isec.com.tw/ej03xu3/main.php）
+帳號：${eu.split('.')[0]}
+密碼：${crmPwd}
+驗證密碼：7088
+*兩道密碼皆可自行更改
+
+7. NAS 公司雲端硬碟
+（平時請用電腦版，但依舊提供網頁版以防萬一）
+網頁版：quickconnect.to/ISEC
+帳號：isec.${enFirst}
+密碼：${nasPwd}
+備註：請找 Stanley 幫忙設定電腦版
+${(emp.dept&&(emp.dept.includes('留學教育顧問')||emp.dept.includes('行政顧問')))?(
+'\n8. 所屬主管將為您擬定接下來就職後的職務訓練，訓練 SOP 網址請參考：\n'+(emp.sopUrl||'（網址請洽主管）')
+):''}
+
+🚨 重要：電腦的 PDF ADOBE 和 OFFICE 軟體「絕對不可以」更新。
+
+🏥 員工團體保險與自費加保詢問：
+公司於到職當天會幫您加保團體保險（定期壽險、意外傷害保險等），費用由公司全額負擔。
+
+這邊也想一併詢問，您是否需要額外加保「實支實付保險」（費用為新台幣 $2,450 元／年）？此加保項目為員工自費，費用詳見附件：「南山人壽新醫療給付團體健康保險(NGHS)_實支實付」PDF（開啟密碼：7777）。
+
+如有任何問題，歡迎隨時回信聯繫，謝謝！
+
+祝 順心,
+
+Sharon Tseng
+艾爾斯人資部`;
+    return `<div class="section-card">
+    <div class="section-title">📬 發出報到須知 Email ＋ 詢問團險</div>
+    <div class="section-desc">錄取通知回簽後發送此 Email。</div>
+    <div class="alert alert-success">📨 收件人：<strong>${emp.personalEmail||'（未填寫個人信箱）'}</strong></div>
+    <div class="alert alert-warn">📎 <strong>附件提醒：</strong>請附上「南山人壽新醫療給付團體健康保險(NGHS)_實支實付」PDF（開啟密碼：7777）</div>
+    ${!(emp.gmailPwd&&emp.linePwd&&emp.crmPwd&&emp.nasPwd)?'<div class="alert alert-danger">⚠️ 尚未填入所有密碼（步驟 3），請先完成 IT 設定再發送。</div>':''}
+    <div class="text-output" id="ne">${txt}</div>
+    <div class="btn-row"><button class="btn" onclick="copyEl('ne')">📋 複製內容</button></div>
+    ${obNav()}
+  </div>`;
+  },
+  // Insurance 勞健退
+  function(){
+    if(!emp.nameZh) return needData('goOb(0)');
+    return `<div class="section-card">
+    <div class="section-title">🏥 加保作業</div>
+    <div class="alert alert-warn"><strong>注意：</strong>勞健退應於到職日當天或之前完成，逾期依法罰鍰。</div>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px">① 勞保、健保、勞退</div>
+    <div class="checklist">
+      ${ci('i0','登入政府系統完成勞保加保')}
+      ${ci('i1','完成健保加保')}
+      ${ci('i2','設定勞退提撥')}
+    </div>
+    <div class="cred-box" style="margin-top:10px">
+      <div style="font-weight:700;margin-bottom:8px">🔐 系統登入資訊</div>
+      <table class="info-table">
+        <tr><td>系統網址</td><td><a href="https://edesk.bli.gov.tw/me/#/cpa/login" target="_blank" style="color:#1a4f8a">edesk.bli.gov.tw</a></td></tr>
+        <tr><td>身分證號</td><td>A227056812</td></tr>
+        <tr><td>自然人憑證密碼</td><td>banian28</td></tr>
+        <tr><td>保險證號</td><td>請查閱各公司會計資料密碼表　<a href="https://docs.google.com/spreadsheets/d/1LpctEIVHxXkUYmnbYFxIMrvWlagWn1xo6xs6-CxDxBM/edit?gid=2047344479#gid=2047344479" target="_blank" style="color:#1a4f8a">🔗 開啟密碼表</a></td></tr>
+      </table>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;margin:16px 0 8px">② 南山團體保險（員工回覆後辦理）</div>
+    <div class="checklist" style="margin-bottom:12px">
+      ${ci('ins3','確認員工是否加保實支實付')}
+    </div>
+
+    <div style="background:#f0f9f5;border:0.5px solid #a8dfc8;border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#0f6e56">📧 寄送南山加保通知</div>
+      <table class="info-table" style="margin-bottom:10px">
+        <tr><td style="width:20%">收件人</td><td><strong>Ella-YH.Huang@nanshan.com.tw</strong></td></tr>
+        <tr><td>主旨</td><td><strong>${(['stanley','joyce_e'].includes(emp.cid)?'史丹利英語教育有限公司':'艾爾斯國際諮詢顧問有限公司')}_加退保通知_${emp.nameZh||'（員工姓名）'}</strong></td></tr>
+      </table>
+      <div style="font-size:12px;color:#6b6966;margin-bottom:6px">內文（複製後貼入 Email）：</div>
+      <div class="text-output" id="nanshan-email" style="max-height:180px;font-size:13px">Dear Ella,
+
+您好，我是艾爾斯 HR Sharon。
+
+我們${(['stanley','joyce_e'].includes(emp.cid)?'史丹利英語教育有限公司':'艾爾斯國際諮詢顧問有限公司')}員工 ${emp.nameZh||'（員工姓名）'} ${emp.startDate?new Date(emp.startDate).getFullYear()+'年'+(new Date(emp.startDate).getMonth()+1)+'月'+new Date(emp.startDate).getDate()+'日':'（到職日）'}到職，再麻煩協助加保，謝謝您。
+
+謝謝您的協助與時間閱讀此信。
+
+艾爾斯人資部
+Sharon Tseng</div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-sm" onclick="copyEl('nanshan-email')">📋 複製內文</button>
+        <button class="btn btn-sm btn-green" onclick="downloadNanshanXlsx()">📎 下載異動單 Excel</button>
+      </div>
+    </div>
+    <div class="checklist">
+      ${ci('ins4','已填寫南山加退保異動單並以附件寄出')}
+    </div>
+    ${obNav()}
+  </div>`;
+  },
+  // Estelle
+  function(){
+    if(!emp.nameZh) return needData('goOb(0)');
+    const ePhone=emp.ePhone||'';
+    const msg='嗨～Estelle，再麻煩您協助新人設定大門人臉辨識、指紋、EVOX 分機，員工資訊如下，謝謝。\n\n'
+      +'姓名＋職稱：'+emp.nameZh+'（'+emp.title+'）\n'
+      +'到職日：'+emp.startDate+'\n'
+      +'員工編號：'+(emp.empId||'（請確認）')+'\n'
+      +'公司 Mail：'+emp.email+'\n'
+      +'手機：'+(ePhone||'（請填寫）')+'\n'
+      +'大頭照：（請見附件）';
+    return '<div class="section-card">'
+      +'<div class="section-title">🚪 人臉辨識、指紋、EVOX 分機（Estelle 設定）</div>'
+      +'<div class="section-desc">以下資訊自動帶入，請補填手機號碼並上傳大頭照後，複製訊息傳給 Estelle。</div>'
+      +'<div class="form-grid" style="margin-bottom:14px">'
+        +'<div class="form-group">'
+          +'<label class="form-label">手機號碼<span class="form-required">*</span></label>'
+          +'<input class="form-input" id="e-phone" placeholder="例：0937858162" value="'+ePhone+'" oninput="emp.ePhone=this.value;saveFirebase()">'
+        +'</div>'
+        +'<div class="form-group">'
+          +'<label class="form-label">大頭照圖檔<span class="form-required">*</span></label>'
+          +'<input type="file" id="e-photo" accept="image/*" class="form-input" style="padding:6px" onchange="handleEstellePhoto(this)">'
+        +'</div>'
+      +'</div>'
+      +'<div class="text-output" id="es">'+msg+'</div>'
+      +'<div class="btn-row"><button class="btn" onclick="copyEl(\'es\')">📋 複製訊息</button></div>'
+      +'<div id="estelle-photo-preview" style="margin-top:12px;display:none">'
+        +'<div style="font-size:12px;color:#6b6966;margin-bottom:6px">📷 大頭照預覽（請手動附加至訊息或 Email）</div>'
+        +'<img id="estelle-photo-img" style="max-width:120px;max-height:120px;border-radius:8px;border:0.5px solid rgba(0,0,0,0.12)">'
+        +'<div style="margin-top:6px"><button class="btn btn-sm btn-green" onclick="downloadEstellePhoto()">⬇️ 下載大頭照</button></div>'
+      +'</div>'
+      +'<div class="checklist" style="margin-top:14px">'+ci('estelle_done','Estelle 已完成人臉辨識、指紋、EVOX 分機設定並確認')+'</div>'
+      +obNav()
+      +'</div>';
+  },
+  // Orientation
+  function(){
+    return `<div class="section-card">
+    <div class="section-title">🎓 到職當天：就職訓練</div>
+    <div class="checklist">
+      ${ci('o0','雇傭合約說明，員工回簽，收齊應備文件（存摺封面、一吋照片、良民證）')}
+      ${ci('o1','NUEIP 打卡系統教學（薪資明細、費用代墊、排班、考勤）')}
+      ${ci('o2','講解人資制度手冊、請假管理辦法、工作規則')}
+      ${ci('o3','認識辦公室環境和員工')}
+    </div>
+    ${obNav()}
+  </div>`;
+  },
+  // HR更新項目
+  function(){
+    return '<div class="section-card">'
+      +'<div class="section-title">📊 HR 更新項目</div>'
+      +'<div class="checklist">'
+        +ci('t0','更新艾爾斯/史丹利－薪資清冊')
+        +ci('t1','更新公司員工姓名表 ＆ 台北座位圖')
+        +ci('t2','更新南山團險表')
+      +'</div>'
+      +'<div class="btn-row">'
+        +'<a href="https://docs.google.com/spreadsheets/d/1aS2lJ8PyJUfocnC9NVU5YCD1ChIHdam0eMOGS_8OxPE/edit" target="_blank" class="btn">🔗 薪資清冊</a>'
+        +'<a href="https://docs.google.com/spreadsheets/d/1NVjByTtqAp8mQn935dvt44Cg7gpmodove5Njcsta68s/edit?gid=596240714#gid=596240714" target="_blank" class="btn">🔗 員工姓名表 ＆ 座位圖</a>'
+        +'<a href="https://docs.google.com/spreadsheets/d/1RgjbwM_ZoVmYHapClIDQFsrKNX9mD-k_JjEFFbfPFQo/edit" target="_blank" class="btn">🔗 南山團險表</a>'
+      +'</div>'
+      +obNav()
+      +'</div>';
+  },
+  // Probation
+  function(){
+    if(!emp.nameZh) return needData('goOb(0)');
+    const start=new Date(emp.startDate);
+    const d30=nextWorkdayFrom(addDays(start,30));
+    const d60=nextWorkdayFrom(addDays(start,60));
+    const d90=nextWorkdayFrom(addDays(start,90));
+    function calUrl(title,d){
+      const dt=d.toISOString().replace(/-/g,'').slice(0,8);
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dt}/${dt}&details=${encodeURIComponent('試用期面談：'+emp.nameZh)}`;
+    }
+    return `<div class="section-card">
+    <div class="section-title">📅 試用期三次面談</div>
+    <div class="section-desc">面談日期已自動避開假日，順延至最近工作日。</div>
+    <a href="${calUrl('【第一次試用期面談】'+emp.nameZh,d30)}" target="_blank" class="cal-link">
+      <div class="cal-icon">📅</div>
+      <div class="cal-info"><div class="cal-title">第一次面談（30 天）</div><div class="cal-date">${fmtDate(d30)}（${['日','一','二','三','四','五','六'][d30.getDay()]}）</div></div>
+      <span class="btn">加入日曆 ↗</span>
+    </a>
+    <a href="${calUrl('【第二次試用期面談】'+emp.nameZh,d60)}" target="_blank" class="cal-link">
+      <div class="cal-icon">📅</div>
+      <div class="cal-info"><div class="cal-title">第二次面談（60 天）</div><div class="cal-date">${fmtDate(d60)}（${['日','一','二','三','四','五','六'][d60.getDay()]}）</div></div>
+      <span class="btn">加入日曆 ↗</span>
+    </a>
+    <a href="${calUrl('【第三次試用期面談／評核】'+emp.nameZh,d90)}" target="_blank" class="cal-link">
+      <div class="cal-icon">📅</div>
+      <div class="cal-info"><div class="cal-title">第三次面談＋評核（90 天）</div><div class="cal-date">${fmtDate(d90)}（${['日','一','二','三','四','五','六'][d90.getDay()]}）</div></div>
+      <span class="btn">加入日曆 ↗</span>
+    </a>
+    <div style="margin-top:16px">${ci('bday','✅ 試用期通過後：至 NUEIP 為 <strong>'+emp.nameZh+'</strong> 匯入生日假','試用期評核通過後執行，未勾選將出現在待辦 PDF 中')}</div>
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="printObSummary()">📄 匯出入職追蹤 PDF</button>
+      <button class="btn btn-primary" onclick="obDone[10]=true;updateProgress('ob',obDone,11);saveFirebase();renderOb();alert('🎉 入職流程全部完成！')">✅ 完成入職流程</button>
+    </div>
+  </div>`;
+  },
+];
+
+function saveObEmp(){
+  const v=id=>document.getElementById(id).value.trim();
+  const nameZh=v('f0'),nameEn=v('f1'),startDate=v('f3'),cid=v('f4'),dept=v('f5'),title=v('f6'),email=v('f7'),personalEmail=v('f8');
+  if(!nameZh||!nameEn||!startDate||!cid||!dept||!title||!email||!personalEmail){alert('請填寫所有必填欄位！');return;}
+  const co=COMPANIES.find(c=>c.id===cid);
+  // Preserve all existing emp fields, just update the form fields
+  emp=Object.assign(emp,{nameZh,nameEn,startDate,cid,companyName:co.name,companyTax:co.tax,dept,title,email,personalEmail});
+  // Set currentKey from the prompt key (already set) or from nameZh
+  if(!currentKey) currentKey=nameZh.replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
+  saveFirebase();
+  obNext();
+}
+
+function obNav(){
+  return `<div class="nav-buttons">
+    <button class="btn" onclick="obPrev()" ${obStep===0?'disabled style="opacity:0.4"':''}>← 上一步</button>
+    <button class="btn btn-primary" onclick="obNext()">${obStep===10?'✅ 完成':'下一步 →'}</button>
+  </div>`;
+}
+
+// Print onboard summary
+const OB_CHECKS = [
+  {id:'it_all_done', step:'IT 設定（Stanley）', label:'Stanley 已設定完成（密碼已填入）'},
+  {id:'c0', step:'僱用合約', label:'至僱用合約系統產生合約'},
+  {id:'c1', step:'僱用合約', label:'列印兩份（公司及員工各一）'},
+  {id:'n0', step:'NUEIP 帳號設定', label:'建立員工帳號'},
+  {id:'n1', step:'NUEIP 帳號設定', label:'設定員工薪資管理'},
+  {id:'n2', step:'NUEIP 帳號設定', label:'員工與眷屬健保作業'},
+  {id:'n3', step:'NUEIP 帳號設定', label:'設定出勤班別與排班'},
+  {id:'i0', step:'加保作業', label:'勞保加保'},
+  {id:'i1', step:'加保作業', label:'健保加保'},
+  {id:'i2', step:'加保作業', label:'設定勞退提撥'},
+  {id:'ins3', step:'加保作業 / 南山', label:'確認員工是否加保實支實付'},
+  {id:'ins4', step:'加保作業 / 南山', label:'已填寫南山加退保異動單並以附件寄出'},
+  {id:'estelle_done', step:'人臉辨識、指紋、EVOX 分機（Estelle 設定）', label:'Estelle 已完成人臉辨識、指紋、EVOX 分機設定'},
+  {id:'o0', step:'到職當天：就職訓練', label:'雇傭合約說明，員工回簽，收齊應備文件'},
+  {id:'o1', step:'到職當天：就職訓練', label:'NUEIP 打卡系統教學'},
+  {id:'o2', step:'到職當天：就職訓練', label:'講解人資制度手冊、請假管理辦法'},
+  {id:'o3', step:'到職當天：就職訓練', label:'認識辦公室環境和員工'},
+  {id:'t0', step:'HR 更新項目', label:'新增員工資料至 HR Training List'},
+  {id:'t1', step:'HR 更新項目', label:'更新公司人員姓名表'},
+  {id:'t2', step:'HR 更新項目', label:'更新台北辦公室座位圖'},
+  {id:'t3', step:'HR 更新項目', label:'更新雲端艾爾斯/史丹利薪資清冊'},
+  {id:'bday', step:'試用期通過後', label:'NUEIP 匯入生日假'},
+];
+
+function printObSummary(){
+  const start=new Date(emp.startDate);
+  const d30=nextWorkdayFrom(addDays(start,30));
+  const d60=nextWorkdayFrom(addDays(start,60));
+  const d90=nextWorkdayFrom(addDays(start,90));
+  const logoSrc=emp.cid?getLogo(emp.cid):ISEC_LOGO;
+  const checks=emp._checks||{};
+
+  // Map each step index to its child checkboxes
+  const STEP_CHECKS = {
+    2: [{id:'it_all_done', label:'Stanley 已設定完成（密碼已填入）'}],
+    3: [
+      {id:'c0', label:'至僱用合約系統產生合約'},
+      {id:'c1', label:'列印兩份（公司及員工各一）'},
+    ],
+    4: [
+      {id:'n0', label:'建立員工帳號'},
+      {id:'n1', label:'設定員工薪資管理'},
+      {id:'n2', label:'員工與眷屬健保作業'},
+      {id:'n3', label:'設定出勤班別與排班'},
+    ],
+    5: [
+      {id:'ins3', label:'確認員工是否加保實支實付'},
+      {id:'ins4', label:'已填寫南山加退保異動單並以附件寄出'},
+    ],
+    6: [
+      {id:'i0', label:'勞保加保'},
+      {id:'i1', label:'健保加保'},
+      {id:'i2', label:'設定勞退提撥'},
+    ],
+    7: [{id:'estelle_done', label:'Estelle 已完成人臉辨識、指紋、EVOX 分機設定'}],
+    8: [
+      {id:'o0', label:'雇傭合約說明，員工回簽，收齊應備文件'},
+      {id:'o1', label:'NUEIP 打卡系統教學'},
+      {id:'o2', label:'講解人資制度手冊、請假管理辦法'},
+      {id:'o3', label:'認識辦公室環境和員工'},
+    ],
+    9: [
+      {id:'t0', label:'更新艾爾斯/史丹利－薪資清冊'},
+      {id:'t1', label:'更新公司員工姓名表 ＆ 台北座位圖'},
+      {id:'t2', label:'更新南山團險表'},
+      
+    ],
+    10: [{id:'bday', label:'試用期通過後：NUEIP 匯入生日假'}],
+  };
+
+  // Build rows: each step + its child checkboxes indented below
+  let rows = '';
+  let doneCnt = 0;
+  let totalCnt = 0;
+
+  OB_STEPS.forEach((s,i)=>{
+    const stepDone = obDone[i]||false;
+    if(stepDone) doneCnt++;
+    totalCnt++;
+    rows += '<tr style="background:'+(stepDone?'#e8f8f0':'#fff')+';border-top:1.5px solid #ccc">'
+      +'<td style="text-align:center;font-size:15px;vertical-align:middle">'+(stepDone?'✅':'⬜')+'</td>'
+      +'<td style="font-weight:700;padding:8px 12px">'+s+'</td>'
+      +'<td style="color:'+(stepDone?'#1a7a55':'#c97a0a')+';font-weight:600;white-space:nowrap">'+(stepDone?'已完成':'未完成')+'</td>'
+      +'<td></td></tr>';
+
+    // Child checkboxes
+    const children = STEP_CHECKS[i]||[];
+    children.forEach(c=>{
+      const done = checks[c.id]||false;
+      if(done) doneCnt++;
+      totalCnt++;
+      rows += '<tr style="background:'+(done?'#f5fbf8':'#fffdf5')+'">'
+        +'<td style="text-align:center;font-size:13px;color:#aaa;vertical-align:middle">'+(done?'✓':'○')+'</td>'
+        +'<td style="padding:5px 12px 5px 28px;font-size:12px;color:#3a3937">↳ '+c.label+'</td>'
+        +'<td style="font-size:12px;color:'+(done?'#1a7a55':'#c97a0a')+'">'+(done?'完成':'未完成')+'</td>'
+        +'<td></td></tr>';
+    });
+  });
+
+  const pdfHtml='<div class="pdf-doc">'
+    +'<div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:20px">'
+      +'<img src="'+logoSrc+'" style="height:52px;width:auto;flex-shrink:0">'
+      +'<div style="flex:1;text-align:center">'
+        +'<div style="font-size:14px;font-weight:700">'+(emp.companyName||'艾爾斯人資部')+'</div>'
+        +'<div style="font-size:20px;font-weight:700;letter-spacing:0.08em;margin-top:2px">入　職　流　程　追　蹤　表</div>'
+      +'</div><div style="width:52px"></div></div>'
+    +'<table class="pdf-table" style="margin-bottom:16px">'
+      +'<tr><td style="width:25%">員工姓名</td><td><strong>'+(emp.nameZh||'')+'（'+(emp.nameEn||'')+'）</strong></td><td style="width:25%">到職日</td><td>'+(emp.startDate||'')+'</td></tr>'
+      +'<tr><td>職稱</td><td>'+(emp.title||'')+'</td><td>所屬公司</td><td>'+(emp.companyName||'')+'</td></tr>'
+      +'<tr><td>30天面談</td><td>'+fmtDate(d30)+'</td><td>60天面談</td><td>'+fmtDate(d60)+'</td></tr>'
+      +'<tr><td>90天面談／評核</td><td>'+fmtDate(d90)+'</td><td>完成進度</td><td><strong>'+doneCnt+' / '+totalCnt+' 項</strong></td></tr>'
+    +'</table>'
+    +'<table class="pdf-table">'
+      +'<tr style="background:#1a1917;color:#fff"><th style="width:8%">狀態</th><th>步驟 / 細項</th><th style="width:16%">完成情形</th><th style="width:22%">完成日期／備註</th></tr>'
+      +rows
+    +'</table>'
+    +'<div style="margin-top:16px;font-size:12px;color:#888;display:flex;justify-content:space-between">'
+      +'<span>列印日期：'+new Date().toLocaleDateString('zh-TW')+'</span>'
+      +'<span>HR 簽名：＿＿＿＿＿＿＿＿</span>'
+    +'</div></div>';
+  printDoc(pdfHtml, '入職流程追蹤表-'+(emp.nameZh||''));
+}
+function handleEstellePhoto(input){
+  if(!input.files||!input.files[0]) return;
+  const file=input.files[0];
+  const reader=new FileReader();
+  reader.onload=function(e){
+    emp.ePhotoData=e.target.result;
+    saveFirebase();
+    const preview=document.getElementById('estelle-photo-preview');
+    const img=document.getElementById('estelle-photo-img');
+    if(preview) preview.style.display='block';
+    if(img) img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function downloadEstellePhoto(){
+  if(!emp.ePhotoData) return;
+  const link=document.createElement('a');
+  link.href=emp.ePhotoData;
+  link.download=(emp.nameZh||'employee')+'_大頭照.jpg';
+  link.click();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+let dashData = {};
+
+function openDashboard(){
+  currentFlow = 'dashboard';
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('app-dashboard').classList.add('active');
+  loadDashboard();
+}
+
+function openDashboard(){
+  currentFlow = 'dashboard';
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('app-dashboard').classList.add('active');
+  renderPendingDashboard();
+}
+
+// Step definitions for each flow
+const FLOW_DEFS = {
   onboard: {
-    pre: [
-      {label:'寄送錄取通知書與勞動契約（含薪資、職稱、到職日）', tag:'hr'},
-      {label:'建立員工基本資料（身分證、學歷、緊急聯絡人）', tag:'hr'},
-      {label:'申請員工帳號（Email、內部系統、通訊軟體）', tag:'it', note:'建議到職日前 3 天完成'},
-      {label:'準備電腦設備、門禁卡、辦公用品', tag:'it'},
-      {label:'通知部門主管安排新人引導計畫', tag:'mgr'},
-      {label:'準備新人訓練資料（員工手冊、公司介紹）', tag:'hr'},
-      {label:'投保勞保、健保（到職日前完成）', tag:'hr', note:'法定義務，不可延遲'},
-      {label:'設定薪資帳號與出勤系統', tag:'fin'},
-    ],
-    day: [
-      {label:'報到確認、簽署勞動契約與保密協議', tag:'hr'},
-      {label:'辦公室導覽、介紹同事與部門主管', tag:'mgr'},
-      {label:'交付設備並簽署財產清單', tag:'it'},
-      {label:'說明公司規章、出勤、請假制度', tag:'hr'},
-      {label:'開通系統帳號並確認可正常登入', tag:'it'},
-      {label:'安排第一週工作計畫說明（主管負責）', tag:'mgr'},
-    ],
-    trial: [
-      {label:'第 30 天 — HR 與新人進行適應狀況面談', tag:'hr'},
-      {label:'第 30 天 — 主管完成第一月工作表現評估表', tag:'mgr'},
-      {label:'第 60 天 — 確認工作目標設定完成', tag:'mgr'},
-      {label:'第 90 天 — 試用期考核（通過 / 延長 / 不通過）', tag:'hr'},
-      {label:'考核通過 — 更新員工狀態為正式員工，通知財務調薪', tag:'hr'},
-    ]
+    label: '🎉 入職流程',
+    color: '#0f6e56',
+    bg: '#e3f5ed',
+    steps: OB_STEPS,
+    done: ()=>obDone,
+    empName: ()=>emp.nameZh,
+    checks: ()=>({
+      'it_all_done': {step:'IT 設定（Stanley）', label:'Stanley 已設定完成（密碼已填入）'},
+      'c0':  {step:'僱用合約', label:'至僱用合約系統產生合約'},
+      'c1':  {step:'僱用合約', label:'列印兩份（公司及員工各一）'},
+      'n0':  {step:'NUEIP 帳號設定', label:'建立員工帳號'},
+      'n1':  {step:'NUEIP 帳號設定', label:'設定員工薪資管理'},
+      'n2':  {step:'NUEIP 帳號設定', label:'員工與眷屬健保作業'},
+      'n3':  {step:'NUEIP 帳號設定', label:'設定出勤班別與排班'},
+      'ins3':{step:'加保作業', label:'確認員工是否加保實支實付'},
+      'ins4':{step:'加保作業', label:'已填寫南山加退保異動單並寄出'},
+      'i0':  {step:'加保作業', label:'勞保加保'},
+      'i1':  {step:'加保作業', label:'健保加保'},
+      'i2':  {step:'加保作業', label:'設定勞退提撥'},
+      'estelle_done':{step:'Estelle 設定', label:'Estelle 已完成人臉辨識、指紋、EVOX 設定'},
+      'o0':  {step:'就職訓練', label:'雇傭合約說明，員工回簽，收齊應備文件'},
+      'o1':  {step:'就職訓練', label:'NUEIP 打卡系統教學'},
+      'o2':  {step:'就職訓練', label:'講解人資制度手冊、請假管理辦法'},
+      'o3':  {step:'就職訓練', label:'認識辦公室環境和員工'},
+      't0':  {step:'HR 更新項目', label:'更新艾爾斯/史丹利－薪資清冊'},
+      't1':  {step:'HR 更新項目', label:'更新公司員工姓名表 ＆ 台北座位圖'},
+      't2':  {step:'HR 更新項目', label:'更新南山團險表'},
+      'bday':{step:'試用期通過後', label:'NUEIP 匯入生日假'},
+      'it_all_done':{step:'IT 設定（Stanley）', label:'Stanley 已設定完成'},
+    }),
   },
   offboard: {
-    imm: [
-      {label:'收到辭呈，確認最後上班日（注意預告期規定）', tag:'hr', note:'勞基法第16條：年資1年以上需10天前通知'},
-      {label:'通知部門主管啟動工作移交計畫', tag:'mgr'},
-      {label:'確認離職原因（自願/非自願），影響後續失業給付', tag:'hr'},
-      {label:'安排離職面談（HR 主持，了解離職原因）', tag:'hr'},
-    ],
-    '2w': [
-      {label:'完成工作交接文件與業務移交清單', tag:'mgr'},
-      {label:'知識文件存檔（操作手冊、客戶資料、密碼清單）', tag:'mgr'},
-      {label:'確認未休特休天數，計算補償金額', tag:'hr'},
-      {label:'確認借款、備用金或公司財物是否清償', tag:'fin'},
-    ],
-    last: [
-      {label:'回收門禁卡、識別證、設備、制服', tag:'hr'},
-      {label:'IT 停用所有帳號（Email、系統、VPN、雲端）', tag:'it', note:'最後上班日下班後立即執行'},
-      {label:'簽署離職確認書與保密協議再確認', tag:'legal'},
-      {label:'進行最後一次面談，確認無勞資糾紛', tag:'hr'},
-    ],
-    after: [
-      {label:'辦理勞保、健保退保（離職日起 2 天內）', tag:'hr', note:'法定期限，逾期罰鍰'},
-      {label:'開立離職證明書', tag:'hr'},
-      {label:'結算最後薪資（含加班費、未休假補償）', tag:'fin'},
-      {label:'開立薪資扣繳憑單', tag:'fin'},
-      {label:'歸檔員工完整資料（依法保存至少 5 年）', tag:'hr'},
-    ]
+    label: '👋 離職流程',
+    color: '#7a4f0a',
+    bg: '#fdf0d9',
+    steps: OFF_STEPS,
+    done: ()=>offDone,
+    empName: ()=>emp.nameZh,
+    checks: ()=>({
+      'r0': {step:'退保作業', label:'勞保退保'},
+      'r1': {step:'退保作業', label:'健保退保'},
+      'r2': {step:'退保作業', label:'已填寫南山加退保異動單（退保）並寄出'},
+      'd0': {step:'完成確認', label:'所有文件已簽署並歸檔'},
+      'd1': {step:'完成確認', label:'員工帳號已停用'},
+      'd2': {step:'完成確認', label:'公司資產已回收'},
+      'd3': {step:'完成確認', label:'勞健保退保已完成'},
+      'd4': {step:'完成確認', label:'離職證明書已發給員工'},
+      'd5': {step:'完成確認', label:'員工資料歸檔保存'},
+    }),
   },
   layoff: {
-    pre: [
-      {label:'確認資遣事由（勞基法第11條：業務緊縮/虧損/轉讓/技術更新等）', tag:'legal'},
-      {label:'確認是否有不得資遣之員工（育嬰假中、職業災害未痊癒）', tag:'legal', note:'違法資遣可申訴撤銷'},
-      {label:'計算預告天數（年資不滿3月：0天；3月~1年：10天；1~3年：20天；3年以上：30天）', tag:'legal'},
-      {label:'計算資遣費（新制：每年 0.5 個月，最高 6 個月）', tag:'fin'},
-      {label:'諮詢法律顧問確認程序合規', tag:'legal'},
-    ],
-    notice: [
-      {label:'大量解僱（10人以上）需於 60 天前向勞動局申報', tag:'legal', note:'大量解僱勞工保護法'},
-      {label:'書面通知員工資遣（含事由、最後上班日、資遣費金額）', tag:'legal'},
-      {label:'提供就業服務資訊（失業給付、職訓局資源）', tag:'hr'},
-      {label:'向勞動局申報資遣通報', tag:'legal', note:'10 天內完成通報'},
-    ],
-    comp: [
-      {label:'計算並確認資遣費金額，留存計算明細', tag:'fin'},
-      {label:'確認非自願離職認定，協助員工申請失業給付', tag:'hr'},
-      {label:'結算未休特休天數', tag:'hr'},
-      {label:'結算最終薪資（含預告期薪資或代通知金）', tag:'fin'},
-    ],
-    exit: [
-      {label:'回收設備、門禁卡，停用所有帳號', tag:'it'},
-      {label:'簽署資遣同意書（留存正本）', tag:'legal'},
-      {label:'開立服務證明書（非自願離職）', tag:'hr'},
-      {label:'辦理勞保、健保退保', tag:'hr'},
-      {label:'歸檔資遣全案書面紀錄', tag:'legal'},
-    ]
-  }
+    label: '⚖️ 資遣流程',
+    color: '#8a1a1a',
+    bg: '#fde8e8',
+    steps: LAY_STEPS,
+    done: ()=>layDone,
+    empName: ()=>emp.nameZh,
+    checks: ()=>({
+      'ly0': {step:'資遣通知書', label:'向勞動局申報資遣通報（10天內）'},
+      'ly1': {step:'資遣通知書', label:'確認是否涉及大量解僱'},
+      'lr0': {step:'退保作業', label:'勞保退保'},
+      'lr1': {step:'退保作業', label:'健保退保'},
+      'lr2': {step:'退保作業', label:'已填寫南山加退保異動單（退保）並寄出'},
+    }),
+  },
 };
 
-const TAG_CLASS = {hr:'tag-hr',it:'tag-it',mgr:'tag-mgr',fin:'tag-fin',legal:'tag-legal'};
-const TAG_LABEL = {hr:'HR',it:'IT',mgr:'主管',fin:'財務',legal:'法務'};
+function renderPendingDashboard(){
+  const el = document.getElementById('dash-content');
+  const checks = emp._checks || {};
+  let hasAny = false;
+  let out = '';
 
-let state = {};
+  ['onboard','offboard','layoff'].forEach(type => {
+    const def = FLOW_DEFS[type];
+    const doneArr = def.done();
+    const empName = def.empName() || '（未開始）';
 
-function loadState() { loadLocalState(); }
+    // Collect pending steps
+    const pendingSteps = def.steps
+      .map((s,i) => ({label:s, done:doneArr[i]||false}))
+      .filter(s => !s.done);
 
+    // Collect pending checks
+    const checkDefs = def.checks();
+    const pendingChecks = Object.entries(checkDefs)
+      .filter(([id]) => !checks[id])
+      .map(([id,c]) => c);
 
-function ensureState(flow) {
-  if(!state[flow]) state[flow] = {};
-  Object.keys(FLOW_DATA[flow]).forEach(sec => {
-    if(!state[flow][sec]) state[flow][sec] = new Array(FLOW_DATA[flow][sec].length).fill(false);
-  });
-}
+    if(pendingSteps.length === 0 && pendingChecks.length === 0) {
+      // All done
+      out += '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:'+def.bg+';border-radius:10px;margin-bottom:12px">'
+        +'<span style="font-size:18px">✅</span>'
+        +'<div><div style="font-weight:700;color:'+def.color+'">'+def.label+'</div>'
+        +'<div style="font-size:13px;color:#6b6966">'+empName+' — 所有項目已完成</div></div>'
+        +'</div>';
+      return;
+    }
 
-function renderChecklist(flow, sec) {
-  const el = document.getElementById('cl-'+flow+'-'+sec);
-  if(!el) return;
-  ensureState(flow);
-  const items = FLOW_DATA[flow][sec];
-  el.innerHTML = '';
-  items.forEach((item, i) => {
-    const done = state[flow][sec][i];
-    const div = document.createElement('div');
-    div.className = 'item' + (done ? ' done' : '');
-    div.onclick = () => toggleItem(flow, sec, i);
-    div.innerHTML =
-      '<div class="checkbox"><span class="check-mark">✓</span></div>' +
-      '<div class="item-body">' +
-        '<div class="item-label">' + item.label + '</div>' +
-        (item.note ? '<div class="item-note">' + item.note + '</div>' : '') +
-      '</div>' +
-      '<span class="tag ' + TAG_CLASS[item.tag] + '">' + TAG_LABEL[item.tag] + '</span>';
-    el.appendChild(div);
-  });
-}
+    hasAny = true;
+    out += '<div style="margin-bottom:20px;border:0.5px solid rgba(0,0,0,0.1);border-radius:12px;overflow:hidden">';
+    out += '<div style="background:'+def.bg+';padding:12px 16px;display:flex;align-items:center;justify-content:space-between">'
+      +'<div style="font-weight:700;color:'+def.color+'">'+def.label+'</div>'
+      +'<div style="font-size:13px;color:'+def.color+'">'+empName+'　未完成 '+(pendingSteps.length+pendingChecks.length)+' 項</div>'
+      +'</div>';
 
-function toggleItem(flow, sec, i) {
-  ensureState(flow);
-  state[flow][sec][i] = !state[flow][sec][i];
-  renderChecklist(flow, sec);
-  updateProgress(flow);
-  saveState();
-}
+    out += '<div style="padding:14px 16px;background:#fff">';
 
-function updateProgress(flow) {
-  let total = 0, done = 0;
-  Object.keys(FLOW_DATA[flow]).forEach(sec => {
-    ensureState(flow);
-    total += FLOW_DATA[flow][sec].length;
-    done += state[flow][sec].filter(Boolean).length;
-  });
-  const pct = total ? Math.round(done / total * 100) : 0;
+    // Pending steps
+    if(pendingSteps.length > 0){
+      out += '<div style="font-size:12px;font-weight:700;color:#6b6966;letter-spacing:0.06em;margin-bottom:8px">未完成步驟</div>';
+      pendingSteps.forEach(s => {
+        out += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff8f0;border-radius:8px;margin-bottom:6px;border-left:3px solid #c97a0a">'
+          +'<span style="font-size:14px">⬜</span>'
+          +'<span style="font-size:14px;font-weight:600">'+s.label+'</span>'
+          +'</div>';
+      });
+    }
 
-  const fill = document.getElementById('prog-fill-' + flow);
-  const label = document.getElementById('prog-label-' + flow);
-  const pctEl = document.getElementById('prog-pct-' + flow);
-  if(fill) fill.style.width = pct + '%';
-  if(label) label.textContent = '進度：' + done + ' / ' + total + ' 項';
-  if(pctEl) pctEl.textContent = pct + '%';
+    // Pending checks grouped by step
+    if(pendingChecks.length > 0){
+      const byStep = {};
+      pendingChecks.forEach(c => {
+        if(!byStep[c.step]) byStep[c.step] = [];
+        byStep[c.step].push(c.label);
+      });
+      if(pendingSteps.length > 0) out += '<div style="height:8px"></div>';
+      out += '<div style="font-size:12px;font-weight:700;color:#6b6966;letter-spacing:0.06em;margin-bottom:8px">未完成細項</div>';
+      Object.entries(byStep).forEach(([step, items]) => {
+        out += '<div style="margin-bottom:8px">'
+          +'<div style="font-size:12px;color:#9a9894;margin-bottom:4px">↳ '+step+'</div>';
+        items.forEach(label => {
+          out += '<div style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 24px;background:#f8f7f3;border-radius:8px;margin-bottom:4px">'
+            +'<span style="font-size:13px;color:#ccc">○</span>'
+            +'<span style="font-size:13px">'+label+'</span>'
+            +'</div>';
+        });
+        out += '</div>';
+      });
+    }
 
-  const short = flow === 'onboard' ? 'on' : flow === 'offboard' ? 'off' : 'lay';
-  const doneEl = document.getElementById('s-'+short+'-done');
-  const todoEl = document.getElementById('s-'+short+'-todo');
-  const pctEl2 = document.getElementById('s-'+short+'-pct');
-  if(doneEl) doneEl.textContent = done;
-  if(todoEl) todoEl.textContent = total - done;
-  if(pctEl2) pctEl2.textContent = pct + '%';
-
-  const badge = document.getElementById('badge-' + flow);
-  if(badge) badge.textContent = (total - done);
-
-  updateOverview();
-}
-
-function updateOverview() {
-  let totalDone = 0, totalPending = 0;
-  ['onboard','offboard','layoff'].forEach(flow => {
-    let d = 0, t = 0;
-    Object.keys(FLOW_DATA[flow]).forEach(sec => {
-      ensureState(flow);
-      t += FLOW_DATA[flow][sec].length;
-      d += state[flow][sec].filter(Boolean).length;
-    });
-    totalDone += d;
-    totalPending += (t - d);
-    const pct = t ? Math.round(d/t*100) : 0;
-    const labels = {onboard:'ov-on-prog', offboard:'ov-off-prog', layoff:'ov-lay-prog'};
-    const el = document.getElementById(labels[flow]);
-    if(el) el.textContent = d + ' / ' + t + ' 項完成（' + pct + '%）';
+    out += '</div></div>';
   });
 
-  const activeEl = document.getElementById('ov-active');
-  const doneEl = document.getElementById('ov-done');
-  const pendingEl = document.getElementById('ov-pending');
-  if(activeEl) activeEl.textContent = 3;
-  if(doneEl) doneEl.textContent = totalDone;
-  if(pendingEl) pendingEl.textContent = totalPending;
+  if(!hasAny){
+    out = '<div class="alert alert-success">🎉 所有流程的所有項目都已完成！</div>';
+  }
+
+  el.innerHTML = out;
 }
 
-function resetFlow(flow) {
-  if(!confirm('確定要重置「' + {onboard:'入職',offboard:'離職',layoff:'資遣'}[flow] + '」的所有勾選記錄？')) return;
-  state[flow] = {};
-  Object.keys(FLOW_DATA[flow]).forEach(sec => renderChecklist(flow, sec));
-  updateProgress(flow);
-  saveState();
-}
+// ============================================================
 
-function saveEmpName(flow) {}
 
-function nav(name, btn) {
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const panel = document.getElementById('panel-' + name);
-  if(panel) panel.classList.add('active');
-  const titles = {
-    overview:['儀表板','所有 HR 案件總覽'],
-    onboard:['入職流程','新員工到職 SOP 追蹤'],
-    offboard:['離職流程','員工離職 SOP 追蹤'],
-    layoff:['資遣流程','資遣 SOP 與法規確認'],
-    calc:['資遣費試算','依勞基法自動計算'],
-    docs:['文件範本','常用 HR 文件快速複製'],
-  };
-  const t = titles[name] || ['HR系統',''];
-  document.getElementById('page-title').textContent = t[0];
-  document.getElementById('page-sub').textContent = t[1];
-}
-
-function calcSeverance() {
-  const start = document.getElementById('calc-start').value;
-  const end = document.getElementById('calc-end').value;
-  const salary = parseFloat(document.getElementById('calc-salary').value);
-  const type = document.getElementById('calc-type').value;
-
-  if(!start || !end || !salary) { alert('請填寫所有欄位'); return; }
-
-  const s = new Date(start), e = new Date(end);
-  if(e <= s) { alert('離職日必須晚於到職日'); return; }
-
-  const totalDays = (e - s) / (1000 * 60 * 60 * 24);
-  const years = totalDays / 365.25;
-  const wholeYears = Math.floor(years);
-  const fraction = years - wholeYears;
-
-  let months = 0;
-  if(type === 'new') {
-    months = wholeYears * 0.5 + fraction * 0.5;
-    months = Math.min(months, 6);
+function printDoc(html, filename=''){
+  const pa=document.getElementById('print-area');
+  pa.innerHTML=html;
+  pa.style.display='block';
+  if(filename){
+    // Set document title temporarily so browser uses it as PDF filename
+    const origTitle = document.title;
+    document.title = filename;
+    setTimeout(()=>{
+      window.print();
+      pa.style.display='none';
+      document.title = origTitle;
+    },300);
   } else {
-    months = wholeYears * 1 + fraction;
-    months = Math.min(months, 45);
-  }
-
-  months = Math.round(months * 100) / 100;
-  const total = Math.round(salary * months);
-
-  document.getElementById('cr-years').textContent =
-    wholeYears + ' 年 ' + Math.round(fraction * 12) + ' 個月';
-  document.getElementById('cr-salary').textContent =
-    'NT$ ' + salary.toLocaleString();
-  document.getElementById('cr-months').textContent = months.toFixed(2) + ' 個月';
-  document.getElementById('cr-total').textContent = 'NT$ ' + total.toLocaleString();
-
-  const note = type === 'new'
-    ? '新制上限 6 個月。如員工有 2012/2/3 前年資，需另計舊制部分，建議請專業人資或律師確認。'
-    : '舊制上限 45 個月。此為估算，實際金額請依勞資雙方確認之平均工資計算。';
-  document.getElementById('calc-note').textContent = note;
-  document.getElementById('calc-result').style.display = 'block';
-}
-
-const TEMPLATES = {
-  offer: `【錄取通知書】
-
-親愛的 ＿＿＿＿ 先生/女士，您好：
-
-感謝您參與本公司的徵才面試。經審慎評估後，我們很高興通知您錄取以下職位：
-
-■ 職　稱：＿＿＿＿
-■ 所屬部門：＿＿＿＿
-■ 試用期：自到職日起 ＿＿ 個月
-■ 試用期月薪：新台幣 ＿＿＿＿ 元整
-■ 正式月薪：新台幣 ＿＿＿＿ 元整
-■ 薪資結構：本薪 ＿＿＿ 元 / 伙食津貼 ＿＿＿ 元
-■ 預定到職日：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
-■ 工作地點：＿＿＿＿
-
-請於 ＿＿＿＿ 年 ＿＿ 月 ＿＿ 日前確認是否接受此職位，並回覆本通知。
-如有任何問題，歡迎聯繫 HR 部門：＿＿＿＿
-
-                                        ＿＿＿＿ 公司  HR 部門
-                                        日期：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日`,
-
-  checkin: `【新人入職準備清單（員工版）】
-
-親愛的新同仁，歡迎加入！請於到職日前備妥以下資料：
-
-□ 身分證正本（供驗證後歸還）
-□ 健保卡正本（供加保使用）
-□ 銀行存摺封面影本（薪資轉帳帳號）
-□ 學歷證書影本（最高學歷）
-□ 緊急聯絡人資料（姓名、關係、電話）
-□ 個人印章（若有）
-□ 2吋彩色照片 2 張
-
-到職當天請於 ＿＿:＿＿ 前至 ＿＿＿＿（地址）辦理報到手續。
-聯絡窗口：＿＿＿＿  電話：＿＿＿＿
-
-期待與您共事！`,
-
-  trial: `【試用期考核表】
-
-員工姓名：＿＿＿＿　部門：＿＿＿＿　職稱：＿＿＿＿
-到職日：＿＿＿＿　考核日期：＿＿＿＿　考核階段：□ 30天 □ 60天 □ 90天
-
-一、工作表現評估（請勾選）
-
-項目              優秀  良好  尚可  待改善
-工作品質          □     □     □     □
-工作效率          □     □     □     □
-學習能力          □     □     □     □
-團隊合作          □     □     □     □
-出勤狀況          □     □     □     □
-主動積極程度      □     □     □     □
-
-二、主管評語：
-____________________________________________________
-____________________________________________________
-
-三、建議改善事項：
-____________________________________________________
-
-四、考核結果：
-□ 通過試用期，轉為正式員工（生效日：＿＿＿＿）
-□ 延長試用期至 ＿＿＿＿
-□ 不通過，終止勞動契約
-
-主管簽名：＿＿＿＿　日期：＿＿＿＿
-HR確認：＿＿＿＿　　日期：＿＿＿＿
-員工簽名：＿＿＿＿　日期：＿＿＿＿`,
-
-  resign: `【離職申請書】
-
-茲申請離職，相關資料如下：
-
-姓　　名：＿＿＿＿
-員工編號：＿＿＿＿
-部　　門：＿＿＿＿
-職　　稱：＿＿＿＿
-到　職　日：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
-申請離職日：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
-最後上班日：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
-
-離職原因：
-□ 個人因素（家庭/健康/出國等）
-□ 生涯規劃（轉換跑道/進修）
-□ 工作內容/環境因素
-□ 薪資福利因素
-□ 其他：＿＿＿＿
-
-說明：____________________________________________________
-
-本人確認已瞭解離職相關規定，將依規定完成工作移交。
-
-申請人簽名：＿＿＿＿　日期：＿＿＿＿
-主管核准：＿＿＿＿　　日期：＿＿＿＿
-HR 確認：＿＿＿＿　　日期：＿＿＿＿`,
-
-  handover: `【工作移交清單】
-
-交接人：＿＿＿＿　部門：＿＿＿＿　最後上班日：＿＿＿＿
-承接人：＿＿＿＿　主管：＿＿＿＿
-
-一、工作項目移交
-項目名稱              說明               狀態      承接人確認
-＿＿＿＿＿＿＿＿    ＿＿＿＿＿＿    □完成     ＿＿＿＿
-＿＿＿＿＿＿＿＿    ＿＿＿＿＿＿    □完成     ＿＿＿＿
-＿＿＿＿＿＿＿＿    ＿＿＿＿＿＿    □完成     ＿＿＿＿
-
-二、文件/資料移交
-□ 客戶資料（清單附件）
-□ 操作手冊/SOP文件
-□ 專案進度報告
-□ 其他重要文件：＿＿＿＿
-
-三、系統帳號/密碼移交
-系統名稱    帳號    備注
-＿＿＿＿    ＿＿    ＿＿
-（注意：移交後 IT 需立即變更密碼）
-
-四、公司財物歸還
-□ 電腦/筆電  □ 手機  □ 門禁卡  □ 識別證  □ 制服  □ 其他：＿＿
-
-交接人確認：＿＿＿＿　日期：＿＿＿＿
-承接人確認：＿＿＿＿　日期：＿＿＿＿
-主管確認：＿＿＿＿　　日期：＿＿＿＿`,
-
-  cert: `【離職證明書】
-
-茲證明 ＿＿＿＿ 先生/女士（身分證字號：＿＿＿＿）
-自 ＿＿＿＿ 年 ＿＿ 月 ＿＿ 日起至 ＿＿＿＿ 年 ＿＿ 月 ＿＿ 日止
-任職於本公司，職稱為 ＿＿＿＿，服務年資共 ＿＿ 年 ＿＿ 月。
-
-離職原因：□ 自願離職　□ 非自願離職（資遣）　□ 合約到期
-
-特此證明。
-
-                                        ＿＿＿＿ 股份有限公司
-                                        代表人：＿＿＿＿
-                                        統一編號：＿＿＿＿
-                                        地　　址：＿＿＿＿
-                                        日　　期：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
-                                        （公司大小章）`,
-
-  layoff_letter: `【資遣通知書】
-
-受文者：＿＿＿＿ 先生/女士
-
-主旨：依勞動基準法第十一條規定，通知終止勞動契約事宜。
-
-說明：
-一、本公司因 □業務緊縮 □虧損 □業務性質變更 □技術更新，
-    有減少勞工之必要，依勞動基準法第十一條第＿款規定，
-    終止與貴方之勞動契約。
-
-二、貴方任職期間：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日 至 ＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
-    服務年資：＿＿ 年 ＿＿ 月
-
-三、預告期間：自本通知日起算 ＿＿ 日為預告期。
-    預定終止日（最後上班日）：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
-
-四、資遣費：新台幣 ＿＿＿＿ 元整
-    （計算基礎：平均工資 NT$＿＿＿＿ × ＿＿ 個月）
-    發放方式：於最後上班日或 ＿＿＿＿ 日前匯入薪資帳戶
-
-五、本公司將協助提供非自願離職證明，供申請失業給付使用。
-
-                                        ＿＿＿＿ 股份有限公司（公章）
-                                        代表人：＿＿＿＿（簽章）
-                                        日期：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日
-
-受通知人簽名：＿＿＿＿　日期：＿＿＿＿`,
-
-  layoff_calc: `【資遣費計算明細表】
-
-員工姓名：＿＿＿＿　到職日：＿＿＿＿　終止日：＿＿＿＿
-計算基準月薪（最近6個月平均工資）：NT$ ＿＿＿＿
-
-適用制度：□ 新制（勞退新制，2005/7/1 後）
-          □ 舊制（勞基法，2005/7/1 前）
-          □ 新舊制並計
-
-一、新制資遣費（每年 0.5 個月，上限 6 個月）
-年度         計算期間             月數
-＿＿         ＿＿＿＿~＿＿＿＿    ＿＿ 月
-＿＿         ＿＿＿＿~＿＿＿＿    ＿＿ 月
-小計：＿＿ 個月 × NT$ ＿＿＿＿ = NT$ ＿＿＿＿
-
-二、其他結算項目
-未休特休天數：＿＿ 天 × 日薪 NT$＿＿＿＿ = NT$ ＿＿＿＿
-代通知金（如適用）：NT$ ＿＿＿＿
-最後月份薪資（按比例）：NT$ ＿＿＿＿
-
-三、合計應給付金額：NT$ ＿＿＿＿
-
-計算人：＿＿＿＿　確認主管：＿＿＿＿　日期：＿＿＿＿
-員工確認：＿＿＿＿　日期：＿＿＿＿`
-};
-
-function copyTemplate(key) {
-  const text = TEMPLATES[key];
-  const out = document.getElementById('template-output');
-  const ta = document.getElementById('template-text');
-  ta.value = text;
-  out.style.display = 'block';
-  out.scrollIntoView({behavior:'smooth', block:'start'});
-}
-
-function copyToClipboard() {
-  const ta = document.getElementById('template-text');
-  ta.select();
-  try {
-    document.execCommand('copy');
-    alert('已複製到剪貼簿！可貼入 Word 或 Google 文件使用。');
-  } catch(e) {
-    alert('請手動全選（Ctrl+A）後複製（Ctrl+C）');
+    setTimeout(()=>{window.print();pa.style.display='none';},300);
   }
 }
 
-function printFlow(flow) {
-  window.print();
+function printResign(){
+  const today=new Date();
+  const html=`<div class="pdf-doc">
+    ${pdfLogoHeader('離　職　申　請　書')}
+    <div class="pdf-date-row">填表日期：${today.getFullYear()} 年　　${today.getMonth()+1} 月　　${today.getDate()} 日</div>
+    <table class="pdf-table">
+      <tr><td style="width:25%">員工編號</td><td>${emp.empId||''}</td><td style="width:25%">部門／職稱</td><td>${emp.title}</td></tr>
+      <tr><td>姓名</td><td>${emp.nameZh}</td><td>到職日期</td><td>${emp.startDate}</td></tr>
+      <tr><td></td><td></td><td>擬離職日期</td><td>${emp.endDate}</td></tr>
+    </table>
+    <table class="pdf-table">
+      <tr><td style="width:25%;vertical-align:top;padding-top:12px">離職原因</td><td>
+        <div class="pdf-check-row">□ 人際溝通問題</div>
+        <div class="pdf-check-row">□ 公司管理方式</div>
+        <div class="pdf-check-row">□ 就學或深造</div>
+        <div class="pdf-check-row">□ 職涯發展</div>
+        <div class="pdf-check-row">□ 個人及家庭因素</div>
+        <div class="pdf-check-row">□ 其它：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</div>
+      </td></tr>
+      <tr><td style="vertical-align:top;padding-top:12px">對公司的建議</td><td>
+        <div style="margin-bottom:8px">◎ 值得讚許的部分：</div>
+        <div style="height:50px"></div>
+        <div style="margin-bottom:8px">◎ 需改進的部分：</div>
+        <div style="height:50px"></div>
+      </td></tr>
+      <tr><td style="vertical-align:top;padding-top:12px">主管核定<br>離職日期<br>及備註</td><td>
+        <div>核定離職日期：＿＿＿年＿＿＿月＿＿＿日</div>
+        <div style="margin-top:10px">備註：</div>
+        <div style="height:40px"></div>
+      </td></tr>
+    </table>
+    <div class="pdf-sign-row" style="margin-top:30px">
+      <div class="pdf-sign-col"><div class="pdf-sign-line">營運總經理</div></div>
+      <div class="pdf-sign-col"><div class="pdf-sign-line">部門主管</div></div>
+      <div class="pdf-sign-col"><div class="pdf-sign-line">申請人</div></div>
+    </div>
+  </div>`;
+  printDoc(html);
 }
 
-function initAll() {
-  initFirebase();
-  const legalCount = FLOW_DATA.layoff.pre.filter(i=>i.tag==='legal').length +
-    FLOW_DATA.layoff.notice.filter(i=>i.tag==='legal').length +
-    FLOW_DATA.layoff.exit.filter(i=>i.tag==='legal').length;
-  const lel = document.getElementById('s-lay-legal');
-  if(lel) lel.textContent = legalCount;
+function printHandover(){
+  const today=new Date();
+  const html=`<div class="pdf-doc">
+    ${pdfLogoHeader('員工離職移交會辦單')}
+    <div class="pdf-date-row">填表日期：${today.getFullYear()} 年　　${today.getMonth()+1} 月　　${today.getDate()} 日</div>
+    <table class="pdf-table">
+      <tr><td style="width:25%">員工編號</td><td>${emp.empId||''}</td></tr>
+      <tr><td>姓名</td><td>${emp.nameZh}</td></tr>
+      <tr><td>部門／職稱</td><td>${emp.title}</td></tr>
+      <tr><td>最後上班日</td><td>${emp.endDate}</td></tr>
+    </table>
+    <div class="pdf-section">一、所屬單位確認事項</div>
+    <table class="pdf-table">
+      <tr><th style="width:45%">項目</th><th>批注意見／完成情況</th></tr>
+      <tr><td>1. 工作項目交接</td><td>□ 已移交　□ 未移交　□ 無<br>交接人員：＿＿＿＿＿<br>交接項目：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</td></tr>
+      <tr><td>2. 座位清潔與個人物品清空</td><td>□ 完成　□ 未完成</td></tr>
+    </table>
+    <div class="pdf-section">二、人資財會部確認事項</div>
+    <table class="pdf-table">
+      <tr><th style="width:45%">項目</th><th>批注意見／完成情況</th></tr>
+      <tr><td>1. 公司資產歸還（筆電、名片）</td><td>□ 已移交　□ 未移交　□ 無</td></tr>
+      <tr><td>2. 勞健保與團體保險退保辦理</td><td>□ 完成　□ 未完成</td></tr>
+      <tr><td>3. 特休與補休時數結算</td><td>□ 已結算　□ 未完成<br>剩餘特休：＿＿＿小時　剩餘補休：＿＿＿小時</td></tr>
+    </table>
+    <div class="pdf-sign-row" style="margin-top:30px">
+      <div class="pdf-sign-col"><div class="pdf-sign-line">主管簽名</div></div>
+      <div class="pdf-sign-col"><div class="pdf-sign-line">HR 確認</div></div>
+    </div>
+  </div>`;
+  printDoc(html);
 }
 
-initAll();
+function printOffCert(){
+  const s=new Date(emp.startDate),e=new Date(emp.endDate);
+  const years=Math.floor((e-s)/(1000*60*60*24*365.25));
+  const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-years)*12);
+  const tenure=years>0?`${years} 年 ${mos} 個月`:`${mos} 個月`;
+  const logoSrc=getLogo(emp.cid);
+  const html=`<div class="pdf-doc">
+    <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:30px">
+      <img src="${logoSrc}" style="height:52px;width:auto;flex-shrink:0">
+      <div style="flex:1;text-align:center">
+        <div style="font-size:15px;font-weight:700;letter-spacing:0.05em">${emp.companyName}</div>
+        <div style="font-size:22px;font-weight:700;letter-spacing:0.15em;margin-top:4px">離　職　證　明　書</div>
+      </div>
+      <div style="width:52px"></div>
+    </div>
+    <div style="height:20px"></div>
+    <div style="font-size:14px;line-height:3;margin-left:40px">
+      <div>茲　證　明：<strong style="font-size:15px">${emp.nameZh}</strong>　先生／女士</div>
+      <div>任 職 期 間：<strong>${emp.startDate}</strong>　至　<strong>${emp.endDate}</strong></div>
+      <div>擔　任　職：<strong>${emp.title}</strong></div>
+      <div>服 務 年 資：<strong>${tenure}</strong></div>
+      <div>離 職 原 因：個人因素自願離職</div>
+    </div>
+    <div style="height:20px"></div>
+    <div style="font-size:14px;margin-left:40px">特此證明。</div>
+    <div style="height:80px"></div>
+    <div style="display:flex;justify-content:flex-end">
+      <div style="font-size:13px;line-height:2.8;border:1px solid #ccc;padding:20px 30px;border-radius:8px;min-width:280px">
+        <div>${emp.companyName}</div>
+        <div>統一編號：${emp.companyTax}</div>
+        <div>負 責 人：<span style="border-bottom:1px solid #333;display:inline-block;min-width:100px;margin-left:4px"></span>（簽章）</div>
+        <div>日　　期：${fmtDateFormal(e)}</div>
+        <div style="margin-top:16px;text-align:center;color:#888;font-size:12px">（公司大小章）</div>
+      </div>
+    </div>
+  </div>`;
+  printDoc(html);
+}
+
+function printLayoffNotice(){
+  const s=new Date(emp.startDate),e=new Date(emp.endDate);
+  const years=(e-s)/(1000*60*60*24*365.25);
+  const wy=Math.floor(years),fm=Math.round((years-wy)*12);
+  let months=Math.min(wy*0.5+(years-wy)*0.5,6);months=Math.round(months*100)/100;
+  const total=Math.round(emp.salary*months);
+  let nd=0;if(years>=3)nd=30;else if(years>=1)nd=20;else if(years>=0.25)nd=10;
+  const noticeEnd=new Date(new Date().getTime()+nd*24*60*60*1000);
+  const today=new Date();
+  const logoSrc=getLogo(emp.cid);
+  const html=`<div class="pdf-doc">
+    <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:20px">
+      <img src="${logoSrc}" style="height:52px;width:auto;flex-shrink:0">
+      <div style="flex:1;text-align:center">
+        <div style="font-size:15px;font-weight:700">${emp.companyName}</div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:0.12em;margin-top:4px">資　遣　通　知　書</div>
+      </div>
+      <div style="width:52px"></div>
+    </div>
+    <div class="pdf-body">受文者：<strong>${emp.nameZh}</strong> 先生／女士</div>
+    <div class="pdf-body">主旨：依勞動基準法第十一條規定，通知終止勞動契約。</div>
+    <div class="pdf-section">說明：</div>
+    <div class="pdf-body">
+一、本公司因業務緊縮，依勞動基準法第十一條規定，終止與貴方之勞動契約。
+
+二、貴方任職期間：${emp.startDate} 至 ${emp.endDate}
+　　服務年資：${wy} 年 ${fm} 個月
+
+三、預告期間：${nd} 日
+　　預告期屆滿日（最後上班日）：${fmtDateFormal(noticeEnd)}
+
+四、資遣費：新台幣 <strong>${total.toLocaleString()}</strong> 元整
+　　（計算基礎：平均工資 NT$${emp.salary.toLocaleString()} × ${months} 個月）
+　　發放日：最後上班日當日或次月薪資發放日
+
+五、本公司將提供非自願離職證明，供申請失業給付使用。</div>
+    <div style="height:40px"></div>
+    <div style="text-align:right;font-size:13px;line-height:2.5">
+      <div>${emp.companyName}（公章）</div>
+      <div>負責人：＿＿＿＿＿＿＿＿（簽章）</div>
+      <div>日期：${fmtDateFormal(today)}</div>
+    </div>
+    <div style="margin-top:40px;padding-top:20px;border-top:1px solid #ccc;font-size:13px">
+      受通知人簽名：＿＿＿＿＿＿＿＿＿＿　日期：＿＿＿＿＿＿＿＿
+    </div>
+  </div>`;
+  printDoc(html);
+}
+
+function printLayoffCert(){
+  const s=new Date(emp.startDate),e=new Date(emp.endDate);
+  const yrs=Math.floor((e-s)/(1000*60*60*24*365.25));
+  const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-yrs)*12);
+  const tenure=yrs>0?`${yrs} 年 ${mos} 個月`:`${mos} 個月`;
+  const logoSrc=getLogo(emp.cid);
+  const html=`<div class="pdf-doc">
+    <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:30px">
+      <img src="${logoSrc}" style="height:52px;width:auto;flex-shrink:0">
+      <div style="flex:1;text-align:center">
+        <div style="font-size:15px;font-weight:700;letter-spacing:0.05em">${emp.companyName}</div>
+        <div style="font-size:22px;font-weight:700;letter-spacing:0.15em;margin-top:4px">非　自　願　離　職　證　明　書</div>
+      </div>
+      <div style="width:52px"></div>
+    </div>
+    <div style="height:20px"></div>
+    <div style="font-size:14px;line-height:3;margin-left:40px">
+      <div>茲　證　明：<strong style="font-size:15px">${emp.nameZh}</strong>　先生／女士</div>
+      <div>任 職 期 間：<strong>${emp.startDate}</strong>　至　<strong>${emp.endDate}</strong></div>
+      <div>擔　任　職：<strong>${emp.title}</strong></div>
+      <div>服 務 年 資：<strong>${tenure}</strong></div>
+    </div>
+    <div style="height:16px"></div>
+    <div style="font-size:14px;line-height:2;margin-left:40px;margin-right:40px;background:#f8f8f8;padding:16px;border-left:3px solid #1a1917;border-radius:4px">
+      上列員工因本公司業務緊縮，依勞動基準法第十一條第二款規定，屬<strong>非自願離職</strong>，<br>特此證明。本證明書供當事人申請失業給付使用。
+    </div>
+    <div style="height:80px"></div>
+    <div style="display:flex;justify-content:flex-end">
+      <div style="font-size:13px;line-height:2.8;border:1px solid #ccc;padding:20px 30px;border-radius:8px;min-width:280px">
+        <div>${emp.companyName}</div>
+        <div>統一編號：${emp.companyTax}</div>
+        <div>負 責 人：<span style="border-bottom:1px solid #333;display:inline-block;min-width:100px;margin-left:4px"></span>（簽章）</div>
+        <div>日　　期：${fmtDateFormal(e)}</div>
+        <div style="margin-top:16px;text-align:center;color:#888;font-size:12px">（公司大小章）</div>
+      </div>
+    </div>
+  </div>`;
+  printDoc(html);
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function needData(fn){
+  return `<div class="section-card"><div class="alert alert-warn">⚠️ 請先填寫員工資料（步驟 1）。</div><div class="btn-row"><button class="btn btn-primary" onclick="${fn}">← 回到填資料</button></div></div>`;
+}
+
+let ciCounter=0;
+function ci(id,label,note=''){
+  return `<div class="check-item" id="ci-${id}" onclick="toggleCI('${id}')">
+    <div class="checkbox" id="cb-${id}"></div>
+    <div style="flex:1"><div class="check-label">${label}</div>${note?`<div class="check-note">${note}</div>`:''}</div>
+  </div>`;
+}
+
+function toggleCI(id){
+  const el=document.getElementById('ci-'+id);
+  const cb=document.getElementById('cb-'+id);
+  if(!el)return;
+  el.classList.toggle('done');
+  const isDone=el.classList.contains('done');
+  cb.textContent=isDone?'✓':'';
+  // Save checkbox state to emp for Firebase sync
+  if(!emp._checks) emp._checks={};
+  emp._checks[id]=isDone;
+  saveFirebase();
+}
+
+function restoreChecks(){
+  if(!emp._checks) return;
+  Object.entries(emp._checks).forEach(([id,done])=>{
+    const el=document.getElementById('ci-'+id);
+    const cb=document.getElementById('cb-'+id);
+    if(!el) return;
+    if(done){el.classList.add('done');}
+    else{el.classList.remove('done');}
+    if(cb) cb.textContent=done?'✓':'';
+  });
+}
+
+function copyEl(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  navigator.clipboard.writeText(el.innerText||el.textContent).then(()=>alert('✅ 已複製！')).catch(()=>{
+    const t=document.createElement('textarea');t.value=el.innerText;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('✅ 已複製！');
+  });
+}
 </script>
 </body>
 </html>
