@@ -178,8 +178,8 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
     </div>
   </div>
   <div style="padding:24px 32px;max-width:900px">
-    <div class="alert alert-info" style="margin-bottom:20px">
-      此頁面顯示<strong>本裝置</strong>所有流程中尚未完成的大步驟和細項，已完成的不顯示。
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <button class="btn btn-primary" onclick="loadAllEmployees()">🔄 重新整理</button>
     </div>
     <div id="dash-content"></div>
   </div>
@@ -1037,174 +1037,272 @@ function downloadEstellePhoto(){
 // ============================================================
 let dashData = {};
 
-function openDashboard(){
-  currentFlow = 'dashboard';
-  document.getElementById('welcome').style.display = 'none';
-  document.getElementById('app-dashboard').classList.add('active');
-  loadDashboard();
-}
+// ============================================================
+// DASHBOARD - 未完成事項追蹤
+// ============================================================
+let allEmpRecords = {};  // All records from Firebase
+let selectedEmpKey = null;
+let selectedEmpType = null;
 
 function openDashboard(){
   currentFlow = 'dashboard';
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('app-dashboard').classList.add('active');
-  renderPendingDashboard();
+  loadAllEmployees();
 }
 
-// Step definitions for each flow
-const FLOW_DEFS = {
-  onboard: {
-    label: '🎉 入職流程',
-    color: '#0f6e56',
-    bg: '#e3f5ed',
-    steps: OB_STEPS,
-    done: ()=>obDone,
-    empName: ()=>emp.nameZh,
-    checks: ()=>({
-      'it_all_done': {step:'IT 設定（Stanley）', label:'Stanley 已設定完成（密碼已填入）'},
-      'c0':  {step:'僱用合約', label:'至僱用合約系統產生合約'},
-      'c1':  {step:'僱用合約', label:'列印兩份（公司及員工各一）'},
-      'n0':  {step:'NUEIP 帳號設定', label:'建立員工帳號'},
-      'n1':  {step:'NUEIP 帳號設定', label:'設定員工薪資管理'},
-      'n2':  {step:'NUEIP 帳號設定', label:'員工與眷屬健保作業'},
-      'n3':  {step:'NUEIP 帳號設定', label:'設定出勤班別與排班'},
-      'ins3':{step:'加保作業', label:'確認員工是否加保實支實付'},
-      'ins4':{step:'加保作業', label:'已填寫南山加退保異動單並寄出'},
-      'i0':  {step:'加保作業', label:'勞保加保'},
-      'i1':  {step:'加保作業', label:'健保加保'},
-      'i2':  {step:'加保作業', label:'設定勞退提撥'},
-      'estelle_done':{step:'Estelle 設定', label:'Estelle 已完成人臉辨識、指紋、EVOX 設定'},
-      'o0':  {step:'就職訓練', label:'雇傭合約說明，員工回簽，收齊應備文件'},
-      'o1':  {step:'就職訓練', label:'NUEIP 打卡系統教學'},
-      'o2':  {step:'就職訓練', label:'講解人資制度手冊、請假管理辦法'},
-      'o3':  {step:'就職訓練', label:'認識辦公室環境和員工'},
-      't0':  {step:'HR 更新項目', label:'更新艾爾斯/史丹利－薪資清冊'},
-      't1':  {step:'HR 更新項目', label:'更新公司員工姓名表 ＆ 台北座位圖'},
-      't2':  {step:'HR 更新項目', label:'更新南山團險表'},
-      'bday':{step:'試用期通過後', label:'NUEIP 匯入生日假'},
-      'it_all_done':{step:'IT 設定（Stanley）', label:'Stanley 已設定完成'},
-    }),
-  },
-  offboard: {
-    label: '👋 離職流程',
-    color: '#7a4f0a',
-    bg: '#fdf0d9',
-    steps: OFF_STEPS,
-    done: ()=>offDone,
-    empName: ()=>emp.nameZh,
-    checks: ()=>({
-      'r0': {step:'退保作業', label:'勞保退保'},
-      'r1': {step:'退保作業', label:'健保退保'},
-      'r2': {step:'退保作業', label:'已填寫南山加退保異動單（退保）並寄出'},
-      'd0': {step:'完成確認', label:'所有文件已簽署並歸檔'},
-      'd1': {step:'完成確認', label:'員工帳號已停用'},
-      'd2': {step:'完成確認', label:'公司資產已回收'},
-      'd3': {step:'完成確認', label:'勞健保退保已完成'},
-      'd4': {step:'完成確認', label:'離職證明書已發給員工'},
-      'd5': {step:'完成確認', label:'員工資料歸檔保存'},
-    }),
-  },
-  layoff: {
-    label: '⚖️ 資遣流程',
-    color: '#8a1a1a',
-    bg: '#fde8e8',
-    steps: LAY_STEPS,
-    done: ()=>layDone,
-    empName: ()=>emp.nameZh,
-    checks: ()=>({
-      'ly0': {step:'資遣通知書', label:'向勞動局申報資遣通報（10天內）'},
-      'ly1': {step:'資遣通知書', label:'確認是否涉及大量解僱'},
-      'lr0': {step:'退保作業', label:'勞保退保'},
-      'lr1': {step:'退保作業', label:'健保退保'},
-      'lr2': {step:'退保作業', label:'已填寫南山加退保異動單（退保）並寄出'},
-    }),
-  },
-};
-
-function renderPendingDashboard(){
+function loadAllEmployees(){
   const el = document.getElementById('dash-content');
-  const checks = emp._checks || {};
-  let hasAny = false;
-  let out = '';
+  el.innerHTML = '<div style="color:#6b6966;font-size:14px;padding:20px">從 Firebase 載入員工清單...</div>';
+  if(!fbReady) initFirebase();
+  function doLoad(){
+    db.ref('hr_ob').once('value', snap => {
+      allEmpRecords = snap.val() || {};
+      renderEmployeeList();
+    }).catch(e => {
+      el.innerHTML = '<div class="alert alert-danger">載入失敗：' + e.message + '</div>';
+    });
+  }
+  if(fbReady && db){ doLoad(); }
+  else {
+    let tries=0;
+    const wait=setInterval(()=>{
+      tries++;
+      if(db&&fbReady){clearInterval(wait);doLoad();}
+      if(tries>20){clearInterval(wait);
+        el.innerHTML='<div class="alert alert-danger">Firebase 連線逾時，請重新整理頁面。</div>';
+      }
+    },300);
+  }
+}
+
+function renderEmployeeList(){
+  const el = document.getElementById('dash-content');
+  const keys = Object.keys(allEmpRecords);
+
+  if(keys.length === 0){
+    el.innerHTML = '<div class="alert alert-info">Firebase 中尚無任何員工資料，請先進行入職/離職/資遣流程。</div>';
+    return;
+  }
+
+  // Group by flow type
+  const groups = {onboard:[], offboard:[], layoff:[]};
+  keys.forEach(key => {
+    const r = allEmpRecords[key];
+    const e = r.emp || {};
+    const type = r.flowType || (e.salary?'layoff':e.endDate&&!e.startDate?'offboard':'onboard');
+    groups[type].push({key, record:r, emp:e});
+  });
+
+  const typeInfo = {
+    onboard:{label:'🎉 入職', color:'#0f6e56', bg:'#e3f5ed'},
+    offboard:{label:'👋 離職', color:'#7a4f0a', bg:'#fdf0d9'},
+    layoff:{label:'⚖️ 資遣', color:'#8a1a1a', bg:'#fde8e8'},
+  };
+
+  let out = '<div style="margin-bottom:16px;font-size:13px;color:#6b6966">點選員工姓名查看未完成事項</div>';
 
   ['onboard','offboard','layoff'].forEach(type => {
-    const def = FLOW_DEFS[type];
-    const doneArr = def.done();
-    const empName = def.empName() || '（未開始）';
-
-    // Collect pending steps
-    const pendingSteps = def.steps
-      .map((s,i) => ({label:s, done:doneArr[i]||false}))
-      .filter(s => !s.done);
-
-    // Collect pending checks
-    const checkDefs = def.checks();
-    const pendingChecks = Object.entries(checkDefs)
-      .filter(([id]) => !checks[id])
-      .map(([id,c]) => c);
-
-    if(pendingSteps.length === 0 && pendingChecks.length === 0) {
-      // All done
-      out += '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:'+def.bg+';border-radius:10px;margin-bottom:12px">'
-        +'<span style="font-size:18px">✅</span>'
-        +'<div><div style="font-weight:700;color:'+def.color+'">'+def.label+'</div>'
-        +'<div style="font-size:13px;color:#6b6966">'+empName+' — 所有項目已完成</div></div>'
-        +'</div>';
-      return;
-    }
-
-    hasAny = true;
-    out += '<div style="margin-bottom:20px;border:0.5px solid rgba(0,0,0,0.1);border-radius:12px;overflow:hidden">';
-    out += '<div style="background:'+def.bg+';padding:12px 16px;display:flex;align-items:center;justify-content:space-between">'
-      +'<div style="font-weight:700;color:'+def.color+'">'+def.label+'</div>'
-      +'<div style="font-size:13px;color:'+def.color+'">'+empName+'　未完成 '+(pendingSteps.length+pendingChecks.length)+' 項</div>'
-      +'</div>';
-
-    out += '<div style="padding:14px 16px;background:#fff">';
-
-    // Pending steps
-    if(pendingSteps.length > 0){
-      out += '<div style="font-size:12px;font-weight:700;color:#6b6966;letter-spacing:0.06em;margin-bottom:8px">未完成步驟</div>';
-      pendingSteps.forEach(s => {
-        out += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff8f0;border-radius:8px;margin-bottom:6px;border-left:3px solid #c97a0a">'
-          +'<span style="font-size:14px">⬜</span>'
-          +'<span style="font-size:14px;font-weight:600">'+s.label+'</span>'
-          +'</div>';
-      });
-    }
-
-    // Pending checks grouped by step
-    if(pendingChecks.length > 0){
-      const byStep = {};
-      pendingChecks.forEach(c => {
-        if(!byStep[c.step]) byStep[c.step] = [];
-        byStep[c.step].push(c.label);
-      });
-      if(pendingSteps.length > 0) out += '<div style="height:8px"></div>';
-      out += '<div style="font-size:12px;font-weight:700;color:#6b6966;letter-spacing:0.06em;margin-bottom:8px">未完成細項</div>';
-      Object.entries(byStep).forEach(([step, items]) => {
-        out += '<div style="margin-bottom:8px">'
-          +'<div style="font-size:12px;color:#9a9894;margin-bottom:4px">↳ '+step+'</div>';
-        items.forEach(label => {
-          out += '<div style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 24px;background:#f8f7f3;border-radius:8px;margin-bottom:4px">'
-            +'<span style="font-size:13px;color:#ccc">○</span>'
-            +'<span style="font-size:13px">'+label+'</span>'
-            +'</div>';
-        });
-        out += '</div>';
-      });
-    }
-
+    const items = groups[type];
+    if(items.length === 0) return;
+    const info = typeInfo[type];
+    out += '<div style="margin-bottom:20px">';
+    out += '<div style="font-size:12px;font-weight:700;color:'+info.color+';background:'+info.bg+';padding:5px 12px;border-radius:6px;display:inline-block;margin-bottom:8px">'+info.label+'</div>';
+    out += '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+    items.forEach(({key, record, emp:e}) => {
+      const doneArr = type==='onboard'?(record.obDone||[]):type==='offboard'?(record.offDone||[]):(record.layDone||[]);
+      const total = type==='onboard'?11:type==='offboard'?6:5;
+      const done = doneArr.filter(Boolean).length;
+      const checks = record.emp&&record.emp._checks||{};
+      const allDone = done===total;
+      out += '<button data-key="'+key+'" data-type="'+type+'" onclick="selectEmployee(this.dataset.key,this.dataset.type)" style="'
+        +'padding:10px 16px;border-radius:10px;border:1.5px solid '+(selectedEmpKey===key?info.color:'rgba(0,0,0,0.12)')+';'
+        +'background:'+(selectedEmpKey===key?info.bg:'#fff')+';cursor:pointer;font-family:inherit;'
+        +'font-size:13px;font-weight:600;color:#1a1917;transition:all 0.1s;text-align:left">'
+        +'<div>'+((e.nameZh)||key)+'</div>'
+        +'<div style="font-size:11px;color:#6b6966;margin-top:3px;font-weight:400">'+(e.title||'—')+'　'+done+'/'+total+' 完成</div>'
+        +'</button>';
+    });
     out += '</div></div>';
   });
 
-  if(!hasAny){
-    out = '<div class="alert alert-success">🎉 所有流程的所有項目都已完成！</div>';
-  }
-
   el.innerHTML = out;
+  // If already selected, re-render pending
+  if(selectedEmpKey) renderPending();
 }
 
+function selectEmployee(key, type){
+  selectedEmpKey = key;
+  selectedEmpType = type;
+  renderEmployeeList();
+  renderPending();
+}
+
+// Check definitions per flow type
+const PENDING_CHECKS = {
+  onboard: {
+    'it_all_done':{step:'IT 設定（Stanley）', label:'Stanley 已設定完成（密碼已填入）'},
+    'c0':{step:'僱用合約', label:'至僱用合約系統產生合約'},
+    'c1':{step:'僱用合約', label:'列印兩份（公司及員工各一）'},
+    'n0':{step:'NUEIP 帳號設定', label:'建立員工帳號'},
+    'n1':{step:'NUEIP 帳號設定', label:'設定員工薪資管理'},
+    'n2':{step:'NUEIP 帳號設定', label:'員工與眷屬健保作業'},
+    'n3':{step:'NUEIP 帳號設定', label:'設定出勤班別與排班'},
+    'ins3':{step:'加保作業', label:'確認員工是否加保實支實付'},
+    'ins4':{step:'加保作業', label:'已填寫南山加退保異動單並寄出'},
+    'i0':{step:'加保作業', label:'勞保加保'},
+    'i1':{step:'加保作業', label:'健保加保'},
+    'i2':{step:'加保作業', label:'設定勞退提撥'},
+    'estelle_done':{step:'Estelle 設定', label:'Estelle 已完成人臉辨識、指紋、EVOX 設定'},
+    'o0':{step:'就職訓練', label:'雇傭合約說明，員工回簽，收齊應備文件'},
+    'o1':{step:'就職訓練', label:'NUEIP 打卡系統教學'},
+    'o2':{step:'就職訓練', label:'講解人資制度手冊、請假管理辦法'},
+    'o3':{step:'就職訓練', label:'認識辦公室環境和員工'},
+    't0':{step:'HR 更新項目', label:'更新艾爾斯/史丹利－薪資清冊'},
+    't1':{step:'HR 更新項目', label:'更新公司員工姓名表 ＆ 台北座位圖'},
+    't2':{step:'HR 更新項目', label:'更新南山團險表'},
+    'bday':{step:'試用期通過後', label:'NUEIP 匯入生日假'},
+  },
+  offboard: {
+    'r0':{step:'退保作業', label:'勞保退保'},
+    'r1':{step:'退保作業', label:'健保退保'},
+    'r2':{step:'退保作業', label:'已填寫南山加退保異動單（退保）並寄出'},
+    'd0':{step:'完成確認', label:'所有文件已簽署並歸檔'},
+    'd1':{step:'完成確認', label:'員工帳號已停用'},
+    'd2':{step:'完成確認', label:'公司資產已回收'},
+    'd3':{step:'完成確認', label:'勞健保退保已完成'},
+    'd4':{step:'完成確認', label:'離職證明書已發給員工'},
+    'd5':{step:'完成確認', label:'員工資料歸檔保存'},
+  },
+  layoff: {
+    'ly0':{step:'資遣通知書', label:'向勞動局申報資遣通報（10天內）'},
+    'ly1':{step:'資遣通知書', label:'確認是否涉及大量解僱'},
+    'lr0':{step:'退保作業', label:'勞保退保'},
+    'lr1':{step:'退保作業', label:'健保退保'},
+    'lr2':{step:'退保作業', label:'已填寫南山加退保異動單（退保）並寄出'},
+  },
+};
+
+const STEP_LISTS = {
+  onboard: OB_STEPS,
+  offboard: OFF_STEPS,
+  layoff: LAY_STEPS,
+};
+const DONE_KEYS = {onboard:'obDone', offboard:'offDone', layoff:'layDone'};
+const TOTALS = {onboard:11, offboard:6, layoff:5};
+const TYPE_COLORS = {onboard:'#0f6e56', offboard:'#7a4f0a', layoff:'#8a1a1a'};
+const TYPE_BG = {onboard:'#e3f5ed', offboard:'#fdf0d9', layoff:'#fde8e8'};
+
+function renderPending(){
+  // Find or create pending area
+  let pendingEl = document.getElementById('pending-area');
+  if(!pendingEl){
+    const dashEl = document.getElementById('dash-content');
+    pendingEl = document.createElement('div');
+    pendingEl.id = 'pending-area';
+    pendingEl.style.marginTop = '24px';
+    dashEl.parentNode.appendChild(pendingEl);
+  }
+
+  if(!selectedEmpKey){
+    pendingEl.innerHTML = '';
+    return;
+  }
+
+  const record = allEmpRecords[selectedEmpKey];
+  if(!record){ pendingEl.innerHTML = ''; return; }
+
+  const type = selectedEmpType;
+  const e = record.emp || {};
+  const doneArr = record[DONE_KEYS[type]] || [];
+  const checks = (e._checks) || {};
+  const steps = STEP_LISTS[type];
+  const color = TYPE_COLORS[type];
+  const bg = TYPE_BG[type];
+  const checkDefs = PENDING_CHECKS[type] || {};
+
+  // Pending steps
+  const pendingSteps = steps.map((s,i)=>({label:s,i,done:doneArr[i]||false})).filter(s=>!s.done);
+  // Pending checks grouped by step
+  const pendingCheckList = Object.entries(checkDefs).filter(([id])=>!checks[id]);
+  const byStep = {};
+  pendingCheckList.forEach(([id,c])=>{
+    if(!byStep[c.step]) byStep[c.step]=[];
+    byStep[c.step].push({id,label:c.label});
+  });
+
+  let out = '<div style="background:'+bg+';border-radius:12px;padding:16px;border:0.5px solid rgba(0,0,0,0.1)">';
+  out += '<div style="font-size:16px;font-weight:700;color:'+color+';margin-bottom:4px">'+(e.nameZh||selectedEmpKey)+'　未完成事項</div>';
+  out += '<div style="font-size:13px;color:#6b6966;margin-bottom:16px">'+(e.title||'')+'　'+(e.companyName||'')+'</div>';
+
+  if(pendingSteps.length === 0 && pendingCheckList.length === 0){
+    out += '<div style="color:#1a7a55;font-weight:600">✅ 所有項目都已完成！</div>';
+    out += '</div>';
+    pendingEl.innerHTML = out;
+    return;
+  }
+
+  // Pending steps
+  if(pendingSteps.length > 0){
+    out += '<div style="font-size:12px;font-weight:700;color:#6b6966;letter-spacing:0.06em;margin-bottom:8px">未完成步驟（點擊勾選）</div>';
+    pendingSteps.forEach(s => {
+      out += '<div data-key="'+selectedEmpKey+'" data-type="'+type+'" data-idx="'+s.i+'" onclick="toggleDashStep(this.dataset.key,this.dataset.type,parseInt(this.dataset.idx))" '
+        +'style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-radius:8px;margin-bottom:6px;cursor:pointer;border:0.5px solid rgba(0,0,0,0.1)">'
+
+        +'<div style="width:20px;height:20px;border:1.5px solid #ccc;border-radius:5px;flex-shrink:0"></div>'
+        +'<span style="font-size:14px;font-weight:600">'+s.label+'</span>'
+        +'</div>';
+    });
+  }
+
+  // Pending checks
+  if(pendingCheckList.length > 0){
+    if(pendingSteps.length > 0) out += '<div style="height:12px"></div>';
+    out += '<div style="font-size:12px;font-weight:700;color:#6b6966;letter-spacing:0.06em;margin-bottom:8px">未完成細項（點擊勾選）</div>';
+    Object.entries(byStep).forEach(([step, items]) => {
+      out += '<div style="margin-bottom:10px">';
+      out += '<div style="font-size:12px;color:#9a9894;margin-bottom:5px">↳ '+step+'</div>';
+      items.forEach(({id,label}) => {
+        out += '<div data-key="'+selectedEmpKey+'" data-type="'+type+'" data-id="'+id+'" onclick="toggleDashCheck(this.dataset.key,this.dataset.type,this.dataset.id)" '
+          +'style="display:flex;align-items:center;gap:10px;padding:8px 14px 8px 26px;background:#fff;border-radius:8px;margin-bottom:5px;cursor:pointer;border:0.5px solid rgba(0,0,0,0.08)">'
+
+          +'<div style="width:18px;height:18px;border:1.5px solid #ccc;border-radius:4px;flex-shrink:0"></div>'
+          +'<span style="font-size:13px">'+label+'</span>'
+          +'</div>';
+      });
+      out += '</div>';
+    });
+  }
+
+  out += '</div>';
+  pendingEl.innerHTML = out;
+}
+
+function toggleDashStep(key, type, stepIdx){
+  if(!allEmpRecords[key]) return;
+  const doneKey = DONE_KEYS[type];
+  const total = TOTALS[type];
+  let doneArr = allEmpRecords[key][doneKey] || new Array(total).fill(false);
+  doneArr[stepIdx] = true;
+  allEmpRecords[key][doneKey] = doneArr;
+  // Save to Firebase
+  db.ref('hr_ob/'+key+'/'+doneKey).set(doneArr).then(()=>{
+    renderEmployeeList();
+    renderPending();
+  });
+}
+
+function toggleDashCheck(key, type, checkId){
+  if(!allEmpRecords[key]) return;
+  if(!allEmpRecords[key].emp) allEmpRecords[key].emp = {};
+  if(!allEmpRecords[key].emp._checks) allEmpRecords[key].emp._checks = {};
+  allEmpRecords[key].emp._checks[checkId] = true;
+  // Save to Firebase
+  db.ref('hr_ob/'+key+'/emp/_checks/'+checkId).set(true).then(()=>{
+    renderEmployeeList();
+    renderPending();
+  });
+}
 // ============================================================
 
 
