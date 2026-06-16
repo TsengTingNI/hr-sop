@@ -296,12 +296,12 @@ function loadFirebase(key) {
       if(val.obDone) obDone = val.obDone;
       if(val.offDone) offDone = val.offDone;
       if(val.layDone) layDone = val.layDone;
-      // Render the current active flow
-      if(currentFlow==='onboard') renderOb();
-      else if(currentFlow==='offboard') renderOff();
-      else if(currentFlow==='layoff') renderLay();
     }
-    setSyncDot(true, '已同步');
+    // Always render regardless of whether data exists
+    if(currentFlow==='onboard') renderOb();
+    else if(currentFlow==='offboard') renderOff();
+    else if(currentFlow==='layoff') renderLay();
+    setSyncDot(true, val ? '已同步' : '新案件');
   });
 }
 // ─────────────────────────────────────────────────────────────
@@ -399,6 +399,8 @@ let obStep=0, offStep=0, layStep=0;
 let obDone=[], offDone=[], layDone=[];
 
 const OB_STEPS = ['填寫員工基本資料','發出錄取通知 Email','IT 設定（Stanley）','僱用合約','NUEIP 帳號設定','發報到須知 + 詢問團險','加保（勞健退）','人臉辨識、指紋、EVOX 分機（Estelle 設定）','到職當天：就職訓練','HR 更新項目','試用期三次面談'];
+const OFF_STEPS = ['填寫員工資料','離職申請書','移交會辦單','退保作業（勞健退＋團險）','離職證明書','完成離職'];
+const LAY_STEPS = ['填寫員工資料','資遣費試算','資遣通知書','退保作業（勞健退＋團險）','非自願離職證明書'];
 
 // ============================================================
 // NAVIGATION
@@ -431,23 +433,32 @@ function startFlow(flow) {
     }
   }
   if(flow==='offboard'){
-    offStep=0;offDone=new Array(6).fill(false);
-    if(!fbReady) initFirebase();
-    const offKey=prompt('請輸入員工姓名作為同步識別碼：');
+    offStep=0; offDone=new Array(6).fill(false); emp={};
+    const offKey=prompt('請輸入員工姓名作為同步識別碼（新案件請填員工姓名）：');
     if(offKey&&offKey.trim()){
-      const safeKey=offKey.trim().replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
-      currentKey=safeKey;
-      loadFirebase(safeKey);
+      currentKey=offKey.trim().replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
+      // Try to load from Firebase, but render regardless
+      if(fbReady&&db){
+        db.ref('hr_ob/'+currentKey).once('value',snap=>{
+          const val=snap.val();
+          if(val){if(val.emp)emp=val.emp;if(val.offDone)offDone=val.offDone;}
+          renderOff();
+        }).catch(()=>renderOff());
+      } else { renderOff(); }
     } else { currentKey=null; renderOff(); }
   }
   if(flow==='layoff'){
-    layStep=0;layDone=new Array(5).fill(false);
-    if(!fbReady) initFirebase();
-    const layKey=prompt('請輸入員工姓名作為同步識別碼：');
+    layStep=0; layDone=new Array(5).fill(false); emp={};
+    const layKey=prompt('請輸入員工姓名作為同步識別碼（新案件請填員工姓名）：');
     if(layKey&&layKey.trim()){
-      const safeKey=layKey.trim().replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
-      currentKey=safeKey;
-      loadFirebase(safeKey);
+      currentKey=layKey.trim().replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
+      if(fbReady&&db){
+        db.ref('hr_ob/'+currentKey).once('value',snap=>{
+          const val=snap.val();
+          if(val){if(val.emp)emp=val.emp;if(val.layDone)layDone=val.layDone;}
+          renderLay();
+        }).catch(()=>renderLay());
+      } else { renderLay(); }
     } else { currentKey=null; renderLay(); }
   }
 }
@@ -1376,14 +1387,20 @@ function toggleDashCheck(key, type, checkId){
 // ============================================================
 // OFFBOARD
 // ============================================================
-const OFF_STEPS = ['填寫員工資料','離職申請書','移交會辦單','退保作業（勞健退＋團險）','離職證明書','完成離職'];
+
 
 function renderOff(){
-  renderSidebar('off',OFF_STEPS,offStep,offDone);
-  document.getElementById('off-content').innerHTML = OFF_RENDER[offStep]();
-  updateProgress('off',offDone,6);
-  window.scrollTo(0,0);
-  setTimeout(restoreChecks,0);
+  try {
+    renderSidebar('off',OFF_STEPS,offStep,offDone);
+    const content = OFF_RENDER[offStep]();
+    document.getElementById('off-content').innerHTML = content;
+    updateProgress('off',offDone,6);
+    window.scrollTo(0,0);
+    setTimeout(restoreChecks,0);
+  } catch(e) {
+    document.getElementById('off-content').innerHTML = '<div class="section-card"><div class="alert alert-danger">錯誤：'+e.message+'</div></div>';
+    console.error('renderOff error:', e);
+  }
 }
 function goOff(s){offStep=s;renderOff();}
 function offNext(){offDone[offStep]=true;if(offStep<5)offStep++;saveFirebase();renderOff();}
@@ -1507,14 +1524,20 @@ const OFF_RENDER = [
 // ============================================================
 // LAYOFF
 // ============================================================
-const LAY_STEPS = ['填寫員工資料','資遣費試算','資遣通知書','退保作業（勞健退＋團險）','非自願離職證明書'];
+
 
 function renderLay(){
-  renderSidebar('lay',LAY_STEPS,layStep,layDone);
-  document.getElementById('lay-content').innerHTML = LAY_RENDER[layStep]();
-  updateProgress('lay',layDone,5);
-  window.scrollTo(0,0);
-  setTimeout(restoreChecks,0);
+  try {
+    renderSidebar('lay',LAY_STEPS,layStep,layDone);
+    const content = LAY_RENDER[layStep]();
+    document.getElementById('lay-content').innerHTML = content;
+    updateProgress('lay',layDone,5);
+    window.scrollTo(0,0);
+    setTimeout(restoreChecks,0);
+  } catch(e) {
+    document.getElementById('lay-content').innerHTML = '<div class="section-card"><div class="alert alert-danger">錯誤：'+e.message+'</div></div>';
+    console.error('renderLay error:', e);
+  }
 }
 function goLay(s){layStep=s;renderLay();}
 function layNext(){layDone[layStep]=true;if(layStep<4)layStep++;saveFirebase();renderLay();}
@@ -1919,6 +1942,7 @@ function copyEl(id){
     const t=document.createElement('textarea');t.value=el.innerText;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('✅ 已複製！');
   });
 }
+initFirebase();
 </script>
 </body>
 </html>
