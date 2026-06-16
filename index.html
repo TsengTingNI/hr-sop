@@ -962,8 +962,9 @@ function printObSummary(){
   let doneCnt = 0;
   let totalCnt = 0;
 
+  const pdfRecord={emp:{_checks:emp._checks||{}},obDone:obDone,offDone:offDone,layDone:layDone};
   OB_STEPS.forEach((s,i)=>{
-    const stepDone = obDone[i]||false;
+    const stepDone = isStepTrulyDone(pdfRecord,'onboard',i);
     if(stepDone) doneCnt++;
     totalCnt++;
     rows += '<tr style="background:'+(stepDone?'#e8f8f0':'#fff')+';border-top:1.5px solid #ccc">'
@@ -1054,7 +1055,6 @@ function openDashboard(){
 function loadAllEmployees(){
   const el = document.getElementById('dash-content');
   el.innerHTML = '<div style="color:#6b6966;font-size:14px;padding:20px">從 Firebase 載入員工清單...</div>';
-  if(!fbReady) initFirebase();
   function doLoad(){
     db.ref('hr_ob').once('value', snap => {
       allEmpRecords = snap.val() || {};
@@ -1063,56 +1063,17 @@ function loadAllEmployees(){
       el.innerHTML = '<div class="alert alert-danger">載入失敗：' + e.message + '</div>';
     });
   }
-  if(fbReady && db){ doLoad(); }
-  else {
-    let tries=0;
-    const wait=setInterval(()=>{
-      tries++;
-      if(db&&fbReady){clearInterval(wait);doLoad();}
-      if(tries>20){clearInterval(wait);
-        el.innerHTML='<div class="alert alert-danger">Firebase 連線逾時，請重新整理頁面。</div>';
-      }
-    },300);
-  }
-}
-
-
-const STEP_CHECK_MAP = {
-  onboard: {
-    2:  ['it_all_done'],
-    3:  ['c0','c1'],
-    4:  ['n0','n1','n2','n3'],
-    5:  ['ins3','ins4'],
-    6:  ['i0','i1','i2'],
-    7:  ['estelle_done'],
-    8:  ['o0','o1','o2','o3'],
-    9:  ['t0','t1','t2'],
-    10: ['bday'],
-  },
-  offboard: {
-    3: ['r0','r1','r2'],
-    5: ['d0','d1','d2','d3','d4','d5'],
-  },
-  layoff: {
-    2: ['ly0','ly1'],
-    3: ['lr0','lr1','lr2'],
-  },
-};
-
-// Count pending checks for an employee record
-function countPendingChecks(record, type){
-  const checks = (record.emp && record.emp._checks) || {};
-  const defs = PENDING_CHECKS[type] || {};
-  return Object.keys(defs).filter(id => !checks[id]).length;
-}
-
-// Check if a step is truly done (step done AND all its child checks done)
-function isStepTrulyDone(record, type, stepIdx){
-  const doneArr = record[DONE_KEYS[type]] || [];
-  if(!doneArr[stepIdx]) return false; // step itself not done
-  const checks = (record.emp && record.emp._checks) || {};
-  const childIds = (STEP_CHECK_MAP[type] && STEP_CHECK_MAP[type][stepIdx]) || [];
-  return childIds.every(id => checks[id]);
+  // Wait for Firebase to be ready
+  if(fbReady && db){ doLoad(); return; }
+  initFirebase();
+  let tries=0;
+  const wait=setInterval(()=>{
+    tries++;
+    if(fbReady && db){ clearInterval(wait); doLoad(); return; }
+    if(tries>30){ clearInterval(wait);
+      el.innerHTML='<div class="alert alert-danger">Firebase 連線失敗，請重新整理頁面再試。</div>';
+    }
+  },200);
 }
 
 function renderEmployeeList(){
