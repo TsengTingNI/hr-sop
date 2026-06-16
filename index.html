@@ -1129,25 +1129,33 @@ function openDashboard(){
 function loadAllEmployees(){
   const el = document.getElementById('dash-content');
   el.innerHTML = '<div style="color:#6b6966;font-size:14px;padding:20px">從 Firebase 載入員工清單...</div>';
+  
   function doLoad(){
     db.ref('hr_ob').once('value', snap => {
       allEmpRecords = snap.val() || {};
+      const count = Object.keys(allEmpRecords).length;
+      document.getElementById('dash-sync-dot').style.background = '#1a7a55';
+      document.getElementById('dash-sync-label').textContent = '已載入 ' + count + ' 筆';
       renderEmployeeList();
     }).catch(e => {
-      el.innerHTML = '<div class="alert alert-danger">載入失敗：' + e.message + '</div>';
+      el.innerHTML = '<div class="alert alert-danger">載入失敗：' + e.message + '<br><small>請確認 Firebase 規則已設定為允許讀取。</small></div>';
     });
   }
-  // Wait for Firebase to be ready
+
+  // If Firebase already ready, load directly
   if(fbReady && db){ doLoad(); return; }
-  initFirebase();
-  let tries=0;
-  const wait=setInterval(()=>{
-    tries++;
-    if(fbReady && db){ clearInterval(wait); doLoad(); return; }
-    if(tries>30){ clearInterval(wait);
-      el.innerHTML='<div class="alert alert-danger">Firebase 連線失敗，請重新整理頁面再試。</div>';
+  
+  // Otherwise init and wait
+  try {
+    if(!firebase.apps || firebase.apps.length === 0){
+      firebase.initializeApp(FIREBASE_CONFIG);
     }
-  },200);
+    db = firebase.database();
+    fbReady = true;
+    doLoad();
+  } catch(e) {
+    el.innerHTML = '<div class="alert alert-danger">Firebase 初始化失敗：' + e.message + '</div>';
+  }
 }
 
 function renderEmployeeList(){
@@ -1773,7 +1781,7 @@ function printOffCert(){
   const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-years)*12);
   const tenure=years>0?`${years} 年 ${mos} 個月`:`${mos} 個月`;
   const logoSrc=getLogo(emp.cid);
-  const html=`<div class="pdf-doc">
+  const pdfHtml=`<div class="pdf-doc">
     <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:30px">
       <img src="${logoSrc}" style="height:52px;width:auto;flex-shrink:0">
       <div style="flex:1;text-align:center">
@@ -1803,7 +1811,7 @@ function printOffCert(){
       </div>
     </div>
   </div>`;
-  printDoc(html);
+  printDoc(pdfHtml);
 }
 
 function printLayoffNotice(){
