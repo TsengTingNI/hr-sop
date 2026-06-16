@@ -1076,6 +1076,45 @@ function loadAllEmployees(){
   }
 }
 
+
+const STEP_CHECK_MAP = {
+  onboard: {
+    2:  ['it_all_done'],
+    3:  ['c0','c1'],
+    4:  ['n0','n1','n2','n3'],
+    5:  ['ins3','ins4'],
+    6:  ['i0','i1','i2'],
+    7:  ['estelle_done'],
+    8:  ['o0','o1','o2','o3'],
+    9:  ['t0','t1','t2'],
+    10: ['bday'],
+  },
+  offboard: {
+    3: ['r0','r1','r2'],
+    5: ['d0','d1','d2','d3','d4','d5'],
+  },
+  layoff: {
+    2: ['ly0','ly1'],
+    3: ['lr0','lr1','lr2'],
+  },
+};
+
+// Count pending checks for an employee record
+function countPendingChecks(record, type){
+  const checks = (record.emp && record.emp._checks) || {};
+  const defs = PENDING_CHECKS[type] || {};
+  return Object.keys(defs).filter(id => !checks[id]).length;
+}
+
+// Check if a step is truly done (step done AND all its child checks done)
+function isStepTrulyDone(record, type, stepIdx){
+  const doneArr = record[DONE_KEYS[type]] || [];
+  if(!doneArr[stepIdx]) return false; // step itself not done
+  const checks = (record.emp && record.emp._checks) || {};
+  const childIds = (STEP_CHECK_MAP[type] && STEP_CHECK_MAP[type][stepIdx]) || [];
+  return childIds.every(id => checks[id]);
+}
+
 function renderEmployeeList(){
   const el = document.getElementById('dash-content');
   const keys = Object.keys(allEmpRecords);
@@ -1112,15 +1151,17 @@ function renderEmployeeList(){
     items.forEach(({key, record, emp:e}) => {
       const doneArr = type==='onboard'?(record.obDone||[]):type==='offboard'?(record.offDone||[]):(record.layDone||[]);
       const total = type==='onboard'?11:type==='offboard'?6:5;
-      const done = doneArr.filter(Boolean).length;
-      const checks = record.emp&&record.emp._checks||{};
-      const allDone = done===total;
+      const pendingCnt = countPendingChecks(r, type);
+      const totalChecks = Object.keys(PENDING_CHECKS[type]||{}).length;
+      const doneCnt = totalChecks - pendingCnt;
       out += '<button data-key="'+key+'" data-type="'+type+'" onclick="selectEmployee(this.dataset.key,this.dataset.type)" style="'
         +'padding:10px 16px;border-radius:10px;border:1.5px solid '+(selectedEmpKey===key?info.color:'rgba(0,0,0,0.12)')+';'
         +'background:'+(selectedEmpKey===key?info.bg:'#fff')+';cursor:pointer;font-family:inherit;'
         +'font-size:13px;font-weight:600;color:#1a1917;transition:all 0.1s;text-align:left">'
         +'<div>'+((e.nameZh)||key)+'</div>'
-        +'<div style="font-size:11px;color:#6b6966;margin-top:3px;font-weight:400">'+(e.title||'—')+'　'+done+'/'+total+' 完成</div>'
+        +'<div style="font-size:11px;margin-top:3px;font-weight:400;color:'+(pendingCnt===0?'#1a7a55':'#c97a0a')+'">'
+          +(e.title||'—')+'　細項未完成 '+pendingCnt+' 項'
+        +'</div>'
         +'</button>';
     });
     out += '</div></div>';
@@ -1221,8 +1262,8 @@ function renderPending(){
   const bg = TYPE_BG[type];
   const checkDefs = PENDING_CHECKS[type] || {};
 
-  // Pending steps
-  const pendingSteps = steps.map((s,i)=>({label:s,i,done:doneArr[i]||false})).filter(s=>!s.done);
+  // Pending steps: only show if step not done OR has undone child checks
+  const pendingSteps = steps.map((s,i)=>({label:s,i,done:isStepTrulyDone(record,type,i)})).filter(s=>!s.done);
   // Pending checks grouped by step
   const pendingCheckList = Object.entries(checkDefs).filter(([id])=>!checks[id]);
   const byStep = {};
@@ -1233,7 +1274,9 @@ function renderPending(){
 
   let out = '<div style="background:'+bg+';border-radius:12px;padding:16px;border:0.5px solid rgba(0,0,0,0.1)">';
   out += '<div style="font-size:16px;font-weight:700;color:'+color+';margin-bottom:4px">'+(e.nameZh||selectedEmpKey)+'　未完成事項</div>';
-  out += '<div style="font-size:13px;color:#6b6966;margin-bottom:16px">'+(e.title||'')+'　'+(e.companyName||'')+'</div>';
+  const totalPendingChecks = Object.keys(checkDefs).filter(id=>!checks[id]).length;
+  out += '<div style="font-size:13px;color:#6b6966;margin-bottom:16px">'+(e.title||'')+'　'+(e.companyName||'')
+    +'<span style="margin-left:12px;color:#c97a0a;font-weight:600">細項未完成 '+totalPendingChecks+' 項</span></div>';
 
   if(pendingSteps.length === 0 && pendingCheckList.length === 0){
     out += '<div style="color:#1a7a55;font-weight:600">✅ 所有項目都已完成！</div>';
