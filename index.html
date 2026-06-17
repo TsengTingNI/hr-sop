@@ -223,7 +223,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
   <div class="header">
     <button class="header-back" onclick="goHome()">← 返回</button>
     <div class="header-title">員工離職流程</div>
-    <span class="header-badge badge-amber" id="off-badge">0 / 6</span>
+    <span class="header-badge badge-amber" id="off-badge">0 / 5</span>
   </div>
   <div class="progress-wrap">
     <div class="progress-bar"><div class="progress-fill fill-amber" id="off-fill" style="width:0%"></div></div>
@@ -418,7 +418,7 @@ let obStep=0, offStep=0, layStep=0;
 let obDone=[], offDone=[], layDone=[];
 
 const OB_STEPS = ['填寫員工基本資料','發出錄取通知 Email','IT 設定（Stanley）','僱用合約','NUEIP 帳號設定','發報到須知 + 詢問團險','加保（勞健退）','人臉辨識、指紋、EVOX 分機（Estelle 設定）','到職當天：就職訓練','HR 更新項目','試用期三次面談'];
-const OFF_STEPS = ['填寫員工資料','離職申請書','移交會辦單','退保作業（勞健退＋團險）','離職證明書','完成離職'];
+const OFF_STEPS = ['填寫員工資料','離職申請書 ＆ 移交會辦單','退保作業（勞健退＋團險）','離職證明書','完成離職'];
 const LAY_STEPS = ['填寫員工資料','資遣費試算','資遣通知書','退保作業（勞健退＋團險）','非自願離職證明書'];
 
 // ============================================================
@@ -452,7 +452,7 @@ function startFlow(flow) {
     }
   }
   if(flow==='offboard'){
-    offStep=0; offDone=new Array(6).fill(false); emp={};
+    offStep=0; offDone=new Array(5).fill(false); emp={};
     const offKey=prompt('請輸入員工姓名作為同步識別碼（新案件請填員工姓名）：');
     if(offKey&&offKey.trim()){
       currentKey=offKey.trim().replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
@@ -1239,7 +1239,7 @@ function renderEmployeeList(){
     const rec = allEmpRecords[key];
     const e = rec.emp || {};
     const type = rec.flowType || (e.salary?'layoff':e.endDate&&!e.startDate?'offboard':'onboard');
-    groups[type].push({key, record:rec, emp:e});
+    groups[type].push({key, record:rec, emp:e, sortDate: type==='onboard'?(e.startDate||''):(e.endDate||'')});
   });
 
   const typeInfo = {
@@ -1468,7 +1468,7 @@ function renderOff(){
     renderSidebar('off',OFF_STEPS,offStep,offDone);
     const content = OFF_RENDER[offStep]();
     document.getElementById('off-content').innerHTML = content;
-    updateProgress('off',offDone,6);
+    updateProgress('off',offDone,5);
     window.scrollTo(0,0);
     setTimeout(restoreChecks,0);
   } catch(e) {
@@ -1477,7 +1477,7 @@ function renderOff(){
   }
 }
 function goOff(s){offStep=s;renderOff();}
-function offNext(){offDone[offStep]=true;if(offStep<5)offStep++;saveFirebase();renderOff();}
+function offNext(){offDone[offStep]=true;if(offStep<4)offStep++;saveFirebase();renderOff();}
 function offPrev(){if(offStep>0){offStep--;renderOff();}}
 
 function offNav(){
@@ -1516,59 +1516,29 @@ const OFF_RENDER = [
       +'<div class="btn-row"><button class="btn btn-primary" onclick="saveOffEmp()">儲存並繼續 →</button></div>'
       +'</div>';
   },
-  // 1: Resignation PDF
+  // 1: Resignation + Handover + Message
   function(){
     if(!emp.nameZh) return needData('goOff(0)');
-    const today=new Date();
+    const brand = ['stanley','joyce_e'].includes(emp.cid)?'史丹利':'艾爾斯';
+    const msg = 'Dear '+emp.nameZh+',\n\n您好，我們已收到您的離職通知。\n感謝您這段時間以來在'+brand+'大家庭的付出與協助！為了協助您順利完成離職與交接手續，再請您撥空協助完成以下事項：\n\n1. 離職申請書\n2. 離職移交會辦單\n\n祝您未來的職涯發展順利、步步高升！\n如有任何流程上的疑問，歡迎隨時與我聯絡。\n\n祝 順心\nSharon Tseng\n'+brand+'人資部';
     return '<div class="section-card">'
-      +'<div class="section-title">📝 離職申請書</div>'
-      +'<div class="section-desc">點擊下方按鈕產生 PDF，列印後請員工填寫與主管簽核。</div>'
-      +'<div class="btn-row"><button class="btn btn-primary" onclick="printResign()">📄 產生離職申請書 PDF</button></div>'
-      +'<div class="checklist" style="margin-top:14px">'+ci('off_resign_recv','已收到離職申請書（員工及主管簽名完成）')+'</div>'
-      +offNav()+'</div>';
-  },
-  // 2: Handover PDF
-  function(){
-    if(!emp.nameZh) return needData('goOff(0)');
-    return '<div class="section-card">'
-      +'<div class="section-title">📋 員工離職移交會辦單</div>'
-      +'<div class="section-desc">點擊下方按鈕產生 PDF，由各單位主管確認簽名。</div>'
-      +'<div style="margin-top:16px;padding-top:14px;border-top:0.5px solid rgba(0,0,0,0.08)">'
-        +'<div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 請填入以下資訊，將自動帶入會辦單</div>'
-        +'<div class="form-grid">'
-          +'<div class="form-group"><label class="form-label">勞健保退保</label>'
-            +'<select class="form-select" id="ho-labor" onchange="emp.hoLabor=this.value;saveFirebase()">'
-              +'<option value="" '+(emp.hoLabor===undefined||emp.hoLabor===''?'selected':'')+'>— 請選擇 —</option>'
-              +'<option value="□ 完成" '+(emp.hoLabor==='□ 完成'?'selected':'')+'>完成</option>'
-              +'<option value="□ 未完成" '+(emp.hoLabor==='□ 未完成'?'selected':'')+'>未完成</option>'
-            +'</select>'
-          +'</div>'
-          +'<div class="form-group"><label class="form-label">團險退保</label>'
-            +'<select class="form-select" id="ho-ins" onchange="emp.hoIns=this.value;saveFirebase()">'
-              +'<option value="" '+(emp.hoIns===undefined||emp.hoIns===''?'selected':'')+'>— 請選擇 —</option>'
-              +'<option value="□ 完成" '+(emp.hoIns==='□ 完成'?'selected':'')+'>完成</option>'
-              +'<option value="□ 未完成" '+(emp.hoIns==='□ 未完成'?'selected':'')+'>未完成</option>'
-            +'</select>'
-          +'</div>'
-          +'<div class="form-group"><label class="form-label">NUEIP 掛離職日、轉出勞健保</label>'
-            +'<select class="form-select" id="ho-nueip" onchange="emp.hoNueip=this.value;saveFirebase()">'
-              +'<option value="" '+(emp.hoNueip===undefined||emp.hoNueip===''?'selected':'')+'>— 請選擇 —</option>'
-              +'<option value="□ 完成" '+(emp.hoNueip==='□ 完成'?'selected':'')+'>完成</option>'
-              +'<option value="□ 未完成" '+(emp.hoNueip==='□ 未完成'?'selected':'')+'>未完成</option>'
-            +'</select>'
-          +'</div>'
-          +'<div class="form-group"><label class="form-label">特休時數剩餘（hr）</label>'
-            +'<input class="form-input" id="ho-annual" type="number" placeholder="例：8" value="'+(emp.hoAnnual||'')+'" oninput="emp.hoAnnual=this.value;saveFirebase()">'
-          +'</div>'
-          +'<div class="form-group"><label class="form-label">補休時數剩餘（hr）</label>'
-            +'<input class="form-input" id="ho-comp" type="number" placeholder="例：4" value="'+(emp.hoComp||'')+'" oninput="emp.hoComp=this.value;saveFirebase()">'
-          +'</div>'
-        +'</div>'
+      +'<div class="section-title">📝 離職申請書 ＆ 移交會辦單</div>'
+      +'<div class="btn-row">'
+        +'<button class="btn btn-primary" onclick="printResign()">📄 產生離職申請書 PDF</button>'
+        +'<button class="btn btn-primary" onclick="printHandover()">📄 產生移交會辦單 PDF</button>'
       +'</div>'
-      +'<div class="btn-row"><button class="btn btn-primary" onclick="printHandover()">📄 產生移交會辦單 PDF</button></div>'
-      +'<div class="checklist" style="margin-top:14px">'+ci('off_handover_recv','已收到移交會辦單（各單位主管確認完成）')+'</div>'
+      +'<div class="checklist" style="margin-top:14px">'
+        +ci('off_resign_recv','已收到離職申請書（員工及主管簽名完成）')
+        +ci('off_handover_recv','已收到移交會辦單（各單位主管確認完成）')
+      +'</div>'
+      +'<div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.08)">'
+        +'<div style="font-size:13px;font-weight:700;margin-bottom:8px">📧 傳送給員工的訊息</div>'
+        +'<div class="text-output" id="off-msg">'+msg+'</div>'
+        +'<div class="btn-row"><button class="btn" onclick="copyEl(&quot;off-msg&quot;)">📋 複製訊息</button></div>'
+      +'</div>'
       +offNav()+'</div>';
   },
+
   // 3: Insurance withdrawal
   function(){
     const empNameZh = emp.nameZh||'（員工姓名）';
