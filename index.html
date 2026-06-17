@@ -1827,53 +1827,51 @@ function printResign(){
   const today=new Date();
   const logoSrc=getLogo(emp.cid);
   const coName=emp.companyName||'';
-  const pdfHtml=`<div class="pdf-doc" style="font-family:'Microsoft JhengHei',sans-serif;max-width:720px;margin:0 auto;padding:40px 48px;line-height:1.6">
+  const dateStr=today.getFullYear()+' 年 '+(today.getMonth()+1)+' 月 '+today.getDate()+' 日';
+
+  const pdfHtml=`<div style="font-family:'Microsoft JhengHei',sans-serif;max-width:700px;margin:0 auto;padding:36px 48px;line-height:1.6;font-size:13px;color:#1a1917">
 
     <!-- Header -->
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
-      <img src="${logoSrc}" style="height:48px;width:auto">
-      <div>
-        <div style="font-size:16px;font-weight:700;letter-spacing:0.08em">${coName}</div>
-      </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+      <img src="${logoSrc}" style="height:44px;width:auto">
+      <div style="font-size:16px;font-weight:700;letter-spacing:0.05em">${coName}</div>
     </div>
-    <div style="border-bottom:2px solid #1a1917;margin-bottom:6px"></div>
+    <div style="height:2px;background:linear-gradient(to right,#1a1917,#888);margin-bottom:8px"></div>
     <div style="text-align:center;margin-bottom:4px">
-      <div style="font-size:22px;font-weight:700;letter-spacing:0.3em">離　職　申　請　書</div>
-      <div style="font-size:12px;color:#666;letter-spacing:0.15em;margin-top:2px">Resignation Application Form</div>
+      <div style="font-size:22px;font-weight:700;letter-spacing:0.3em;color:#1a1917">離　職　申　請　書</div>
+      <div style="font-size:11px;color:#888;font-style:italic;margin-top:3px;letter-spacing:0.1em">Resignation Application Form</div>
     </div>
-    <div style="border-bottom:1px solid #ccc;margin-bottom:16px"></div>
+    <div style="height:1px;background:#ddd;margin-bottom:14px"></div>
 
-    <div style="text-align:right;font-size:13px;margin-bottom:16px">
-      填表日期 Date Filed：${today.getFullYear()} 年 ${today.getMonth()+1} 月 ${today.getDate()} 日
-    </div>
+    <div style="text-align:right;font-size:12px;color:#555;margin-bottom:14px">填表日期 Date Filed：${dateStr}</div>
 
-    <!-- Info table -->
+    <!-- Employee Info - 2 per row -->
     <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px">
       <tr>
-        <td style="border:1px solid #ccc;padding:8px 12px;width:22%;background:#f5f5f5;font-weight:700">員工編號<br><span style="font-weight:400;color:#666">Employee ID</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px;width:28%">${emp.empId||''}</td>
-        <td style="border:1px solid #ccc;padding:8px 12px;width:22%;background:#f5f5f5;font-weight:700">部門 / 職稱<br><span style="font-weight:400;color:#666">Department / Title</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px;width:28%">${emp.title||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;width:20%;background:#f0f0ee;font-weight:700;font-size:12px">員工編號<br><span style="font-weight:400;color:#888;font-size:10px">Employee ID</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;width:30%">${emp.empId||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;width:20%;background:#f0f0ee;font-weight:700;font-size:12px">所屬公司<br><span style="font-weight:400;color:#888;font-size:10px">Company</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;width:30%">${coName}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:8px 12px;background:#f5f5f5;font-weight:700">姓名<br><span style="font-weight:400;color:#666">Name</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px">${emp.nameZh||''}</td>
-        <td style="border:1px solid #ccc;padding:8px 12px;background:#f5f5f5;font-weight:700">到職日期<br><span style="font-weight:400;color:#666">Start Date</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px">${emp.startDate||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">姓名<br><span style="font-weight:400;color:#888;font-size:10px">Name</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;font-weight:600">${emp.nameZh||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">職稱<br><span style="font-weight:400;color:#888;font-size:10px">Job Title</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px">${emp.title||''}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:8px 12px;background:#f5f5f5"></td>
-        <td style="border:1px solid #ccc;padding:8px 12px"></td>
-        <td style="border:1px solid #ccc;padding:8px 12px;background:#f5f5f5;font-weight:700">擬離職日期<br><span style="font-weight:400;color:#666">Intended Last Day</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px">${emp.endDate||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">到職日期<br><span style="font-weight:400;color:#888;font-size:10px">Start Date</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px">${emp.startDate||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">擬離職日期<br><span style="font-weight:400;color:#888;font-size:10px">Intended Last Day</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px">${emp.endDate||''}</td>
       </tr>
     </table>
 
     <!-- Reason -->
     <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px">
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;width:22%;background:#f5f5f5;font-weight:700;vertical-align:top">離職原因<br><span style="font-weight:400;color:#666">Reason for<br>Resignation</span></td>
-        <td style="border:1px solid #ccc;padding:10px 12px;line-height:2.2">
+        <td style="border:1px solid #d0d0d0;padding:10px 12px;width:20%;background:#f0f0ee;font-weight:700;font-size:12px;vertical-align:top">離職原因<br><span style="font-weight:400;color:#888;font-size:10px">Reason for<br>Resignation</span></td>
+        <td style="border:1px solid #d0d0d0;padding:10px 12px;line-height:2.2">
           □ 人際溝通問題 Interpersonal / Communication Issues<br>
           □ 公司管理方式 Company Management Style<br>
           □ 就學或深造 Further Education / Study<br>
@@ -1883,38 +1881,23 @@ function printResign(){
         </td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;background:#f5f5f5;font-weight:700;vertical-align:top">對公司的建議<br><span style="font-weight:400;color:#666">Suggestions to the<br>Company</span></td>
-        <td style="border:1px solid #ccc;padding:10px 12px">
-          <div style="font-weight:600;margin-bottom:6px">◆ 值得讚許的部分 / What the Company Does Well：</div>
-          <div style="border-bottom:1px solid #ccc;margin-bottom:4px;height:24px"></div>
-          <div style="border-bottom:1px solid #ccc;margin-bottom:16px;height:24px"></div>
-          <div style="font-weight:600;margin-bottom:6px">◆ 需改進的部分 / Areas for Improvement：</div>
-          <div style="border-bottom:1px solid #ccc;margin-bottom:4px;height:24px"></div>
-          <div style="border-bottom:1px solid #ccc;height:24px"></div>
+        <td style="border:1px solid #d0d0d0;padding:10px 12px;background:#f0f0ee;font-weight:700;font-size:12px;vertical-align:top">對公司建議<br><span style="font-weight:400;color:#888;font-size:10px">Suggestions to<br>Company</span></td>
+        <td style="border:1px solid #d0d0d0;padding:10px 12px">
+          <div style="font-weight:600;margin-bottom:4px;font-size:12px">◆ 值得讚許的部分 / What the Company Does Well：</div>
+          <div style="border-bottom:1px solid #ccc;height:22px;margin-bottom:3px"></div>
+          <div style="border-bottom:1px solid #ccc;height:22px;margin-bottom:10px"></div>
+          <div style="font-weight:600;margin-bottom:4px;font-size:12px">◆ 需改進的部分 / Areas for Improvement：</div>
+          <div style="border-bottom:1px solid #ccc;height:22px;margin-bottom:3px"></div>
+          <div style="border-bottom:1px solid #ccc;height:22px"></div>
         </td>
       </tr>
     </table>
 
     <!-- Signatures -->
-    <div style="border-top:1.5px solid #1a1917;margin-top:20px;padding-top:16px;display:flex;justify-content:space-around;text-align:center;font-size:13px">
-      <div>
-        <div style="border-top:1px solid #333;width:140px;padding-top:6px;margin-top:48px">
-          <div style="font-weight:700">營運總經理</div>
-          <div style="color:#666;font-size:11px">General Manager of Operations</div>
-        </div>
-      </div>
-      <div>
-        <div style="border-top:1px solid #333;width:140px;padding-top:6px;margin-top:48px">
-          <div style="font-weight:700">部門主管</div>
-          <div style="color:#666;font-size:11px">Department Head</div>
-        </div>
-      </div>
-      <div>
-        <div style="border-top:1px solid #333;width:140px;padding-top:6px;margin-top:48px">
-          <div style="font-weight:700">申請人</div>
-          <div style="color:#666;font-size:11px">Applicant</div>
-        </div>
-      </div>
+    <div style="border-top:1.5px solid #1a1917;padding-top:14px;display:flex;justify-content:space-around;text-align:center;font-size:12px">
+      <div><div style="border-top:1px solid #555;width:130px;padding-top:5px;margin-top:44px"><div style="font-weight:700">營運總經理</div><div style="color:#888;font-size:10px">General Manager of Operations</div></div></div>
+      <div><div style="border-top:1px solid #555;width:130px;padding-top:5px;margin-top:44px"><div style="font-weight:700">部門主管</div><div style="color:#888;font-size:10px">Department Head</div></div></div>
+      <div><div style="border-top:1px solid #555;width:130px;padding-top:5px;margin-top:44px"><div style="font-weight:700">申請人</div><div style="color:#888;font-size:10px">Applicant</div></div></div>
     </div>
   </div>`;
   printDoc(pdfHtml, '離職申請書 Resignation Application Form-'+(emp.nameZh||''));
@@ -1924,150 +1907,128 @@ function printHandover(){
   const today=new Date();
   const logoSrc=getLogo(emp.cid);
   const coName=emp.companyName||'';
-  const laborStatus=emp.hoLabor==='完成'?'☑ 完成 Completed　□ 未完成 Not Completed':emp.hoLabor==='未完成'?'□ 完成 Completed　☑ 未完成 Not Completed':'□ 完成 Completed　□ 未完成 Not Completed';
-  const insStatus=emp.hoIns==='完成'?'☑ 完成 Completed　□ 未完成 Not Completed':emp.hoIns==='未完成'?'□ 完成 Completed　☑ 未完成 Not Completed':'□ 完成 Completed　□ 未完成 Not Completed';
-  const nueipStatus=emp.hoNueip==='完成'?'☑ 完成 Completed　□ 未完成 Not Completed':emp.hoNueip==='未完成'?'□ 完成 Completed　☑ 未完成 Not Completed':'□ 完成 Completed　□ 未完成 Not Completed';
+  const dateStr=today.getFullYear()+' 年 '+(today.getMonth()+1)+' 月 '+today.getDate()+' 日';
+  const laborStatus=emp.hoLabor==='完成'?'☑ 完成　□ 未完成':emp.hoLabor==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成';
+  const insStatus=emp.hoIns==='完成'?'☑ 完成　□ 未完成':emp.hoIns==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成';
+  const nueipStatus=emp.hoNueip==='完成'?'☑ 完成　□ 未完成':emp.hoNueip==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成';
 
-  const pdfHtml=`<div class="pdf-doc" style="font-family:'Microsoft JhengHei',sans-serif;max-width:720px;margin:0 auto;padding:40px 48px;line-height:1.6">
+  const pdfHtml=`<div style="font-family:'Microsoft JhengHei',sans-serif;max-width:700px;margin:0 auto;padding:32px 44px;line-height:1.5;font-size:12.5px;color:#1a1917">
 
     <!-- Header -->
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
-      <img src="${logoSrc}" style="height:48px;width:auto">
-      <div>
-        <div style="font-size:16px;font-weight:700;letter-spacing:0.08em">${coName}</div>
-      </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+      <img src="${logoSrc}" style="height:44px;width:auto">
+      <div style="font-size:16px;font-weight:700;letter-spacing:0.05em">${coName}</div>
     </div>
-    <div style="border-bottom:2px solid #1a1917;margin-bottom:6px"></div>
+    <div style="height:2px;background:linear-gradient(to right,#1a1917,#888);margin-bottom:8px"></div>
     <div style="text-align:center;margin-bottom:4px">
-      <div style="font-size:22px;font-weight:700;letter-spacing:0.2em">員工離職移交會辦單</div>
-      <div style="font-size:12px;color:#666;letter-spacing:0.1em;margin-top:2px">Employee Offboarding Checklist</div>
+      <div style="font-size:20px;font-weight:700;letter-spacing:0.2em">員工離職移交會辦單</div>
+      <div style="font-size:11px;color:#888;font-style:italic;margin-top:2px">Employee Offboarding Checklist</div>
     </div>
-    <div style="border-bottom:1px solid #ccc;margin-bottom:16px"></div>
+    <div style="height:1px;background:#ddd;margin-bottom:10px"></div>
+    <div style="text-align:right;font-size:11px;color:#555;margin-bottom:10px">填表日期 Date Filed：${dateStr}</div>
 
-    <div style="text-align:right;font-size:13px;margin-bottom:16px">
-      填表日期 Date Filed：${today.getFullYear()} 年 ${today.getMonth()+1} 月 ${today.getDate()} 日
-    </div>
-
-    <!-- Employee Info -->
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px">
+    <!-- Employee Info - 2 column -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12.5px">
       <tr>
-        <td style="border:1px solid #ccc;padding:8px 12px;width:22%;background:#f5f5f5;font-weight:700">員工編號<br><span style="font-weight:400;color:#666;font-size:11px">Employee ID</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px">${emp.empId||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;width:18%;background:#f0f0ee;font-weight:700;font-size:11.5px">員工編號<br><span style="font-weight:400;color:#888;font-size:10px">Employee ID</span></td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;width:30%">${emp.empId||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;width:18%;background:#f0f0ee;font-weight:700;font-size:11.5px">姓名<br><span style="font-weight:400;color:#888;font-size:10px">Name</span></td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;font-weight:600">${emp.nameZh||''}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:8px 12px;background:#f5f5f5;font-weight:700">姓名<br><span style="font-weight:400;color:#666;font-size:11px">Name</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px">${emp.nameZh||''}</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #ccc;padding:8px 12px;background:#f5f5f5;font-weight:700">部門 / 職稱<br><span style="font-weight:400;color:#666;font-size:11px">Department / Title</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px">${emp.title||''}</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #ccc;padding:8px 12px;background:#f5f5f5;font-weight:700">最後上班日<br><span style="font-weight:400;color:#666;font-size:11px">Last Working Day</span></td>
-        <td style="border:1px solid #ccc;padding:8px 12px">${emp.endDate||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;background:#f0f0ee;font-weight:700;font-size:11.5px">職稱<br><span style="font-weight:400;color:#888;font-size:10px">Job Title</span></td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px">${emp.title||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;background:#f0f0ee;font-weight:700;font-size:11.5px">最後上班日<br><span style="font-weight:400;color:#888;font-size:10px">Last Working Day</span></td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px">${emp.endDate||''}</td>
       </tr>
     </table>
 
     <!-- Section 1 -->
-    <div style="background:#1a1917;color:#fff;padding:8px 14px;font-size:13px;font-weight:700;margin-bottom:0;border-left:4px solid #666">
-      一、所屬單位確認事項 <span style="font-weight:400;font-size:11px">/ Section 1: Department Confirmation Items</span>
+    <div style="background:#1a1917;color:#fff;padding:6px 12px;font-size:12px;font-weight:700;margin-bottom:0">
+      一、所屬單位確認事項 <span style="font-weight:400;font-size:10px;opacity:0.8">/ Section 1: Department Confirmation Items</span>
     </div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px">
-      <tr style="background:#f5f5f5">
-        <th style="border:1px solid #ccc;padding:8px 12px;width:40%;text-align:center">項目<br><span style="font-weight:400;font-size:11px">Item</span></th>
-        <th style="border:1px solid #ccc;padding:8px 12px;text-align:center">批注意見 / 完成情況<br><span style="font-weight:400;font-size:11px">Comments / Completion Status</span></th>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px">
+      <tr style="background:#f5f5f3">
+        <th style="border:1px solid #d0d0d0;padding:6px 11px;width:38%;text-align:left;font-size:11px">項目 / Item</th>
+        <th style="border:1px solid #d0d0d0;padding:6px 11px;text-align:left;font-size:11px">批注意見 / 完成情況 &nbsp; Comments / Completion Status</th>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;vertical-align:top">
+        <td style="border:1px solid #d0d0d0;padding:8px 11px;vertical-align:top">
           <div style="font-weight:700">1. 工作項目交接</div>
-          <div style="color:#666;font-size:11px">1. Work Handover</div>
+          <div style="color:#888;font-size:10px">Work Handover</div>
         </td>
-        <td style="border:1px solid #ccc;padding:10px 12px">
+        <td style="border:1px solid #d0d0d0;padding:8px 11px">
           □ 已移交 Completed　□ 未移交 Not Completed　□ 無 N/A<br>
-          <strong>交接人員</strong> / Handover Person：<span style="display:inline-block;width:100px;border-bottom:1px solid #333"></span><br><br>
-          <strong>交接項目</strong> / Handover Items：<br>
-          <span style="display:block;border-bottom:1px solid #ccc;margin-bottom:6px;padding-bottom:6px;min-height:20px">&nbsp;</span>
-          <span style="display:block;border-bottom:1px solid #ccc;margin-bottom:6px;padding-bottom:6px;min-height:20px">&nbsp;</span>
-          <span style="display:block;border-bottom:1px solid #ccc;margin-bottom:6px;padding-bottom:6px;min-height:20px">&nbsp;</span>
-          <span style="display:block;border-bottom:1px solid #ccc;padding-bottom:6px;min-height:20px">&nbsp;</span>
+          <span style="font-weight:600">交接人員</span> Handover Person：<span style="display:inline-block;width:90px;border-bottom:1px solid #555"></span><br>
+          <span style="font-weight:600">交接項目</span> Handover Items：<br>
+          <div style="border-bottom:1px solid #ccc;height:18px"></div>
+          <div style="border-bottom:1px solid #ccc;height:18px"></div>
+          <div style="border-bottom:1px solid #ccc;height:18px"></div>
+          <div style="border-bottom:1px solid #ccc;height:18px"></div>
         </td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;vertical-align:top">
+        <td style="border:1px solid #d0d0d0;padding:8px 11px;vertical-align:top">
           <div style="font-weight:700">2. 座位清潔與個人物品清空</div>
-          <div style="color:#666;font-size:11px">2. Workstation Cleaning &amp; Personal Belongings Cleared</div>
+          <div style="color:#888;font-size:10px">Workstation Cleaning &amp; Personal Belongings Cleared</div>
         </td>
-        <td style="border:1px solid #ccc;padding:10px 12px">
-          □ 完成 Completed　□ 未完成 Not Completed
-        </td>
+        <td style="border:1px solid #d0d0d0;padding:8px 11px">□ 完成 Completed　□ 未完成 Not Completed</td>
       </tr>
     </table>
 
     <!-- Section 2 -->
-    <div style="background:#1a1917;color:#fff;padding:8px 14px;font-size:13px;font-weight:700;margin-bottom:0;border-left:4px solid #666">
-      二、人資財會部確認事項 <span style="font-weight:400;font-size:11px">/ Section 2: HR &amp; Finance Department Confirmation Items</span>
+    <div style="background:#1a1917;color:#fff;padding:6px 12px;font-size:12px;font-weight:700;margin-bottom:0">
+      二、人資財會部確認事項 <span style="font-weight:400;font-size:10px;opacity:0.8">/ Section 2: HR &amp; Finance Department Confirmation Items</span>
     </div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px">
-      <tr style="background:#f5f5f5">
-        <th style="border:1px solid #ccc;padding:8px 12px;width:40%;text-align:center">項目<br><span style="font-weight:400;font-size:11px">Item</span></th>
-        <th style="border:1px solid #ccc;padding:8px 12px;text-align:center">批注意見 / 完成情況<br><span style="font-weight:400;font-size:11px">Comments / Completion Status</span></th>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px">
+      <tr style="background:#f5f5f3">
+        <th style="border:1px solid #d0d0d0;padding:6px 11px;width:38%;text-align:left;font-size:11px">項目 / Item</th>
+        <th style="border:1px solid #d0d0d0;padding:6px 11px;text-align:left;font-size:11px">批注意見 / 完成情況 &nbsp; Comments / Completion Status</th>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;vertical-align:top">
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;vertical-align:top">
           <div style="font-weight:700">1. 公司資產歸還（筆電、名片）</div>
-          <div style="color:#666;font-size:11px">1. Company Asset Return (Laptop, Business Cards)</div>
+          <div style="color:#888;font-size:10px">Company Asset Return (Laptop, Business Cards)</div>
         </td>
-        <td style="border:1px solid #ccc;padding:10px 12px">
-          □ 已移交 Returned　□ 未移交 Not Returned　□ 無 N/A
-        </td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px">□ 已移交 Returned　□ 未移交 Not Returned　□ 無 N/A</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;vertical-align:top">
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;vertical-align:top">
           <div style="font-weight:700">2. 勞健保退保</div>
-          <div style="color:#666;font-size:11px">2. Labor &amp; Health Insurance Withdrawal</div>
+          <div style="color:#888;font-size:10px">Labor &amp; Health Insurance Withdrawal</div>
         </td>
-        <td style="border:1px solid #ccc;padding:10px 12px">${laborStatus}</td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px">${laborStatus}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;vertical-align:top">
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;vertical-align:top">
           <div style="font-weight:700">3. 團險退保</div>
-          <div style="color:#666;font-size:11px">3. Group Insurance Withdrawal</div>
+          <div style="color:#888;font-size:10px">Group Insurance Withdrawal</div>
         </td>
-        <td style="border:1px solid #ccc;padding:10px 12px">${insStatus}</td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px">${insStatus}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;vertical-align:top">
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;vertical-align:top">
           <div style="font-weight:700">4. NUEIP 掛離職日、轉出勞健保</div>
-          <div style="color:#666;font-size:11px">4. NUEIP: Set Resignation Date &amp; Transfer Labor/Health Insurance</div>
+          <div style="color:#888;font-size:10px">NUEIP: Set Resignation Date &amp; Transfer Insurance</div>
         </td>
-        <td style="border:1px solid #ccc;padding:10px 12px">${nueipStatus}</td>
+        <td style="border:1px solid #d0d0d0;padding:7px 11px">${nueipStatus}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;vertical-align:top">
+        <td style="border:1px solid #d0d0d0;padding:7px 11px;vertical-align:top">
           <div style="font-weight:700">5. 特休與補休時數結算</div>
-          <div style="color:#666;font-size:11px">5. Annual Leave &amp; Compensatory Leave Hours Settlement</div>
+          <div style="color:#888;font-size:10px">Annual Leave &amp; Compensatory Leave Settlement</div>
         </td>
-        <td style="border:1px solid #ccc;padding:10px 12px">
-          <strong>特休剩餘</strong> Annual Leave Balance：<strong>${emp.hoAnnual||'＿＿＿'}</strong> hr<br>
-          <strong>補休剩餘</strong> Comp. Leave Balance：<strong>${emp.hoComp||'＿＿＿'}</strong> hr
+        <td style="border:1px solid #d0d0d0;padding:7px 11px">
+          <span style="font-weight:600">特休剩餘</span> Annual Leave：<span style="font-weight:700">${emp.hoAnnual||'＿＿＿'}</span> hr　
+          <span style="font-weight:600">補休剩餘</span> Comp. Leave：<span style="font-weight:700">${emp.hoComp||'＿＿＿'}</span> hr
         </td>
       </tr>
     </table>
 
     <!-- Signatures -->
-    <div style="border-top:1.5px solid #1a1917;padding-top:16px;display:flex;justify-content:space-around;text-align:center;font-size:13px">
-      <div>
-        <div style="border-top:1px solid #333;width:140px;padding-top:6px;margin-top:48px">
-          <div style="font-weight:700">主管簽名</div>
-          <div style="color:#666;font-size:11px">Supervisor Signature</div>
-        </div>
-      </div>
-      <div>
-        <div style="border-top:1px solid #333;width:140px;padding-top:6px;margin-top:48px">
-          <div style="font-weight:700">HR 確認</div>
-          <div style="color:#666;font-size:11px">HR Confirmation</div>
-        </div>
-      </div>
+    <div style="border-top:1.5px solid #1a1917;padding-top:12px;display:flex;justify-content:space-around;text-align:center;font-size:12px">
+      <div><div style="border-top:1px solid #555;width:120px;padding-top:4px;margin-top:40px"><div style="font-weight:700">主管簽名</div><div style="color:#888;font-size:10px">Supervisor Signature</div></div></div>
+      <div><div style="border-top:1px solid #555;width:120px;padding-top:4px;margin-top:40px"><div style="font-weight:700">HR 確認</div><div style="color:#888;font-size:10px">HR Confirmation</div></div></div>
     </div>
   </div>`;
   printDoc(pdfHtml, '離職移交會辦單 Employee Offboarding Checklist-'+(emp.nameZh||''));
@@ -2090,113 +2051,79 @@ function printOffCert(){
   const today=new Date();
   const issueStr=today.getFullYear()+' 年 '+String(today.getMonth()+1).padStart(2,'0')+' 月 '+String(today.getDate()).padStart(2,'0')+' 日';
 
-  const pdfHtml=`<div class="pdf-doc" style="font-family:'Microsoft JhengHei',sans-serif;max-width:680px;margin:0 auto;padding:32px 44px;line-height:1.6;font-size:13px">
+  const pdfHtml=`<div style="font-family:'Microsoft JhengHei',sans-serif;max-width:680px;margin:0 auto;padding:32px 44px;line-height:1.6;font-size:13px;color:#1a1917">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
+    <!-- Header with logo and company -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
       <img src="${logoSrc}" style="height:44px;width:auto">
-      <div style="font-size:16px;font-weight:700;letter-spacing:0.06em">${coName}</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;letter-spacing:0.05em">${coName}</div>
+        <div style="font-size:11px;color:#888">統一編號：${emp.companyTax||''}</div>
+      </div>
     </div>
-    <div style="border-bottom:2px solid #1a1917;margin-bottom:6px"></div>
+    <div style="height:2px;background:linear-gradient(to right,#1a1917,#888);margin-bottom:8px"></div>
     <div style="text-align:center;margin-bottom:4px">
       <div style="font-size:22px;font-weight:700;letter-spacing:0.3em">離　職　證　明　書</div>
-      <div style="font-size:11px;color:#666;font-style:italic;margin-top:3px">Certificate of Employment</div>
+      <div style="font-size:11px;color:#888;font-style:italic;margin-top:3px">Certificate of Employment</div>
     </div>
-    <div style="border-bottom:1px solid #ccc;margin-bottom:14px"></div>
+    <div style="height:1px;background:#ddd;margin-bottom:16px"></div>
 
     <!-- Preamble -->
-    <div style="font-size:12px;margin-bottom:12px;color:#333">
+    <div style="font-size:12px;color:#444;margin-bottom:14px;padding:8px 12px;border-left:3px solid #1a1917;background:#f8f8f8">
       茲證明下列員工確實任職於本公司，並已依規定辦理離職手續，特此證明。<br>
-      <span style="color:#888;font-style:italic">This is to certify that the employee listed below was duly employed by this company and has completed all resignation procedures in accordance with company regulations.</span>
+      <span style="color:#999;font-style:italic;font-size:10.5px">This is to certify that the employee listed below was duly employed by this company and has completed all resignation procedures.</span>
     </div>
 
-    <!-- Info table - compact single page -->
-    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px">
+    <!-- Info table -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:13px">
       <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;width:34%;background:#f5f5f5;font-weight:700">
-          員工姓名<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Employee Name</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px;font-weight:600;font-size:14px">${emp.nameZh||''}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;width:32%;background:#f0f0ee;font-weight:700;font-size:12px">員工姓名<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Employee Name</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;font-size:14px;font-weight:700" colspan="3">${emp.nameZh||''}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;background:#f5f5f5;font-weight:700">
-          身分證字號<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">National ID No.</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px">${emp.idNo||'（未填寫）'}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">身分證字號<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">National ID No.</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;width:20%">${emp.idNo||'（未填寫）'}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;width:18%;background:#f0f0ee;font-weight:700;font-size:12px">出生年月日<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Date of Birth</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;width:30%">${bdayStr}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;background:#f5f5f5;font-weight:700">
-          出生年月日<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Date of Birth</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px">${bdayStr}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">擔任職稱<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Job Title</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px" colspan="3">${emp.title||''}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;background:#f5f5f5;font-weight:700">
-          任職公司<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Employer</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px">
-          ${coName}<br>
-          <span style="font-size:11px;color:#666">統一編號 / Tax ID：${emp.companyTax||''}</span>
-        </td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">正式到職日期<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Official Start Date</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px">${fmtYMD(emp.startDate)}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">正式離職日期<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Official Last Day</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px">${fmtYMD(emp.endDate)}</td>
       </tr>
       <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;background:#f5f5f5;font-weight:700">
-          擔任職稱<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Job Title</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px">${emp.title||''}</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;background:#f5f5f5;font-weight:700">
-          正式到職日期<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Official Start Date</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px">${fmtYMD(emp.startDate)}</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;background:#f5f5f5;font-weight:700">
-          正式離職日期<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Official Last Day</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px">${fmtYMD(emp.endDate)}</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;background:#f5f5f5;font-weight:700">
-          在職年資<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Length of Service</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px">${tenure}</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #ccc;padding:7px 12px;background:#f5f5f5;font-weight:700">
-          離職原因<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Reason for Leaving</span>
-        </td>
-        <td style="border:1px solid #ccc;padding:7px 12px">自願離職　<span style="color:#888;font-style:italic">Voluntary Resignation</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">在職年資<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Length of Service</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px">${tenure}</td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px;background:#f0f0ee;font-weight:700;font-size:12px">離職原因<br><span style="font-weight:400;color:#888;font-size:10px;font-style:italic">Reason for Leaving</span></td>
+        <td style="border:1px solid #d0d0d0;padding:8px 12px">自願離職<br><span style="color:#888;font-style:italic;font-size:11px">Voluntary Resignation</span></td>
       </tr>
     </table>
 
     <!-- Disclaimer -->
-    <div style="font-size:11px;color:#666;margin-bottom:16px;padding:8px 12px;border:0.5px solid #ddd;border-radius:4px;background:#fafafa">
+    <div style="font-size:11px;color:#777;margin-bottom:16px;padding:7px 11px;border:0.5px solid #ddd;border-radius:4px;background:#fafafa">
       本證明書僅供該員證明在職期間與職務之用，不作其他任何擔保、徵信或特定用途。<br>
       <span style="color:#aaa;font-style:italic">This certificate is issued solely for the purpose of verifying the employee's period of employment and job title.</span>
     </div>
 
-    <!-- Seal & Signature - compact -->
-    <div style="display:flex;justify-content:flex-end">
-      <div style="border:1px solid #ccc;border-radius:6px;padding:14px 24px;font-size:12px">
-        <div style="font-weight:700;font-size:13px;margin-bottom:10px">${coName}</div>
-        <div style="display:flex;gap:28px;align-items:flex-end">
-          <div style="text-align:center">
-            <div style="width:72px;height:72px;border:2px dashed #ccc;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 4px">
-              <div style="color:#bbb;font-size:10px;text-align:center">大印<br><span style="font-size:9px">Company<br>Seal</span></div>
-            </div>
-            <div style="font-size:11px;font-weight:600">公司大印</div>
-          </div>
-          <div style="text-align:center">
-            <div style="width:52px;height:52px;border:2px dashed #ccc;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 4px">
-              <div style="color:#bbb;font-size:9px;text-align:center">小印<br>Sign.</div>
-            </div>
-            <div style="font-size:11px;font-weight:600">負責人簽章</div>
-          </div>
-          <div style="font-size:12px;padding-bottom:4px">
-            開立日期：${issueStr}
-          </div>
+    <!-- Seal & Signature - single row -->
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:24px;border:1px solid #d0d0d0;border-radius:6px;padding:14px 20px">
+      <div style="font-size:12px;line-height:2">
+        <div style="font-weight:700;font-size:13px">${coName}</div>
+        <div>開立日期：${issueStr}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="width:70px;height:70px;border:2px dashed #bbb;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 4px">
+          <div style="color:#bbb;font-size:10px;text-align:center">公司大印<br><span style="font-size:9px">Company Seal</span></div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div style="width:52px;height:52px;border:2px dashed #bbb;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 4px">
+          <div style="color:#bbb;font-size:9px;text-align:center">負責人<br>簽章</div>
         </div>
       </div>
     </div>
