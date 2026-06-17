@@ -515,13 +515,13 @@ const OB_RENDER = [    // 0: Employee data (no empId, add personalEmail)
   // Offer email
   function(){
     if(!emp.nameZh) return needData('goOb(0)');
-    const txt=`主旨：【艾爾斯】錄用通知書 - ${emp.nameZh}
+    const txt=`主旨：【${(['stanley','joyce_e'].includes(emp.cid)?'史丹利':'艾爾斯')}】錄用通知書 - ${emp.nameZh}（${emp.title}）
 
 Dear ${emp.nameZh} 您好：
 
 我是艾爾斯的人資 Sharon。
 
-非常高興通知您，經過團隊的審慎評估，我們誠摯地邀請您加入艾爾斯，擔任 ${emp.title} 一職！在面試過程中，您的專業能力與特質給我們留下了深刻的印象。
+非常高興通知您，經過團隊的審慎評估，我們誠摯地邀請您加入${['stanley','joyce_e'].includes(emp.cid)?'史丹利':'艾爾斯'}，擔任 ${emp.title} 一職！在面試過程中，您的專業能力與特質給我們留下了深刻的印象。
 
 有關本次錄取的薪資福利及相關權益，請參閱附件之「錄用通知書」。
 
@@ -556,6 +556,17 @@ Sharon Tseng
     <div class="text-output" id="oe">${txt}</div>
     <div class="btn-row">
       <button class="btn" onclick="copyEl('oe')">📋 複製內容</button>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.08)">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 第一階段應備文件確認（員工回傳後勾選）</div>
+      <div class="checklist">
+        ${ci('doc1','身分證正反面影印本')}
+        ${ci('doc2','最高學歷證件影本')}
+        ${ci('doc3','員工履歷表 104版本')}
+        ${ci('doc4','人事資料卡')}
+        ${ci('doc5','年薪資受領人申報表')}
+        ${ci('doc6','錄用通知書（已簽名回傳）')}
+      </div>
     </div>
     ${obNav()}
   </div>`;
@@ -1705,7 +1716,7 @@ function printDoc(html, filename=''){
 
 function printResign(){
   const today=new Date();
-  const html=`<div class="pdf-doc">
+  const pdfHtml=`<div class="pdf-doc">
     ${pdfLogoHeader('離　職　申　請　書')}
     <div class="pdf-date-row">填表日期：${today.getFullYear()} 年　　${today.getMonth()+1} 月　　${today.getDate()} 日</div>
     <table class="pdf-table">
@@ -1740,12 +1751,12 @@ function printResign(){
       <div class="pdf-sign-col"><div class="pdf-sign-line">申請人</div></div>
     </div>
   </div>`;
-  printDoc(html);
+  printDoc(pdfHtml);
 }
 
 function printHandover(){
   const today=new Date();
-  const html=`<div class="pdf-doc">
+  const pdfHtml=`<div class="pdf-doc">
     ${pdfLogoHeader('員工離職移交會辦單')}
     <div class="pdf-date-row">填表日期：${today.getFullYear()} 年　　${today.getMonth()+1} 月　　${today.getDate()} 日</div>
     <table class="pdf-table">
@@ -1772,7 +1783,7 @@ function printHandover(){
       <div class="pdf-sign-col"><div class="pdf-sign-line">HR 確認</div></div>
     </div>
   </div>`;
-  printDoc(html);
+  printDoc(pdfHtml);
 }
 
 function printOffCert(){
@@ -1824,7 +1835,7 @@ function printLayoffNotice(){
   const noticeEnd=new Date(new Date().getTime()+nd*24*60*60*1000);
   const today=new Date();
   const logoSrc=getLogo(emp.cid);
-  const html=`<div class="pdf-doc">
+  const pdfHtml=`<div class="pdf-doc">
     <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:20px">
       <img src="${logoSrc}" style="height:52px;width:auto;flex-shrink:0">
       <div style="flex:1;text-align:center">
@@ -1860,7 +1871,7 @@ function printLayoffNotice(){
       受通知人簽名：＿＿＿＿＿＿＿＿＿＿　日期：＿＿＿＿＿＿＿＿
     </div>
   </div>`;
-  printDoc(html);
+  printDoc(pdfHtml);
 }
 
 function printLayoffCert(){
@@ -1869,7 +1880,7 @@ function printLayoffCert(){
   const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-yrs)*12);
   const tenure=yrs>0?`${yrs} 年 ${mos} 個月`:`${mos} 個月`;
   const logoSrc=getLogo(emp.cid);
-  const html=`<div class="pdf-doc">
+  const pdfHtml=`<div class="pdf-doc">
     <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:30px">
       <img src="${logoSrc}" style="height:52px;width:auto;flex-shrink:0">
       <div style="flex:1;text-align:center">
@@ -1900,7 +1911,7 @@ function printLayoffCert(){
       </div>
     </div>
   </div>`;
-  printDoc(html);
+  printDoc(pdfHtml);
 }
 
 // ============================================================
