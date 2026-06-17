@@ -1269,7 +1269,7 @@ function renderEmployeeList(){
         +'font-size:13px;font-weight:600;color:#1a1917;transition:all 0.1s;text-align:left">'
         +'<div>'+((e.nameZh)||key)+'</div>'
         +'<div style="font-size:11px;margin-top:3px;font-weight:400;color:'+(pendingCnt===0?'#1a7a55':'#c97a0a')+'">'
-          +(e.title||'—')+'　細項未完成 '+pendingCnt+' 項'
+          +(e.title||'—')+'　到職日：'+(e.startDate||'—')+(e.endDate?'　離職日：'+e.endDate:'')+'　細項未完成 '+pendingCnt+' 項'
         +'</div>'
         +'</button>';
     });
