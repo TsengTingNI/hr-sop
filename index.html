@@ -1524,6 +1524,7 @@ const OFF_RENDER = [
       +'<div class="section-title">📝 離職申請書</div>'
       +'<div class="section-desc">點擊下方按鈕產生 PDF，列印後請員工填寫與主管簽核。</div>'
       +'<div class="btn-row"><button class="btn btn-primary" onclick="printResign()">📄 產生離職申請書 PDF</button></div>'
+      +'<div class="checklist" style="margin-top:14px">'+ci('off_resign_recv','已收到離職申請書（員工及主管簽名完成）')+'</div>'
       +offNav()+'</div>';
   },
   // 2: Handover PDF
@@ -1533,6 +1534,7 @@ const OFF_RENDER = [
       +'<div class="section-title">📋 員工離職移交會辦單</div>'
       +'<div class="section-desc">點擊下方按鈕產生 PDF，由各單位主管確認簽名。</div>'
       +'<div class="btn-row"><button class="btn btn-primary" onclick="printHandover()">📄 產生移交會辦單 PDF</button></div>'
+      +'<div class="checklist" style="margin-top:14px">'+ci('off_handover_recv','已收到移交會辦單（各單位主管確認完成）')+'</div>'
       +offNav()+'</div>';
   },
   // 3: Insurance withdrawal
@@ -1820,7 +1822,7 @@ function printResign(){
       <div class="pdf-sign-col"><div class="pdf-sign-line">申請人</div></div>
     </div>
   </div>`;
-  printDoc(pdfHtml);
+  printDoc(pdfHtml, '離職申請書-'+(emp.nameZh||''));
 }
 
 function printHandover(){
