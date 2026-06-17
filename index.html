@@ -1492,7 +1492,9 @@ function saveOffEmp(){
   const nameZh=v('g0'),empId=v('g1'),title=v('g2'),cid=v('g3'),startDate=v('g4'),endDate=v('g5');
   if(!nameZh||!title||!cid||!startDate||!endDate){alert('請填寫所有必填欄位！');return;}
   const co=COMPANIES.find(c=>c.id===cid);
-  emp=Object.assign(emp,{nameZh,empId,title,cid,companyName:co.name,companyTax:co.tax,startDate,endDate});
+  const idNo=document.getElementById('g-idno')?document.getElementById('g-idno').value.trim():'';
+  const birthday=document.getElementById('g-bday')?document.getElementById('g-bday').value:'';
+  emp=Object.assign(emp,{nameZh,empId,title,cid,companyName:co.name,companyTax:co.tax,startDate,endDate,idNo,birthday});
   if(!currentKey) currentKey=nameZh.replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
   saveFirebase();
   offNext();
@@ -1512,6 +1514,8 @@ const OFF_RENDER = [
         +'<div class="form-group"><label class="form-label">所屬公司<span class="form-required">*</span></label><select class="form-select" id="g3"><option value="">— 請選擇 —</option>'+cos+'</select></div>'
         +'<div class="form-group"><label class="form-label">到職日<span class="form-required">*</span></label><input class="form-input" type="date" id="g4" value="'+(emp.startDate||'')+'"></div>'
         +'<div class="form-group"><label class="form-label">最後上班日<span class="form-required">*</span></label><input class="form-input" type="date" id="g5" value="'+(emp.endDate||today)+'"></div>'
+      +'<div class="form-group"><label class="form-label">身分證字號 / 護照號碼</label><input class="form-input" id="g-idno" placeholder="例：A123456789" value="'+(emp.idNo||'')+'"></div>'
+      +'<div class="form-group"><label class="form-label">出生年月日</label><input class="form-input" type="date" id="g-bday" value="'+(emp.birthday||'')+'"></div>'
       +'</div>'
       +'<div class="btn-row"><button class="btn btn-primary" onclick="saveOffEmp()">儲存並繼續 →</button></div>'
       +'</div>';
@@ -1890,46 +1894,109 @@ function printHandover(){
       <div class="pdf-sign-col"><div class="pdf-sign-line">HR 確認</div></div>
     </div>
   </div>`;
-  printDoc(pdfHtml);
+  printDoc(pdfHtml, '離職移交會辦單-'+(emp.nameZh||''));
 }
 
 function printOffCert(){
   const s=new Date(emp.startDate),e=new Date(emp.endDate);
-  const years=Math.floor((e-s)/(1000*60*60*24*365.25));
-  const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-years)*12);
-  const tenure=years>0?`${years} 年 ${mos} 個月`:`${mos} 個月`;
+  const yrs=Math.floor((e-s)/(1000*60*60*24*365.25));
+  const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-yrs)*12);
+  const tenure=yrs>0?`${yrs} 年 ${mos} 個月`:`${mos} 個月`;
   const logoSrc=getLogo(emp.cid);
-  const pdfHtml=`<div class="pdf-doc">
-    <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:30px">
-      <img src="${logoSrc}" style="height:52px;width:auto;flex-shrink:0">
+  const issueDate=fmtDateFormal(e);
+
+  // Format birthday
+  let bdayStr='';
+  if(emp.birthday){
+    const bd=new Date(emp.birthday);
+    bdayStr=`${bd.getFullYear()} 年 ${bd.getMonth()+1} 月 ${bd.getDate()} 日`;
+  }
+
+  const pdfHtml=`<div class="pdf-doc" style="font-family:'Microsoft JhengHei',sans-serif;max-width:680px;margin:0 auto;padding:48px 56px;line-height:1.8">
+
+    <!-- Header with logo -->
+    <div style="display:flex;align-items:center;gap:16px;padding-bottom:20px;border-bottom:3px solid #1a1917;margin-bottom:32px">
+      <img src="${logoSrc}" style="height:56px;width:auto;flex-shrink:0">
       <div style="flex:1;text-align:center">
-        <div style="font-size:15px;font-weight:700;letter-spacing:0.05em">${emp.companyName}</div>
-        <div style="font-size:22px;font-weight:700;letter-spacing:0.15em;margin-top:4px">離　職　證　明　書</div>
+        <div style="font-size:16px;font-weight:700;letter-spacing:0.06em">${emp.companyName}</div>
+        <div style="font-size:24px;font-weight:700;letter-spacing:0.2em;margin-top:6px">離　職　證　明　書</div>
+        <div style="font-size:12px;color:#888;margin-top:4px">CERTIFICATE OF EMPLOYMENT</div>
       </div>
-      <div style="width:52px"></div>
+      <div style="width:56px"></div>
     </div>
-    <div style="height:20px"></div>
-    <div style="font-size:14px;line-height:3;margin-left:40px">
-      <div>茲　證　明：<strong style="font-size:15px">${emp.nameZh}</strong>　先生／女士</div>
-      <div>任 職 期 間：<strong>${emp.startDate}</strong>　至　<strong>${emp.endDate}</strong></div>
-      <div>擔　任　職：<strong>${emp.title}</strong></div>
-      <div>服 務 年 資：<strong>${tenure}</strong></div>
-      <div>離 職 原 因：個人因素自願離職</div>
+
+    <!-- Body text -->
+    <div style="font-size:14px;margin-bottom:28px;line-height:2">
+      茲證明下列員工曾任職於本公司，特開立此證明：
     </div>
-    <div style="height:20px"></div>
-    <div style="font-size:14px;margin-left:40px">特此證明。</div>
-    <div style="height:80px"></div>
+
+    <!-- Info table -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:32px;font-size:14px">
+      <tr style="border-bottom:0.5px solid #ddd">
+        <td style="padding:12px 16px;width:35%;font-weight:600;color:#555;background:#f8f8f8">員工姓名</td>
+        <td style="padding:12px 16px;font-weight:700;font-size:16px">${emp.nameZh}</td>
+      </tr>
+      ${emp.idNo?`<tr style="border-bottom:0.5px solid #ddd">
+        <td style="padding:12px 16px;font-weight:600;color:#555;background:#f8f8f8">身分證字號 / 護照號碼</td>
+        <td style="padding:12px 16px">${emp.idNo}</td>
+      </tr>`:''}
+      ${bdayStr?`<tr style="border-bottom:0.5px solid #ddd">
+        <td style="padding:12px 16px;font-weight:600;color:#555;background:#f8f8f8">出生年月日</td>
+        <td style="padding:12px 16px">${bdayStr}</td>
+      </tr>`:''}
+      <tr style="border-bottom:0.5px solid #ddd">
+        <td style="padding:12px 16px;font-weight:600;color:#555;background:#f8f8f8">任職公司</td>
+        <td style="padding:12px 16px">${emp.companyName}</td>
+      </tr>
+      <tr style="border-bottom:0.5px solid #ddd">
+        <td style="padding:12px 16px;font-weight:600;color:#555;background:#f8f8f8">擔任職稱</td>
+        <td style="padding:12px 16px">${emp.title}</td>
+      </tr>
+      <tr style="border-bottom:0.5px solid #ddd">
+        <td style="padding:12px 16px;font-weight:600;color:#555;background:#f8f8f8">正式到職日期</td>
+        <td style="padding:12px 16px">${fmtDateFormal(s)}</td>
+      </tr>
+      <tr style="border-bottom:0.5px solid #ddd">
+        <td style="padding:12px 16px;font-weight:600;color:#555;background:#f8f8f8">正式離職日期</td>
+        <td style="padding:12px 16px">${fmtDateFormal(e)}</td>
+      </tr>
+      <tr style="border-bottom:0.5px solid #ddd">
+        <td style="padding:12px 16px;font-weight:600;color:#555;background:#f8f8f8">服務年資</td>
+        <td style="padding:12px 16px">${tenure}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-weight:600;color:#555;background:#f8f8f8">離職原因</td>
+        <td style="padding:12px 16px">自願離職</td>
+      </tr>
+    </table>
+
+    <!-- Closing statement -->
+    <div style="font-size:14px;margin-bottom:48px">
+      以上所載事項均屬實，特此證明。
+    </div>
+
+    <!-- Signature block -->
     <div style="display:flex;justify-content:flex-end">
-      <div style="font-size:13px;line-height:2.8;border:1px solid #ccc;padding:20px 30px;border-radius:8px;min-width:280px">
-        <div>${emp.companyName}</div>
+      <div style="border:1px solid #ccc;border-radius:8px;padding:24px 36px;min-width:300px;font-size:13px;line-height:3">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px">${emp.companyName}</div>
         <div>統一編號：${emp.companyTax}</div>
-        <div>負 責 人：<span style="border-bottom:1px solid #333;display:inline-block;min-width:100px;margin-left:4px"></span>（簽章）</div>
-        <div>日　　期：${fmtDateFormal(e)}</div>
-        <div style="margin-top:16px;text-align:center;color:#888;font-size:12px">（公司大小章）</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          負責人／法定代理人：
+          <span style="display:inline-block;min-width:120px;border-bottom:1px solid #333"></span>
+        </div>
+        <div>開立日期：${issueDate}</div>
+        <div style="margin-top:16px;display:flex;gap:32px;justify-content:center">
+          <div style="text-align:center">
+            <div style="width:72px;height:72px;border:1.5px dashed #ccc;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px">大印</div>
+          </div>
+          <div style="text-align:center">
+            <div style="width:52px;height:52px;border:1.5px dashed #ccc;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:11px">小印</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>`;
-  printDoc(pdfHtml);
+  printDoc(pdfHtml, '離職證明書-'+(emp.nameZh||''));
 }
 
 function printLayoffNotice(){
