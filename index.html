@@ -1984,8 +1984,12 @@ function printHandover(){
         </td>
         <td style="border:1px solid #ccc;padding:10px 12px">
           □ 已移交 Completed　□ 未移交 Not Completed　□ 無 N/A<br>
-          <strong>交接人員</strong> / Handover Person：<span style="display:inline-block;width:80px;border-bottom:1px solid #333"></span><br>
-          <strong>交接項目</strong> / Handover Items：<span style="display:inline-block;width:160px;border-bottom:1px solid #333"></span>
+          <strong>交接人員</strong> / Handover Person：<span style="display:inline-block;width:100px;border-bottom:1px solid #333"></span><br><br>
+          <strong>交接項目</strong> / Handover Items：<br>
+          <span style="display:block;border-bottom:1px solid #ccc;margin-bottom:6px;padding-bottom:6px;min-height:20px">&nbsp;</span>
+          <span style="display:block;border-bottom:1px solid #ccc;margin-bottom:6px;padding-bottom:6px;min-height:20px">&nbsp;</span>
+          <span style="display:block;border-bottom:1px solid #ccc;margin-bottom:6px;padding-bottom:6px;min-height:20px">&nbsp;</span>
+          <span style="display:block;border-bottom:1px solid #ccc;padding-bottom:6px;min-height:20px">&nbsp;</span>
         </td>
       </tr>
       <tr>
@@ -2097,7 +2101,7 @@ function printOffCert(){
     <div style="border-bottom:2px solid #1a1917;margin-bottom:8px"></div>
     <div style="text-align:center;margin-bottom:4px">
       <div style="font-size:24px;font-weight:700;letter-spacing:0.3em">離　職　證　明　書</div>
-      <div style="font-size:12px;color:#666;font-style:italic;letter-spacing:0.05em;margin-top:4px">Certificate of Resignation / Employment Termination Certificate</div>
+      <div style="font-size:12px;color:#666;font-style:italic;letter-spacing:0.05em;margin-top:4px">Certificate of Employment</div>
     </div>
     <div style="border-bottom:1px solid #ccc;margin-bottom:20px"></div>
 
@@ -2156,6 +2160,18 @@ function printOffCert(){
           離職原因<br><span style="font-weight:400;color:#666;font-size:11px;font-style:italic">Reason for Leaving</span>
         </td>
         <td style="border:1px solid #ccc;padding:10px 14px">自願離職　<span style="color:#666;font-style:italic">Voluntary Resignation</span></td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #ccc;padding:10px 14px;background:#f5f5f5;font-weight:700;vertical-align:top">
+          在職年資<br><span style="font-weight:400;color:#666;font-size:11px;font-style:italic">Length of Service</span>
+        </td>
+        <td style="border:1px solid #ccc;padding:10px 14px">${(()=>{const yrs=Math.floor((e-s)/(1000*60*60*24*365.25));const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-yrs)*12);return yrs>0?yrs+' 年 '+mos+' 個月':mos+' 個月';})()}</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #ccc;padding:10px 14px;background:#f5f5f5;font-weight:700;vertical-align:top">
+          公司統一編號<br><span style="font-weight:400;color:#666;font-size:11px;font-style:italic">Company Tax ID</span>
+        </td>
+        <td style="border:1px solid #ccc;padding:10px 14px">${emp.companyTax||''}</td>
       </tr>
     </table>
 
