@@ -4,8 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>艾爾斯 HR 自動化系統</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js" crossorigin="anonymous"></script>
+<script>
+// Fallback: if firebase not loaded, try unpkg
+window.addEventListener('load', function(){
+  if(typeof firebase === 'undefined'){
+    var s1 = document.createElement('script');
+    s1.src = 'https://unpkg.com/firebase@10.12.0/app/dist/index.umd.cjs';
+    s1.onload = function(){
+      var s2 = document.createElement('script');
+      s2.src = 'https://unpkg.com/firebase@10.12.0/database/dist/index.umd.cjs';
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  }
+});
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3ef;color:#1a1917;min-height:100vh;font-size:15px}
@@ -67,7 +82,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
 .btn-amber{background:#fdf0d9;color:#7a4f0a;border-color:transparent}
 .btn-red{background:#fde8e8;color:#8a1a1a;border-color:transparent}
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-.text-output{background:#f8f7f3;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-all;margin-bottom:12px;max-height:400px;overflow-y:auto}
+.text-output{background:#ffffff;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-all;margin-bottom:12px;max-height:400px;overflow-y:auto}
 .checklist{display:flex;flex-direction:column;gap:8px}
 .check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;background:#fff;cursor:pointer;transition:all 0.1s}
 .check-item:hover{border-color:rgba(0,0,0,0.2)}
@@ -258,8 +273,12 @@ let fbReady = false;
 let currentKey = null; // key for current employee in Firebase
 
 function initFirebase() {
+  if(typeof firebase === 'undefined'){
+    setSyncDot(false, 'SDK載入中...');
+    setTimeout(initFirebase, 500);
+    return;
+  }
   try {
-    // If already initialized, reuse existing app
     if(firebase.apps && firebase.apps.length > 0){
       db = firebase.database();
     } else {
@@ -1169,23 +1188,41 @@ function loadAllEmployees(){
   const el = document.getElementById('dash-content');
   el.innerHTML = '<div style="color:#6b6966;font-size:14px;padding:20px">從 Firebase 載入員工清單...</div>';
 
-  const dbUrl = FIREBASE_CONFIG.databaseURL + '/hr_ob.json';
-  fetch(dbUrl)
-    .then(function(response){ return response.json(); })
-    .then(function(data){
-      allEmpRecords = data || {};
-      const count = Object.keys(allEmpRecords).length;
-      document.getElementById('dash-sync-dot').style.background = '#1a7a55';
-      document.getElementById('dash-sync-label').textContent = '已載入 ' + count + ' 筆';
-      if(count === 0){
-        el.innerHTML = '<div class="alert alert-info">目前尚無員工資料。請先進行入職流程並儲存資料。</div>';
-      } else {
-        renderEmployeeList();
+  function doRead(){
+    if(typeof firebase === 'undefined' || !db){
+      el.innerHTML = '<div class="alert alert-danger">Firebase SDK 尚未載入，請重新整理頁面（F5）後再試。</div>';
+      return;
+    }
+    db.ref('hr_ob').once('value')
+      .then(function(snap){
+        allEmpRecords = snap.val() || {};
+        const count = Object.keys(allEmpRecords).length;
+        document.getElementById('dash-sync-dot').style.background = '#1a7a55';
+        document.getElementById('dash-sync-label').textContent = '已載入 ' + count + ' 筆';
+        if(count === 0){
+          el.innerHTML = '<div class="alert alert-info">目前尚無員工資料。請先進行入職流程並儲存資料。</div>';
+        } else {
+          renderEmployeeList();
+        }
+      })
+      .catch(function(err){
+        el.innerHTML = '<div class="alert alert-danger">讀取失敗：' + err.message + '</div>';
+      });
+  }
+
+  if(fbReady && db){
+    doRead();
+  } else {
+    initFirebase();
+    let tries = 0;
+    const wait = setInterval(function(){
+      tries++;
+      if(fbReady && db){ clearInterval(wait); doRead(); }
+      if(tries > 20){ clearInterval(wait);
+        el.innerHTML = '<div class="alert alert-danger">Firebase 連線逾時，請重新整理頁面後再試。</div>';
       }
-    })
-    .catch(function(err){
-      el.innerHTML = '<div class="alert alert-danger">載入失敗：' + err.message + '</div>';
-    });
+    }, 300);
+  }
 }
 function renderEmployeeList(){
   const el = document.getElementById('dash-content');
@@ -1199,10 +1236,10 @@ function renderEmployeeList(){
   // Group by flow type
   const groups = {onboard:[], offboard:[], layoff:[]};
   keys.forEach(key => {
-    const r = allEmpRecords[key];
-    const e = r.emp || {};
-    const type = r.flowType || (e.salary?'layoff':e.endDate&&!e.startDate?'offboard':'onboard');
-    groups[type].push({key, record:r, emp:e});
+    const rec = allEmpRecords[key];
+    const e = rec.emp || {};
+    const type = rec.flowType || (e.salary?'layoff':e.endDate&&!e.startDate?'offboard':'onboard');
+    groups[type].push({key, record:rec, emp:e});
   });
 
   const typeInfo = {
@@ -1223,7 +1260,7 @@ function renderEmployeeList(){
     items.forEach(({key, record, emp:e}) => {
       const doneArr = type==='onboard'?(record.obDone||[]):type==='offboard'?(record.offDone||[]):(record.layDone||[]);
       const total = type==='onboard'?11:type==='offboard'?6:5;
-      const pendingCnt = countPendingChecks(r, type);
+      const pendingCnt = countPendingChecks(record, type);
       const totalChecks = Object.keys(PENDING_CHECKS[type]||{}).length;
       const doneCnt = totalChecks - pendingCnt;
       out += '<button data-key="'+key+'" data-type="'+type+'" onclick="selectEmployee(this.dataset.key,this.dataset.type)" style="'
