@@ -1169,23 +1169,22 @@ function loadAllEmployees(){
   const el = document.getElementById('dash-content');
   el.innerHTML = '<div style="color:#6b6966;font-size:14px;padding:20px">從 Firebase 載入員工清單...</div>';
 
-  // Use REST API - works even if SDK not loaded
   const dbUrl = FIREBASE_CONFIG.databaseURL + '/hr_ob.json';
   fetch(dbUrl)
-    .then(r => r.json())
-    .then(data => {
+    .then(function(response){ return response.json(); })
+    .then(function(data){
       allEmpRecords = data || {};
       const count = Object.keys(allEmpRecords).length;
       document.getElementById('dash-sync-dot').style.background = '#1a7a55';
       document.getElementById('dash-sync-label').textContent = '已載入 ' + count + ' 筆';
       if(count === 0){
-        el.innerHTML = '<div class="alert alert-info">目前尚無員工資料。<br>請先進行入職/離職/資遣流程並儲存資料後再查看。</div>';
+        el.innerHTML = '<div class="alert alert-info">目前尚無員工資料。請先進行入職流程並儲存資料。</div>';
       } else {
         renderEmployeeList();
       }
     })
-    .catch(e => {
-      el.innerHTML = '<div class="alert alert-danger">載入失敗：' + e.message + '<br><small>請確認網路連線正常。</small></div>';
+    .catch(function(err){
+      el.innerHTML = '<div class="alert alert-danger">載入失敗：' + err.message + '</div>';
     });
 }
 function renderEmployeeList(){
