@@ -1523,6 +1523,38 @@ const OFF_RENDER = [
     const msg = 'Dear '+emp.nameZh+',\n\n您好，我們已收到您的離職通知。\n感謝您這段時間以來在'+brand+'大家庭的付出與協助！為了協助您順利完成離職與交接手續，再請您撥空協助完成以下事項：\n\n1. 離職申請書\n2. 離職移交會辦單\n\n祝您未來的職涯發展順利、步步高升！\n如有任何流程上的疑問，歡迎隨時與我聯絡。\n\n祝 順心\nSharon Tseng\n'+brand+'人資部';
     return '<div class="section-card">'
       +'<div class="section-title">📝 離職申請書 ＆ 移交會辦單</div>'
+      +'<div style="margin-bottom:14px;padding:16px;background:#f8f7f3;border-radius:10px">'
+        +'<div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 請填入以下資訊，將自動帶入移交會辦單</div>'
+        +'<div class="form-grid">'
+          +'<div class="form-group"><label class="form-label">勞健保退保</label>'
+            +'<select class="form-select" id="ho-labor" onchange="emp.hoLabor=this.value;saveFirebase()">'
+              +'<option value="">— 請選擇 —</option>'
+              +'<option value="完成" '+(emp.hoLabor==="完成"?"selected":"")+'>完成</option>'
+              +'<option value="未完成" '+(emp.hoLabor==="未完成"?"selected":"")+'>未完成</option>'
+            +'</select>'
+          +'</div>'
+          +'<div class="form-group"><label class="form-label">團險退保</label>'
+            +'<select class="form-select" id="ho-ins" onchange="emp.hoIns=this.value;saveFirebase()">'
+              +'<option value="">— 請選擇 —</option>'
+              +'<option value="完成" '+(emp.hoIns==="完成"?"selected":"")+'>完成</option>'
+              +'<option value="未完成" '+(emp.hoIns==="未完成"?"selected":"")+'>未完成</option>'
+            +'</select>'
+          +'</div>'
+          +'<div class="form-group"><label class="form-label">NUEIP 掛離職日、轉出勞健保</label>'
+            +'<select class="form-select" id="ho-nueip" onchange="emp.hoNueip=this.value;saveFirebase()">'
+              +'<option value="">— 請選擇 —</option>'
+              +'<option value="完成" '+(emp.hoNueip==="完成"?"selected":"")+'>完成</option>'
+              +'<option value="未完成" '+(emp.hoNueip==="未完成"?"selected":"")+'>未完成</option>'
+            +'</select>'
+          +'</div>'
+          +'<div class="form-group"><label class="form-label">特休時數剩餘（hr）</label>'
+            +'<input class="form-input" type="number" placeholder="例：8" value="'+(emp.hoAnnual||"")+'" oninput="emp.hoAnnual=this.value;saveFirebase()">'
+          +'</div>'
+          +'<div class="form-group"><label class="form-label">補休時數剩餘（hr）</label>'
+            +'<input class="form-input" type="number" placeholder="例：4" value="'+(emp.hoComp||"")+'" oninput="emp.hoComp=this.value;saveFirebase()">'
+          +'</div>'
+        +'</div>'
+      +'</div>'
       +'<div class="btn-row">'
         +'<button class="btn btn-primary" onclick="printResign()">📄 產生離職申請書 PDF</button>'
         +'<button class="btn btn-primary" onclick="printHandover()">📄 產生移交會辦單 PDF</button>'
@@ -1848,9 +1880,9 @@ function printHandover(){
     <table class="pdf-table">
       <tr><th style="width:45%">項目</th><th>批注意見／完成情況</th></tr>
       <tr><td>1. 公司資產歸還（筆電、名片）</td><td>□ 已移交　□ 未移交　□ 無</td></tr>
-      <tr><td>2. 勞健保退保</td><td>${emp.hoLabor||'□ 完成　□ 未完成'}</td></tr>
-      <tr><td>3. 團險退保</td><td>${emp.hoIns||'□ 完成　□ 未完成'}</td></tr>
-      <tr><td>4. NUEIP 掛離職日、轉出勞健保</td><td>${emp.hoNueip||'□ 完成　□ 未完成'}</td></tr>
+      <tr><td>2. 勞健保退保</td><td>${emp.hoLabor==='完成'?'☑ 完成':emp.hoLabor==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成'}</td></tr>
+      <tr><td>3. 團險退保</td><td>${emp.hoIns==='完成'?'☑ 完成':emp.hoIns==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成'}</td></tr>
+      <tr><td>4. NUEIP 掛離職日、轉出勞健保</td><td>${emp.hoNueip==='完成'?'☑ 完成':emp.hoNueip==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成'}</td></tr>
       <tr><td>5. 特休與補休時數結算</td><td>特休剩餘：${emp.hoAnnual||'＿＿＿'} hr　補休剩餘：${emp.hoComp||'＿＿＿'} hr</td></tr>
     </table>
     <div class="pdf-sign-row" style="margin-top:30px">
