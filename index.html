@@ -509,7 +509,8 @@ const OB_RENDER = [    // 0: Employee data (no empId, add personalEmail)
       <div class="form-group"><label class="form-label">公司 Email<span class="form-required">*</span></label><input class="form-input" id="f7" placeholder="例：bessy.tung@isec.com.tw" value="${emp.email||''}"></div>
       <div class="form-group"><label class="form-label">員工個人 Email<span class="form-required">*</span></label><input class="form-input" id="f8" placeholder="例：bessy@gmail.com（寄錄取通知用）" value="${emp.personalEmail||''}"></div>
     </div>
-    <div class="btn-row"><button class="btn btn-primary" onclick="saveObEmp()">儲存並繼續 →</button></div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="saveObEmp()">儲存並繼續 →</button>
+      <button class="btn btn-amber" onclick="saveAsNewEmployee()" title="另存為新員工，舊資料保留">📋 另存為新員工</button></div>
   </div>`;
   },
   // Offer email
@@ -909,6 +910,33 @@ Sharon Tseng</div>
   },
 ];
 
+function saveAsNewEmployee(){
+  const newName = prompt('請輸入新員工姓名（將以此名稱另存一份新資料）：');
+  if(!newName || !newName.trim()) return;
+  const newKey = newName.trim().replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
+  if(newKey === currentKey){
+    alert('新名稱與目前相同，請輸入不同的姓名。');
+    return;
+  }
+  // Copy current emp data with new name
+  const newEmp = Object.assign({}, emp, {nameZh: newName.trim()});
+  const newRecord = {emp: newEmp, obDone: new Array(11).fill(false), flowType: 'onboard'};
+  if(!fbReady || !db){
+    alert('Firebase 未連線，無法另存。');
+    return;
+  }
+  db.ref('hr_ob/' + newKey).set(newRecord).then(()=>{
+    if(confirm('已另存為「' + newName.trim() + '」！\n是否切換到新員工繼續操作？')){
+      currentKey = newKey;
+      emp = newEmp;
+      obDone = new Array(11).fill(false);
+      obStep = 0;
+      setSyncDot(true, '已切換至 ' + newName.trim());
+      renderOb();
+    }
+  }).catch(e => alert('另存失敗：' + e.message));
+}
+
 function saveObEmp(){
   const v=id=>document.getElementById(id).value.trim();
   const nameZh=v('f0'),nameEn=v('f1'),startDate=v('f3'),cid=v('f4'),dept=v('f5'),title=v('f6'),email=v('f7'),personalEmail=v('f8');
@@ -1140,35 +1168,26 @@ function openDashboard(){
 function loadAllEmployees(){
   const el = document.getElementById('dash-content');
   el.innerHTML = '<div style="color:#6b6966;font-size:14px;padding:20px">從 Firebase 載入員工清單...</div>';
-  
-  function doLoad(){
-    db.ref('hr_ob').once('value', snap => {
-      allEmpRecords = snap.val() || {};
+
+  // Use REST API - works even if SDK not loaded
+  const dbUrl = FIREBASE_CONFIG.databaseURL + '/hr_ob.json';
+  fetch(dbUrl)
+    .then(r => r.json())
+    .then(data => {
+      allEmpRecords = data || {};
       const count = Object.keys(allEmpRecords).length;
       document.getElementById('dash-sync-dot').style.background = '#1a7a55';
       document.getElementById('dash-sync-label').textContent = '已載入 ' + count + ' 筆';
-      renderEmployeeList();
-    }).catch(e => {
-      el.innerHTML = '<div class="alert alert-danger">載入失敗：' + e.message + '<br><small>請確認 Firebase 規則已設定為允許讀取。</small></div>';
+      if(count === 0){
+        el.innerHTML = '<div class="alert alert-info">目前尚無員工資料。<br>請先進行入職/離職/資遣流程並儲存資料後再查看。</div>';
+      } else {
+        renderEmployeeList();
+      }
+    })
+    .catch(e => {
+      el.innerHTML = '<div class="alert alert-danger">載入失敗：' + e.message + '<br><small>請確認網路連線正常。</small></div>';
     });
-  }
-
-  // If Firebase already ready, load directly
-  if(fbReady && db){ doLoad(); return; }
-  
-  // Otherwise init and wait
-  try {
-    if(!firebase.apps || firebase.apps.length === 0){
-      firebase.initializeApp(FIREBASE_CONFIG);
-    }
-    db = firebase.database();
-    fbReady = true;
-    doLoad();
-  } catch(e) {
-    el.innerHTML = '<div class="alert alert-danger">Firebase 初始化失敗：' + e.message + '</div>';
-  }
 }
-
 function renderEmployeeList(){
   const el = document.getElementById('dash-content');
   const keys = Object.keys(allEmpRecords);
