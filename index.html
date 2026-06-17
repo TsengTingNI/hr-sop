@@ -1893,14 +1893,6 @@ function printResign(){
           <div style="border-bottom:1px solid #ccc;height:24px"></div>
         </td>
       </tr>
-      <tr>
-        <td style="border:1px solid #ccc;padding:10px 12px;background:#f5f5f5;font-weight:700;vertical-align:top">主管核定<br><span style="font-weight:400;color:#666">Supervisor Approval</span><br><br>離職日期<br><span style="font-weight:400;color:#666">Approved Last Day</span><br><br>及備註<br><span style="font-weight:400;color:#666">& Remarks</span></td>
-        <td style="border:1px solid #ccc;padding:10px 12px;vertical-align:top">
-          <div>核定離職日期 / Approved Resignation Date：＿＿＿＿ 年 ＿＿ 月 ＿＿ 日</div>
-          <div style="margin-top:8px">備註 / Remarks：</div>
-          <div style="border-bottom:1px solid #ccc;margin-top:24px;height:24px"></div>
-        </td>
-      </tr>
     </table>
 
     <!-- Signatures -->
@@ -2081,14 +2073,12 @@ function printOffCert(){
   const s=new Date(emp.startDate),e=new Date(emp.endDate);
   const logoSrc=getLogo(emp.cid);
   const coName=emp.companyName||'';
-  const coNameEn = (['stanley','joyce_e'].includes(emp.cid)?'Stanley English Education Co., Ltd.':coName+' Co., Ltd.');
-
   // Format dates
   function fmtBilingual(d){
     if(!d) return '—';
     const dt=new Date(d);
     const y=dt.getFullYear(),m=String(dt.getMonth()+1).padStart(2,'0'),day=String(dt.getDate()).padStart(2,'0');
-    return `${y} 年 ${m} 月 ${day} 日　（${y} / ${m} / ${day}）`;
+    return `${y} 年 ${m} 月 ${day} 日`;
   }
   let bdayStr='（未填寫 / Not Provided）';
   if(emp.birthday) bdayStr=fmtBilingual(emp.birthday);
@@ -2141,7 +2131,7 @@ function printOffCert(){
         <td style="border:1px solid #ccc;padding:10px 14px;background:#f5f5f5;font-weight:700;vertical-align:top">
           任職公司<br><span style="font-weight:400;color:#666;font-size:11px;font-style:italic">Employer</span>
         </td>
-        <td style="border:1px solid #ccc;padding:10px 14px">${coName}<br><span style="color:#666;font-size:12px;font-style:italic">${coNameEn}</span></td>
+        <td style="border:1px solid #ccc;padding:10px 14px">${coName}</td>
       </tr>
       <tr>
         <td style="border:1px solid #ccc;padding:10px 14px;background:#f5f5f5;font-weight:700;vertical-align:top">
