@@ -1632,7 +1632,7 @@ const OFF_RENDER = [
       +'<div class="alert alert-success" style="margin-top:16px">🎉 離職流程已全部完成！</div>'
       +'<div class="btn-row">'
         +'<button class="btn btn-green" onclick="printOffSummary()">📄 匯出離職追蹤 PDF</button>'
-        +'<button class="btn btn-primary" onclick="offDone[5]=true;updateProgress(&quot;off&quot;,offDone,6);saveFirebase();renderOff();alert(&quot;✅ 完成！&quot;)">✅ 確認完成</button>'
+        +'<button class="btn btn-primary" onclick="offDone[4]=true;updateProgress(&quot;off&quot;,offDone,5);saveFirebase();renderOff();alert(&quot;✅ 完成！&quot;)">✅ 確認完成</button>'
       +'</div>'
       +'</div>';
   },
@@ -1776,9 +1776,11 @@ const LAY_RENDER = [
       +'<div class="section-desc">點擊下方按鈕產生 PDF，蓋章後發給員工供申請失業給付使用。</div>'
       +'<div class="btn-row"><button class="btn btn-primary" onclick="printLayoffCert()">📄 產生非自願離職證明書 PDF</button></div>'
       +'<div class="alert alert-success" style="margin-top:16px">✅ 完成後請確認退保作業已全部辦理。</div>'
-      +'<div class="btn-row"><button class="btn btn-primary" onclick="layDone[4]=true;updateProgress(&quot;lay&quot;,layDone,5);saveFirebase();renderLay();alert(&quot;✅ 資遣流程完成！&quot;)">✅ 確認全部完成</button>'
+      +'<div class="btn-row">'
         +'<button class="btn btn-green" onclick="printLaySummary()">📄 匯出資遣追蹤 PDF</button>'
+        +'<button class="btn btn-primary" onclick="layDone[4]=true;updateProgress(&quot;lay&quot;,layDone,5);saveFirebase();renderLay();alert(&quot;✅ 資遣流程完成！&quot;)">✅ 確認全部完成</button>'
       +'</div>'
+      +layNav()
       +'</div>';
   },
 ];
