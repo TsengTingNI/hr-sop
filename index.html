@@ -1483,7 +1483,7 @@ function offPrev(){if(offStep>0){offStep--;renderOff();}}
 function offNav(){
   return '<div class="nav-buttons">'
     +'<button class="btn" onclick="offPrev()" '+(offStep===0?'disabled style="opacity:0.4"':'')+'">← 上一步</button>'
-    +'<button class="btn btn-primary" onclick="offNext()">'+(offStep===5?'✅ 完成':'下一步 →')+'</button>'
+    +'<button class="btn btn-primary" onclick="offNext()">'+(offStep===4?'✅ 完成':'下一步 →')+'</button>'
     +'</div>';
 }
 
@@ -1634,6 +1634,7 @@ const OFF_RENDER = [
         +'<button class="btn btn-green" onclick="printOffSummary()">📄 匯出離職追蹤 PDF</button>'
         +'<button class="btn btn-primary" onclick="offDone[4]=true;updateProgress(&quot;off&quot;,offDone,5);saveFirebase();renderOff();alert(&quot;✅ 完成！&quot;)">✅ 確認完成</button>'
       +'</div>'
+      +offNav()
       +'</div>';
   },
 ];
