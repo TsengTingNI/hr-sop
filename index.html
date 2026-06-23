@@ -1247,7 +1247,7 @@ function renderEmployeeList(){
   }
 
   // Group by flow type
-  const groups = {onboard:[], offboard:[], layoff:[]};
+  const groups = {onboard:[], offboard:[], layoff:[], cancelled:[]};
   keys.forEach(key => {
     const rec = allEmpRecords[key];
     const e = rec.emp || {};
@@ -1259,11 +1259,12 @@ function renderEmployeeList(){
     onboard:{label:'🎉 入職', color:'#0f6e56', bg:'#e3f5ed'},
     offboard:{label:'👋 離職', color:'#7a4f0a', bg:'#fdf0d9'},
     layoff:{label:'⚖️ 資遣', color:'#8a1a1a', bg:'#fde8e8'},
+    cancelled:{label:'❌ 取消', color:'#555555', bg:'#ebebeb'},
   };
 
   let out = '<div style="margin-bottom:16px;font-size:13px;color:#6b6966">點選員工姓名查看未完成事項</div>';
 
-  ['onboard','offboard','layoff'].forEach(type => {
+  ['onboard','offboard','layoff','cancelled'].forEach(type => {
     const items = groups[type];
     if(items.length === 0) return;
     const info = typeInfo[type];
@@ -1271,19 +1272,21 @@ function renderEmployeeList(){
     out += '<div style="font-size:12px;font-weight:700;color:'+info.color+';background:'+info.bg+';padding:5px 12px;border-radius:6px;display:inline-block;margin-bottom:8px">'+info.label+'</div>';
     out += '<div style="display:flex;flex-wrap:wrap;gap:8px">';
     items.forEach(({key, record, emp:e}) => {
-      const doneArr = type==='onboard'?(record.obDone||[]):type==='offboard'?(record.offDone||[]):(record.layDone||[]);
-      const total = type==='onboard'?11:type==='offboard'?6:5;
-      const pendingCnt = countPendingChecks(record, type);
-      const totalChecks = Object.keys(PENDING_CHECKS[type]||{}).length;
-      const doneCnt = totalChecks - pendingCnt;
+      const isCancelledType = (type === 'cancelled');
+      const originalType = record.cancelledFrom || '';
+      const originalTypeLabel = {onboard:'入職', offboard:'離職', layoff:'資遣'}[originalType] || originalType;
+      const cancelledAt = record.cancelledAt ? record.cancelledAt.slice(0,10) : '';
+      const pendingCnt = isCancelledType ? 0 : countPendingChecks(record, type);
+      const subText = isCancelledType
+        ? (e.title||'—')+'　原流程：'+(originalTypeLabel||'—')+(cancelledAt?'　取消日：'+cancelledAt:'')
+        : (e.title||'—')+'　到職日：'+(e.startDate||'—')+(e.endDate?'　離職日：'+e.endDate:'')+'　細項未完成 '+pendingCnt+' 項';
+      const subColor = isCancelledType ? '#888' : (pendingCnt===0?'#1a7a55':'#c97a0a');
       out += '<button data-key="'+key+'" data-type="'+type+'" onclick="selectEmployee(this.dataset.key,this.dataset.type)" style="'
         +'padding:10px 16px;border-radius:10px;border:1.5px solid '+(selectedEmpKey===key?info.color:'rgba(0,0,0,0.12)')+';'
         +'background:'+(selectedEmpKey===key?info.bg:'#fff')+';cursor:pointer;font-family:inherit;'
         +'font-size:13px;font-weight:600;color:#1a1917;transition:all 0.1s;text-align:left">'
         +'<div>'+((e.nameZh)||key)+'</div>'
-        +'<div style="font-size:11px;margin-top:3px;font-weight:400;color:'+(pendingCnt===0?'#1a7a55':'#c97a0a')+'">'
-          +(e.title||'—')+'　到職日：'+(e.startDate||'—')+(e.endDate?'　離職日：'+e.endDate:'')+'　細項未完成 '+pendingCnt+' 項'
-        +'</div>'
+        +'<div style="font-size:11px;margin-top:3px;font-weight:400;color:'+subColor+'">'+subText+'</div>'
         +'</button>';
     });
     out += '</div></div>';
@@ -1439,6 +1442,16 @@ function renderPending(){
     });
   }
 
+  // 取消按鈕（固定顯示於未完成事項卡片最下方）
+  const isCancelled = (type === 'cancelled');
+  if(!isCancelled){
+    out += '<div style="margin-top:16px;padding-top:14px;border-top:0.5px solid rgba(0,0,0,0.12)">';
+    out += '<button onclick="cancelEmployee(\''+selectedEmpKey+'\',\''+type+'\')" '
+      +'style="padding:8px 18px;border-radius:9px;border:0.5px solid #c72c2c;background:#fde8e8;color:#8a1a1a;'
+      +'font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.12s">'
+      +'❌ 取消此流程</button>';
+    out += '</div>';
+  }
   out += '</div>';
   pendingEl.innerHTML = out;
 }
@@ -1466,6 +1479,28 @@ function toggleDashCheck(key, type, checkId){
   db.ref('hr_ob/'+key+'/emp/_checks/'+checkId).set(true).then(()=>{
     renderEmployeeList();
     renderPending();
+  });
+}
+// ============================================================
+
+function cancelEmployee(key, originalType){
+  if(!allEmpRecords[key]) return;
+  const e = allEmpRecords[key].emp || {};
+  const name = e.nameZh || key;
+  if(!confirm('確定要將「' + name + '」的流程標記為取消？\n此操作會將其移入「取消」類別，可隨時在 Firebase 中還原。')) return;
+  // 記錄原始流程類型，並更新 flowType 為 cancelled
+  allEmpRecords[key].cancelledFrom = originalType;
+  allEmpRecords[key].flowType = 'cancelled';
+  db.ref('hr_ob/' + key).update({
+    flowType: 'cancelled',
+    cancelledFrom: originalType,
+    cancelledAt: new Date().toISOString()
+  }).then(() => {
+    selectedEmpKey = null;
+    selectedEmpType = null;
+    renderEmployeeList();
+    const pendingEl = document.getElementById('pending-area');
+    if(pendingEl) pendingEl.innerHTML = '';
   });
 }
 // ============================================================
