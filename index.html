@@ -604,12 +604,29 @@ Sharon Tseng
 到職日：${emp.startDate}
 
 需要設定的項目：
-1. Google Mail 帳號（${emp.email}）
-2. LINE WORK 帳號（${emp.email.replace('.com.tw','')}）
-3. CRM 學生系統帳號（帳號：${eu.split('.')[0]}）
-4. NAS 公司雲端硬碟帳號（帳號：isec.${enFirst}）
+1.Google 帳號
+E-mail：${emp.email}
+密碼：
+Gmail 簽名檔：請找設計部 Tanisha 協助設定
 
-請設定完成後回覆帳號密碼，謝謝！`;
+2.LINE WORK 帳號
+帳號：${emp.email.replace('.com.tw','')}
+密碼：
+
+3.CRM 學生系統（https://www.isec.com.tw/ej03xu3/main.php）
+帳號：${eu.split('.')[0]}
+密碼：
+驗證密碼：7088
+*兩道密碼皆可自行更改
+
+4.NAS 公司雲端硬碟
+（平時請用電腦版，但依舊提供網頁版以防萬一）
+網頁版：quickconnect.to/ISEC
+帳號：isec.${enFirst}
+密碼：
+備註：請找 Stanley 幫忙設定電腦版
+
+5.訓練 SOP 網址:`;
     return `<div class="section-card">
     <div class="section-title">💻 IT 設定（Stanley）</div>
     <div class="section-desc">傳送訊息給 <strong>Stanley</strong>，並等待他回覆密碼後填入下方。</div>
@@ -617,18 +634,7 @@ Sharon Tseng
     <div class="btn-row"><button class="btn" onclick="copyEl('nm')">📋 複製訊息給 Stanley</button></div>
 
     <div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.08)">
-      <div style="font-size:13px;font-weight:700;margin-bottom:8px">🔗 訓練 SOP 網址（主管提供後填入）</div>
-      <div class="form-group" style="margin-bottom:14px">
-        <input class="form-input" id="it-sopurl" placeholder="請貼上主管提供的訓練 SOP 網址" value="${emp.sopUrl||''}"
-          oninput="emp.sopUrl=this.value;saveFirebase()">
-      </div>
-      ${['consultant','admin'].includes(emp.jobType)||!emp.jobType?`
-      <div style="margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;margin-bottom:4px">🔗 顧問／行政訓練 SOP 網址（主管提供後填入）</div>
-        <div style="font-size:12px;color:#6b6966;margin-bottom:8px">僅顧問和行政職系適用，填入後將自動帶入報到須知。</div>
-        <input class="form-input" id="it-consulturl" placeholder="請貼上顧問/行政訓練 SOP 網址" value="${emp.consultUrl||''}"
-            oninput="emp.consultUrl=this.value;saveFirebase()">
-      </div>`:''}
+
       <div style="font-size:13px;font-weight:700;margin-bottom:4px">📥 Stanley 回覆後填入密碼</div>
       <div style="font-size:12px;color:#6b6966;margin-bottom:12px">填寫完畢即代表完成，密碼將自動帶入報到須知 Email。</div>
       <div class="form-grid">
@@ -720,7 +726,7 @@ Dear ${emp.nameZh},
 
 1. 筆電開機密碼為 7088
 
-2. 所公司SOP：https://docs.google.com/spreadsheets/d/10MCB4ytRLPw_sT2S58zpjWAJTx52C5zCxyOMqCOgV0c/edit?usp=drive_link
+2. 公司SOP：https://docs.google.com/spreadsheets/d/10MCB4ytRLPw_sT2S58zpjWAJTx52C5zCxyOMqCOgV0c/edit?usp=drive_link
 
 3. NUEIP 打卡系統（https://portal.nueip.com/home）
 公司代碼：isec
