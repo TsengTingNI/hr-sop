@@ -254,6 +254,18 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
 
 <script>
 // ============================================================
+// UTILS
+// ============================================================
+function escapeHtml(str){
+  if(str==null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ============================================================
 // CONSTANTS
 // ============================================================
 
@@ -573,7 +585,7 @@ Sharon Tseng
     <div class="section-title">📧 發出錄取通知 Email</div>
     <div class="alert alert-success">📨 收件人（員工個人信箱）：<strong>${emp.personalEmail||'（未填寫）'}</strong></div>
     <div class="alert alert-info">📎 附件：錄用通知書、人事資料卡、年薪資受領人申報表</div>
-    <div class="text-output" id="oe">${txt}</div>
+    <div class="text-output" id="oe">${escapeHtml(txt)}</div>
     <div class="btn-row">
       <button class="btn" onclick="copyEl('oe')">📋 複製內容</button>
     </div>
@@ -630,7 +642,7 @@ Gmail 簽名檔：請找設計部 Tanisha 協助設定
     return `<div class="section-card">
     <div class="section-title">💻 IT 設定（Stanley）</div>
     <div class="section-desc">傳送訊息給 <strong>Stanley</strong>，並等待他回覆密碼後填入下方。</div>
-    <div class="text-output" id="nm">${msg}</div>
+    <div class="text-output" id="nm">${escapeHtml(msg)}</div>
     <div class="btn-row"><button class="btn" onclick="copyEl('nm')">📋 複製訊息給 Stanley</button></div>
 
     <div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.08)">
@@ -778,7 +790,7 @@ Sharon Tseng
     <div class="alert alert-success">📨 收件人：<strong>${emp.personalEmail||'（未填寫個人信箱）'}</strong></div>
     <div class="alert alert-warn">📎 <strong>附件提醒：</strong>請附上「南山人壽新醫療給付團體健康保險(NGHS)_實支實付」PDF（開啟密碼：7777）</div>
     ${!(emp.gmailPwd&&emp.linePwd&&emp.crmPwd&&emp.nasPwd)?'<div class="alert alert-danger">⚠️ 尚未填入所有密碼（步驟 3），請先完成 IT 設定再發送。</div>':''}
-    <div class="text-output" id="ne">${txt}</div>
+    <div class="text-output" id="ne">${escapeHtml(txt)}</div>
     <div class="btn-row"><button class="btn" onclick="copyEl('ne')">📋 複製內容</button></div>
     ${obNav()}
   </div>`;
@@ -863,7 +875,7 @@ Sharon Tseng</div>
           +'<input type="file" id="e-photo" accept="image/*" class="form-input" style="padding:6px" onchange="handleEstellePhoto(this)">'
         +'</div>'
       +'</div>'
-      +'<div class="text-output" id="es">'+msg+'</div>'
+      +'<div class="text-output" id="es">'+escapeHtml(msg)+'</div>'
       +'<div class="btn-row"><button class="btn" onclick="copyEl(\'es\')">📋 複製訊息</button></div>'
       +'<div id="estelle-photo-preview" style="margin-top:12px;display:none">'
         +'<div style="font-size:12px;color:#6b6966;margin-bottom:6px">📷 大頭照預覽（請手動附加至訊息或 Email）</div>'
@@ -1617,7 +1629,7 @@ const OFF_RENDER = [
       +'</div>'
       +'<div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.08)">'
         +'<div style="font-size:13px;font-weight:700;margin-bottom:8px">📧 傳送給員工的訊息</div>'
-        +'<div class="text-output" id="off-msg">'+msg+'</div>'
+        +'<div class="text-output" id="off-msg">'+escapeHtml(msg)+'</div>'
         +'<div class="btn-row"><button class="btn" onclick="copyEl(&quot;off-msg&quot;)">📋 複製訊息</button></div>'
       +'</div>'
       +offNav()+'</div>';
