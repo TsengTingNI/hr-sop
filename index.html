@@ -738,37 +738,35 @@ Dear ${emp.nameZh},
 
 1. 筆電開機密碼為 7088
 
-2. 公司SOP：https://docs.google.com/spreadsheets/d/10MCB4ytRLPw_sT2S58zpjWAJTx52C5zCxyOMqCOgV0c/edit?usp=drive_link
-
-3. NUEIP 打卡系統（https://portal.nueip.com/home）
+2. NUEIP 打卡系統（https://portal.nueip.com/home）
 公司代碼：isec
 員工編號：${emp.empId||'（待確認）'}
 預設登入密碼：0000
 備註：登入後請記得修改「登入密碼」與「認證密碼」。
 
-4. Google 帳號
+3. Google 帳號
 E-mail：${emp.email}
 密碼：${gmailPwd}
 Gmail 簽名檔：請找設計部 Tanisha 協助設定
 
-5. LINE WORK 帳號
+4. LINE WORK 帳號
 帳號：${emp.email.replace('.com.tw','')}
 密碼：${linePwd}
 
-6. CRM 學生系統（https://www.isec.com.tw/ej03xu3/main.php）
+5. CRM 學生系統（https://www.isec.com.tw/ej03xu3/main.php）
 帳號：${eu.split('.')[0]}
 密碼：${crmPwd}
 驗證密碼：7088
 *兩道密碼皆可自行更改
 
-7. NAS 公司雲端硬碟
+6. NAS 公司雲端硬碟
 （平時請用電腦版，但依舊提供網頁版以防萬一）
 網頁版：quickconnect.to/ISEC
 帳號：isec.${enFirst}
 密碼：${nasPwd}
 備註：請找 Stanley 幫忙設定電腦版
 ${(emp.consultUrl||emp.sopUrl)?(
-'\n8. 職務訓練 SOP 請參考：\n'+(emp.consultUrl||emp.sopUrl)
+'\n7. 職務訓練 SOP 請參考：\n'+(emp.consultUrl||emp.sopUrl)
 ):''}
 
 🚨 重要：電腦的 PDF ADOBE 和 OFFICE 軟體「絕對不可以」更新。
