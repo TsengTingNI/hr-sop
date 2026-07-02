@@ -320,7 +320,7 @@ function saveFirebase() {
 function loadFirebase(key) {
   if(!fbReady || !db) return;
   currentKey = key;
-  db.ref('hr_ob/' + key).on('value', snap => {
+  db.ref('hr_ob/' + key).once('value').then(snap => {
     const val = snap.val();
     if(val) {
       if(val.emp) emp = val.emp;
@@ -328,7 +328,7 @@ function loadFirebase(key) {
       if(val.offDone) offDone = val.offDone;
       if(val.layDone) layDone = val.layDone;
     }
-    // Always render regardless of whether data exists
+    // Render once on load; subsequent saves do NOT re-render to avoid scroll jump
     if(currentFlow==='onboard') renderOb();
     else if(currentFlow==='offboard') renderOff();
     else if(currentFlow==='layoff') renderLay();
@@ -559,19 +559,18 @@ Dear ${emp.nameZh} 您好：
 
 若您同意接受本公司的職缺邀約，請您協助於收到錄取通知後的兩日內，詳閱合約內容並於通知書上【簽名並掃描回傳】。
 
-為利後續行政與建檔作業，也請您將下列「第一階段：事先備齊文件」的電子檔，連同已簽名的錄用通知書一併回覆給我們；其餘「第二階段：到職日繳交文件」則請於到職當天攜帶紙本提交即可。
+為利後續行政與建檔作業，也請您將下列「第一階段：事先備齊文件」的電子檔，連同已簽名的錄用通知書一併回覆給我們；其餘「第二階段：應備文件」則請於到職前以電子檔形式提交即可。
 
 【第一階段：事先備齊文件】
 1. 身分證正反面影印本
 2. 最高學歷證件影本
 3. 員工履歷表 104版本
-4. 人事資料卡（有附件）
+4. 人事資料卡（有附件；請附上相片）
 5. 年薪資受領人申報表（有附件）
 
-【第二階段：請於到職當日現場繳交】
-1. 中國信託銀行帳戶存摺封面影本 1 份
-2. 一吋照片 1 張（請直接貼於人事資料卡上）
-3. 良民證正本 1 份
+【第二階段：應備文件】
+1. 中國信託銀行帳戶存摺封面電子檔
+2. 良民證電子檔
 
 我們在收到您的簽回確認後，將會隨即為您寄發「第二階段：報到須知 Mail」，內含確定的報到時間、地點以及相關資訊。
 
@@ -619,7 +618,7 @@ Sharon Tseng
 1.Google 帳號
 E-mail：${emp.email}
 密碼：
-Gmail 簽名檔：請找設計部 Tanisha 協助設定
+簽名檔：請HR協助提供
 
 2.LINE WORK 帳號
 帳號：${emp.email.replace('.com.tw','')}
@@ -636,9 +635,7 @@ Gmail 簽名檔：請找設計部 Tanisha 協助設定
 網頁版：quickconnect.to/ISEC
 帳號：isec.${enFirst}
 密碼：
-備註：請找 Stanley 幫忙設定電腦版
-
-5.訓練 SOP 網址:`;
+備註：請找 Stanley 幫忙設定電腦版`;
     return `<div class="section-card">
     <div class="section-title">💻 IT 設定（Stanley）</div>
     <div class="section-desc">傳送訊息給 <strong>Stanley</strong>，並等待他回覆密碼後填入下方。</div>
@@ -729,6 +726,7 @@ Dear ${emp.nameZh},
 
 📅 報到日期：${emp.startDate}
 📍 報到地點：${getAddr(emp.cid)}
+⏰ 報到時間：9:30
 
 到職當天請直接找我報到，我會協助您辦理入職流程，包含：核對入職文件、打卡系統教學，以及帶您認識公司環境和同事。接著，您的主管會開始帶您熟悉工作內容及流程。
 
@@ -747,7 +745,7 @@ Dear ${emp.nameZh},
 3. Google 帳號
 E-mail：${emp.email}
 密碼：${gmailPwd}
-Gmail 簽名檔：請找設計部 Tanisha 協助設定
+簽名檔：請HR協助提供
 
 4. LINE WORK 帳號
 帳號：${emp.email.replace('.com.tw','')}
@@ -889,7 +887,7 @@ Sharon Tseng</div>
     return `<div class="section-card">
     <div class="section-title">🎓 到職當天：就職訓練</div>
     <div class="checklist">
-      ${ci('o0','雇傭合約說明，員工回簽，收齊應備文件（存摺封面、一吋照片、良民證）')}
+      ${ci('o0','雇傭合約說明，員工回簽，收齊應備文件（存摺封面、良民證）')}
       ${ci('o1','NUEIP 打卡系統教學（薪資明細、費用代墊、排班、考勤）')}
       ${ci('o2','講解人資制度手冊、請假管理辦法、工作規則')}
       ${ci('o3','認識辦公室環境和員工')}
@@ -1330,7 +1328,7 @@ const PENDING_CHECKS = {
     'i1':{step:'加保作業', label:'健保加保'},
     'i2':{step:'加保作業', label:'設定勞退提撥'},
     'estelle_done':{step:'Estelle 設定', label:'Estelle 已完成人臉辨識、指紋、EVOX 設定'},
-    'o0':{step:'就職訓練', label:'雇傭合約說明，員工回簽，收齊應備文件'},
+    'o0':{step:'就職訓練', label:'雇傭合約說明，員工回簽，收齊應備文件（存摺封面、良民證）'},
     'o1':{step:'就職訓練', label:'NUEIP 打卡系統教學'},
     'o2':{step:'就職訓練', label:'講解人資制度手冊、請假管理辦法'},
     'o3':{step:'就職訓練', label:'認識辦公室環境和員工'},
@@ -2299,6 +2297,8 @@ function printHandover(){
         <td style="border:1px solid #d0d0d0;padding:7px 11px;vertical-align:top">
           <div style="font-weight:700">1. 公司資產歸還（筆電、名片）</div>
           <div style="color:#888;font-size:10px">Company Asset Return (Laptop, Business Cards)</div>
+          <div style="margin-top:4px;font-size:11px">・重設電腦密碼為 7088</div>
+          <div style="font-size:11px">・Microsoft 帳號請刪除</div>
         </td>
         <td style="border:1px solid #d0d0d0;padding:7px 11px">□ 已移交 Returned　□ 未移交 Not Returned　□ 無 N/A</td>
       </tr>
