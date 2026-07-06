@@ -724,7 +724,9 @@ Sharon Tseng
     if(!emp.nameZh) return needData('goOb(0)');
     const eu=emp.email?emp.email.split('@')[0]:'';
     const enFirst=emp.nameEn?emp.nameEn.split(' ')[0].toLowerCase():eu;
-    const gmailPwd=emp.gmailPwd||'（請先至步驟3填入 Stanley 設定的密碼）';
+    const enParts=emp.nameEn?emp.nameEn.toLowerCase().split(' '):[];
+    const defaultGmailPwd=enParts.length>=2?('@'+enParts[0]+'.'+enParts[enParts.length-1]):'';
+    const gmailPwd=emp.gmailPwd||defaultGmailPwd||'（請先至步驟3填入 Stanley 設定的密碼）';
     const linePwd=emp.linePwd||'（請先至步驟3填入 Stanley 設定的密碼）';
     const crmPwd=emp.crmPwd||'（請先至步驟3填入 Stanley 設定的密碼）';
     const nasPwd=emp.nasPwd||'（請先至步驟3填入 Stanley 設定的密碼）';
