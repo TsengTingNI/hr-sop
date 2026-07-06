@@ -265,6 +265,37 @@ function escapeHtml(str){
     .replace(/"/g,'&quot;');
 }
 
+// 將報到須知 Email 純文字轉為 HTML，連結行顯示為可點擊名稱
+function txtToHtmlNe(str){
+  if(str==null) return '';
+  const LINK_MAP = {
+    'https://drive.google.com/drive/search?q=e-mail': '簽名檔設定教學',
+    'https://portal.nueip.com/home': 'NUEIP 打卡系統',
+    'https://www.isec.com.tw/ej03xu3/main.php': 'CRM 學生系統',
+  };
+  return String(str).split('\n').map(line => {
+    // 找出行內是否有已知連結
+    for(const [url, name] of Object.entries(LINK_MAP)){
+      if(line.includes(url)){
+        // 把連結替換為 <a> 標籤，其餘文字 escapeHtml
+        const parts = line.split(url);
+        return escapeHtml(parts[0]) + '<a href="' + url + '" target="_blank" style="color:#1a4f8a;text-decoration:underline">' + name + '</a>' + escapeHtml(parts.slice(1).join(url));
+      }
+    }
+    return escapeHtml(line);
+  }).join('\n');
+}
+
+// 複製報到須知 Email（使用隱藏純文字 textarea，保留完整連結）
+function copyNeEmail(){
+  const el = document.getElementById('ne-copy');
+  if(!el) return;
+  const text = el.value;
+  navigator.clipboard.writeText(text).then(()=>alert('✅ 已複製！')).catch(()=>{
+    const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('✅ 已複製！');
+  });
+}
+
 // ============================================================
 // CONSTANTS
 // ============================================================
@@ -341,7 +372,7 @@ const COMPANIES = [
   {id:'isec',   name:'艾爾斯國際文教有限公司',              tax:'50875301', logo:'isec',    addr:'台北市大安區忠孝東路四段176-1號三樓'},
   {id:'isec2',  name:'艾爾斯國際諮詢顧問有限公司',          tax:'25132247', logo:'isec',    addr:'台北市大安區忠孝東路四段176-1號三樓'},
   {id:'joyce',  name:'喬伊斯國際諮詢顧問有限公司',          tax:'54892963', logo:'isec',    addr:'台中市西屯區台灣大道三段32號5樓'},
-  {id:'jsi',    name:'集思留遊學顧問有限公司',              tax:'42929108', logo:'isec',    addr:'台南市中西區西門路一段660號六樓'},
+  {id:'jsi',    name:'集思留遊學顧問有限公司',              tax:'42929108', logo:'isec',    addr:'700 台南市中西區西門路一段660號6樓6B04室'},
   {id:'isec_ks',name:'艾爾斯國際諮詢顧問有限公司高雄分公司', tax:'54343138', logo:'isec',    addr:'高雄市新興區中正三路2號四樓'},
   {id:'stanley',name:'史丹利英語教育有限公司',              tax:'85023996', logo:'stanley', addr:'台北市大安區忠孝東路四段176-1號三樓'},
   {id:'joyce_e',name:'喬伊斯英語教育有限公司',              tax:'90687776', logo:'stanley', addr:'台中市西屯區台灣大道三段32號6樓'},
@@ -709,7 +740,7 @@ Dear ${emp.nameZh},
 
 到職當天請直接找我報到，我會協助您辦理入職流程，包含：核對入職文件、打卡系統教學，以及帶您認識公司環境和同事。接著，您的主管會開始帶您熟悉工作內容及流程。
 
-為了協助您順利完成人事入職手續，請於報到當天攜帶錄用通知內提到的所有應備文件。
+為了協助您順利完成人事入職手續，請於報到當天攜帶第二階段的應備文件。
 
 💻 系統帳密設定須知
 
@@ -724,7 +755,7 @@ Dear ${emp.nameZh},
 3. Google 帳號
 E-mail：${emp.email}
 密碼：${gmailPwd}
-簽名檔：請HR協助提供
+簽名檔設定教學：https://drive.google.com/drive/search?q=e-mail
 
 4. LINE WORK 帳號
 帳號：${emp.email.replace('.com.tw','')}
@@ -765,8 +796,9 @@ Sharon Tseng
     <div class="alert alert-success">📨 收件人：<strong>${emp.personalEmail||'（未填寫個人信箱）'}</strong></div>
     <div class="alert alert-warn">📎 <strong>附件提醒：</strong>請附上「南山人壽新醫療給付團體健康保險(NGHS)_實支實付」PDF（開啟密碼：7777）</div>
     ${!(emp.gmailPwd&&emp.linePwd&&emp.crmPwd&&emp.nasPwd)?'<div class="alert alert-danger">⚠️ 尚未填入所有密碼（步驟 3），請先完成 IT 設定再發送。</div>':''}
-    <div class="text-output" id="ne">${escapeHtml(txt)}</div>
-    <div class="btn-row"><button class="btn" onclick="copyEl('ne')">📋 複製內容</button></div>
+    <div class="text-output" id="ne" style="white-space:pre-wrap">${txtToHtmlNe(txt)}</div>
+    <textarea id="ne-copy" style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">${escapeHtml(txt)}</textarea>
+    <div class="btn-row"><button class="btn" onclick="copyNeEmail()">📋 複製內容</button></div>
     ${obNav()}
   </div>`;
   },
@@ -1367,11 +1399,24 @@ function renderPending(){
 
   const type = selectedEmpType;
   const e = record.emp || {};
+
+  // cancelled 類型無勾選項目，直接顯示取消資訊
+  if(type === 'cancelled'){
+    const originalType = record.cancelledFrom || '';
+    const originalTypeLabel = {onboard:'入職', offboard:'離職', layoff:'資遣'}[originalType] || originalType;
+    const cancelledAt = record.cancelledAt ? record.cancelledAt.slice(0,10) : '';
+    pendingEl.innerHTML = '<div style="background:#ebebeb;border-radius:12px;padding:16px;border:0.5px solid rgba(0,0,0,0.1)">'
+      +'<div style="font-size:16px;font-weight:700;color:#555;margin-bottom:4px">'+(e.nameZh||selectedEmpKey)+'　已取消</div>'
+      +'<div style="font-size:13px;color:#6b6966">原流程：'+(originalTypeLabel||'—')+(cancelledAt?'　取消日期：'+cancelledAt:'')+'</div>'
+      +'</div>';
+    return;
+  }
+
   const doneArr = record[DONE_KEYS[type]] || [];
   const checks = (e._checks) || {};
-  const steps = STEP_LISTS[type];
-  const color = TYPE_COLORS[type];
-  const bg = TYPE_BG[type];
+  const steps = STEP_LISTS[type] || [];
+  const color = TYPE_COLORS[type] || '#555';
+  const bg = TYPE_BG[type] || '#ebebeb';
   const checkDefs = PENDING_CHECKS[type] || {};
 
   // Pending steps: only show if step not done OR has undone child checks
@@ -1430,8 +1475,7 @@ function renderPending(){
   }
 
   // 取消按鈕（固定顯示於未完成事項卡片最下方）
-  const isCancelled = (type === 'cancelled');
-  if(!isCancelled){
+  if(true){
     out += '<div style="margin-top:16px;padding-top:14px;border-top:0.5px solid rgba(0,0,0,0.12)">';
     out += '<button onclick="cancelEmployee(\''+selectedEmpKey+'\',\''+type+'\')" '
       +'style="padding:8px 18px;border-radius:9px;border:0.5px solid #c72c2c;background:#fde8e8;color:#8a1a1a;'
