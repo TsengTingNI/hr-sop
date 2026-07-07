@@ -1623,6 +1623,7 @@ const OFF_RENDER = [
               +'<option value="">— 請選擇 —</option>'
               +'<option value="完成" '+(emp.hoIns==="完成"?"selected":"")+'>完成</option>'
               +'<option value="未完成" '+(emp.hoIns==="未完成"?"selected":"")+'>未完成</option>'
+              +'<option value="無" '+(emp.hoIns==="無"?"selected":"")+'>無 N/A</option>'
             +'</select>'
           +'</div>'
           +'<div class="form-group"><label class="form-label">NUEIP 掛離職日、轉出勞健保</label>'
@@ -1632,11 +1633,21 @@ const OFF_RENDER = [
               +'<option value="未完成" '+(emp.hoNueip==="未完成"?"selected":"")+'>未完成</option>'
             +'</select>'
           +'</div>'
-          +'<div class="form-group"><label class="form-label">特休時數剩餘（hr）</label>'
-            +'<input class="form-input" type="number" placeholder="例：8" value="'+(emp.hoAnnual||"")+'" oninput="emp.hoAnnual=this.value;saveFirebase()">'
+          +'<div class="form-group"><label class="form-label">特休時數剩餘</label>'
+            +'<select class="form-select" style="margin-bottom:6px" onchange="emp.hoAnnualNA=this.value;var inp=document.getElementById(\'ho-annual-inp\');inp.style.display=this.value===\'無\'?\'none\':\'\';saveFirebase()">'
+              +'<option value="">— 請選擇 —</option>'
+              +'<option value="有" '+(emp.hoAnnualNA==="有"?"selected":"")+'>有（填入時數）</option>'
+              +'<option value="無" '+(emp.hoAnnualNA==="無"?"selected":"")+'>無 N/A</option>'
+            +'</select>'
+            +'<input class="form-input" id="ho-annual-inp" type="number" placeholder="例：8" value="'+(emp.hoAnnual||"")+'" style="'+(emp.hoAnnualNA==="無"?"display:none;":"")+'" oninput="emp.hoAnnual=this.value;saveFirebase()">'
           +'</div>'
-          +'<div class="form-group"><label class="form-label">補休時數剩餘（hr）</label>'
-            +'<input class="form-input" type="number" placeholder="例：4" value="'+(emp.hoComp||"")+'" oninput="emp.hoComp=this.value;saveFirebase()">'
+          +'<div class="form-group"><label class="form-label">補休時數剩餘</label>'
+            +'<select class="form-select" style="margin-bottom:6px" onchange="emp.hoCompNA=this.value;var inp=document.getElementById(\'ho-comp-inp\');inp.style.display=this.value===\'無\'?\'none\':\'\';saveFirebase()">'
+              +'<option value="">— 請選擇 —</option>'
+              +'<option value="有" '+(emp.hoCompNA==="有"?"selected":"")+'>有（填入時數）</option>'
+              +'<option value="無" '+(emp.hoCompNA==="無"?"selected":"")+'>無 N/A</option>'
+            +'</select>'
+            +'<input class="form-input" id="ho-comp-inp" type="number" placeholder="例：4" value="'+(emp.hoComp||"")+'" style="'+(emp.hoCompNA==="無"?"display:none;":"")+'" oninput="emp.hoComp=this.value;saveFirebase()">'
           +'</div>'
         +'</div>'
       +'</div>'
@@ -2242,7 +2253,7 @@ function printHandover(){
   const coName=emp.companyName||'';
   const dateStr=today.getFullYear()+' 年 '+(today.getMonth()+1)+' 月 '+today.getDate()+' 日';
   const laborStatus=emp.hoLabor==='完成'?'☑ 完成　□ 未完成':emp.hoLabor==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成';
-  const insStatus=emp.hoIns==='完成'?'☑ 完成　□ 未完成':emp.hoIns==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成';
+  const insStatus=emp.hoIns==='完成'?'☑ 完成　□ 未完成　□ 無 N/A':emp.hoIns==='未完成'?'□ 完成　☑ 未完成　□ 無 N/A':emp.hoIns==='無'?'□ 完成　□ 未完成　☑ 無 N/A':'□ 完成　□ 未完成　□ 無 N/A';
   const nueipStatus=emp.hoNueip==='完成'?'☑ 完成　□ 未完成':emp.hoNueip==='未完成'?'□ 完成　☑ 未完成':'□ 完成　□ 未完成';
 
   const pdfHtml=`<div style="font-family:'Microsoft JhengHei',sans-serif;max-width:700px;margin:0 auto;padding:32px 44px;line-height:1.5;font-size:12.5px;color:#1a1917">
@@ -2354,8 +2365,8 @@ function printHandover(){
           <div style="color:#888;font-size:10px">Annual Leave &amp; Compensatory Leave Settlement</div>
         </td>
         <td style="border:1px solid #d0d0d0;padding:7px 11px">
-          <span style="font-weight:600">特休剩餘</span> Annual Leave：<span style="font-weight:700">${emp.hoAnnual||'＿＿＿'}</span> hr　
-          <span style="font-weight:600">補休剩餘</span> Comp. Leave：<span style="font-weight:700">${emp.hoComp||'＿＿＿'}</span> hr
+          <span style="font-weight:600">特休剩餘</span> Annual Leave：<span style="font-weight:700">${emp.hoAnnualNA==='無'?'無 N/A':(emp.hoAnnual||'＿＿＿')}</span>${emp.hoAnnualNA==='無'?'':' hr'}　
+          <span style="font-weight:600">補休剩餘</span> Comp. Leave：<span style="font-weight:700">${emp.hoCompNA==='無'?'無 N/A':(emp.hoComp||'＿＿＿')}</span>${emp.hoCompNA==='無'?'':' hr'}
         </td>
       </tr>
     </table>
