@@ -269,7 +269,7 @@ function escapeHtml(str){
 function txtToHtmlNe(str){
   if(str==null) return '';
   const LINK_MAP = {
-    'https://drive.google.com/drive/search?q=e-mail': '簽名檔設定教學',
+    'https://drive.google.com/file/d/11zHk-uvZEz3yTHilNAQ0ZsWOSjYZJMsD/view?usp=sharing': '簽名檔設定教學',
     'https://portal.nueip.com/home': 'NUEIP 打卡系統',
     'https://www.isec.com.tw/ej03xu3/main.php': 'CRM 學生系統',
   };
@@ -757,7 +757,7 @@ Dear ${emp.nameZh},
 3. Google 帳號
 E-mail：${emp.email}
 密碼：${gmailPwd}
-簽名檔設定教學：https://drive.google.com/drive/search?q=e-mail
+簽名檔設定教學：https://drive.google.com/file/d/11zHk-uvZEz3yTHilNAQ0ZsWOSjYZJMsD/view?usp=sharing
 
 4. LINE WORK 帳號
 帳號：${emp.email.replace('.com.tw','')}
