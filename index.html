@@ -297,7 +297,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
         <div class="fcard-desc">員工已完成自評，以下為其自評分數，供面談時對照討論。</div>
         <div id="me-self-eval-area"></div>
       </div>
-      <div class="fcard">
+      <div class="fcard" id="me-soft-section">
         <div class="fcard-title">🌱 軟性職場技能評核</div>
         <div class="fcard-desc">評估員工在職場通用能力上的表現。</div>
         <div id="me-soft-area"></div>
@@ -306,7 +306,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
           <textarea id="me-soft-note" placeholder="例：溝通態度積極，但時間管理上仍需加強..."></textarea>
         </div>
       </div>
-      <div class="fcard">
+      <div class="fcard" id="me-hard-section">
         <div class="fcard-title">💼 職位硬性職能評核</div>
         <div class="fcard-desc" id="me-hard-desc">依據職位評估員工的專業能力表現。</div>
         <div id="me-hard-area"></div>
@@ -322,7 +322,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
           <textarea class="fform-input" id="me-summary" style="min-height:90px;resize:vertical" placeholder="請記錄本次面談的主要討論內容、員工反饋等..."></textarea>
         </div>
         <div class="fform-group">
-          <label class="fform-label">改善目標與限期</label>
+          <label class="fform-label">改善目標</label>
           <textarea class="fform-input" id="me-improvement" style="min-height:70px;resize:vertical" placeholder="例：請於下次面談前（60天）提升客戶追蹤頻率..."></textarea>
         </div>
         <div id="me-prev-improvement"></div>
@@ -333,15 +333,20 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
         <div class="fconclusion-area">
           <label class="fform-label">評核結論<span class="fform-required">*</span></label>
           <div class="fradio-group">
-            <div class="fradio-btn" id="me-conclusion-pass" onclick="mgrSelectConclusion('pass')">✅ 通過試用期，正式任用</div>
-            <div class="fradio-btn" id="me-conclusion-extend" onclick="mgrSelectConclusion('extend')">⏳ 延長試用期</div>
-            <div class="fradio-btn" id="me-conclusion-fail" onclick="mgrSelectConclusion('fail')">❌ 試用期未通過</div>
+            <div class="fradio-btn" id="me-conclusion-pass" onclick="mgrSelectConclusion('pass')">✅ 通過試用期，建議正式任用</div>
+            <div class="fradio-btn" id="me-conclusion-extend" onclick="mgrSelectConclusion('extend')">⏳ 延長試用期（請於備註說明原因與改善目標）</div>
+            <div class="fradio-btn" id="me-conclusion-fail" onclick="mgrSelectConclusion('fail')">❌ 試用期未通過，終止試用（請於備註說明原因）</div>
           </div>
         </div>
         <div class="fnote-area" style="margin-top:16px">
           <label>評核結論說明</label>
           <textarea id="me-conclusion-note" placeholder="請說明評核結論的依據與後續處理方式..."></textarea>
         </div>
+      </div>
+      <div class="fcard" id="me-overall-card" style="display:none">
+        <div class="fcard-title">📝 綜合評語</div>
+        <div class="fcard-desc">請針對員工試用期整體表現，填寫綜合評語（優點、待改善之處、對未來的期許）：</div>
+        <textarea id="me-overall-comment" rows="5" placeholder="例如：XX 在試用期間展現出良好的學習態度，專業技能已達基本要求。建議未來在時間管理上持續精進..." style="width:100%;box-sizing:border-box;border:0.5px solid #ddd;border-radius:6px;padding:8px;font-size:13px;font-family:inherit;resize:vertical;margin-top:8px"></textarea>
       </div>
       <div class="fcard">
         <div id="me-score-summary" style="margin-bottom:16px"></div>
@@ -758,7 +763,7 @@ function updateProgress(prefix, done, total) {
 // ============================================================
 // ONBOARD
 // ============================================================
-function renderOb(){renderSidebar('ob',OB_STEPS,obStep,obDone);document.getElementById('ob-content').innerHTML=OB_RENDER[obStep]();updateProgress('ob',obDone,11);window.scrollTo(0,0);setTimeout(restoreChecks,0);}
+function renderOb(){renderSidebar('ob',OB_STEPS,obStep,obDone);document.getElementById('ob-content').innerHTML=OB_RENDER[obStep]();updateProgress('ob',obDone,11);window.scrollTo(0,0);setTimeout(restoreChecks,0);setTimeout(restoreInterviewLinks,80);}
 function goOb(s){obStep=s;renderOb();}
 function obNext(){obDone[obStep]=true;if(obStep<10)obStep++;saveFirebase();renderOb();}
 function obPrev(){if(obStep>0){obStep--;renderOb();}}
@@ -1226,6 +1231,7 @@ Sharon Tseng</div>
       <div class="ilink-row">
         <span class="ilink-label" style="color:#0f6e56">📊 面談進度總覽</span>
         <button class="btn-sm" onclick="refreshInterviewStatus()" style="color:#0f6e56">🔄 更新</button>
+          <button class="btn-sm" onclick="exportInterviewPDF()" style="color:#1a5276;background:#d6eaf8;border-color:#1a5276">📄 匯出 PDF</button>
       </div>
       <div id="interview-overview-content" style="font-size:12px;margin-top:8px;color:#3a3937">點擊「更新」查看最新進度。</div>
     </div>
@@ -2930,15 +2936,52 @@ function genInterviewLink(round, type) {
   const formFile = type === 'self' ? 'self-eval.html' : 'manager-eval.html';
   const url = buildInterviewUrl(formFile, round);
   if (!url) return;
-  const urlBoxId  = (type === 'self' ? 'self-url-' : 'mgr-url-') + round;
-  const inputId   = (type === 'self' ? 'self-url-input-' : 'mgr-url-input-') + round;
-  const urlBox    = document.getElementById(urlBoxId);
-  const inputEl   = document.getElementById(inputId);
+
+  // 直接複製到剪貼簿，並顯示連結（不依賴 DOM 重渲染後的狀態）
+  const typeLabel = type === 'self' ? '員工自評' : '主管評核';
+  const roundLabel = ['', '第一次', '第二次', '第三次'][round] || ('第' + round + '次');
+
+  // 嘗試寫入剪貼簿
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      showLinkBox(round, type, url);
+    }).catch(() => {
+      showLinkBox(round, type, url);
+    });
+  } else {
+    showLinkBox(round, type, url);
+  }
+  refreshInterviewStatus();
+}
+
+function showLinkBox(round, type, url) {
+  // 找到對應的連結顯示區域，強制更新並顯示
+  const urlBoxId = (type === 'self' ? 'self-url-' : 'mgr-url-') + round;
+  const inputId  = (type === 'self' ? 'self-url-input-' : 'mgr-url-input-') + round;
+  const urlBox   = document.getElementById(urlBoxId);
+  const inputEl  = document.getElementById(inputId);
   if (urlBox && inputEl) {
     inputEl.value = url;
     urlBox.style.display = 'flex';
+    // 儲存到 sessionStorage，防止步驟重渲染後消失
+    sessionStorage.setItem('ilink_' + urlBoxId, url);
   }
-  refreshInterviewStatus();
+}
+
+function restoreInterviewLinks() {
+  // 步驟渲染後，從 sessionStorage 還原已產生的連結
+  ['self-url-1','mgr-url-1','self-url-2','mgr-url-2','mgr-url-3'].forEach(id => {
+    const saved = sessionStorage.getItem('ilink_' + id);
+    if (saved) {
+      const inputId = id.replace('url-', 'url-input-');
+      const urlBox  = document.getElementById(id);
+      const inputEl = document.getElementById(inputId);
+      if (urlBox && inputEl) {
+        inputEl.value = saved;
+        urlBox.style.display = 'flex';
+      }
+    }
+  });
 }
 
 function copyLinkById(inputId) {
@@ -2954,6 +2997,125 @@ function copyLinkById(inputId) {
     document.body.removeChild(t);
     alert('✅ 連結已複製！');
   });
+}
+
+
+async function exportInterviewPDF() {
+  if (!currentKey || !db) { alert('⚠️ 請先開啟員工資料。'); return; }
+  const snap = await db.ref('hr_ob/' + currentKey + '/interviews').once('value');
+  const interviews = snap.val() || {};
+  const roundNames = { 1: '第一次（到職 30 天）', 2: '第二次（到職 60 天）', 3: '第三次（試用期評核）' };
+  const conclusionMap = { pass: '✅ 通過試用期，建議正式任用', extend: '⏳ 延長試用期', fail: '❌ 試用期未通過，終止試用' };
+
+  let html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>面談評核報告 - ${emp.nameZh || ''}</title>
+  <style>
+    body{font-family:'Microsoft JhengHei',sans-serif;font-size:13px;color:#1a1917;margin:0;padding:20px}
+    h1{font-size:18px;border-bottom:2px solid #1a1917;padding-bottom:8px;margin-bottom:16px}
+    h2{font-size:14px;background:#f0ede6;padding:6px 10px;border-left:4px solid #c8a96e;margin:20px 0 10px}
+    h3{font-size:13px;color:#5a5754;margin:12px 0 6px}
+    table{width:100%;border-collapse:collapse;margin-bottom:10px}
+    th,td{border:0.5px solid #ddd;padding:5px 8px;font-size:12px}
+    th{background:#f8f7f3;font-weight:700;text-align:left}
+    .score-badge{display:inline-block;background:#1a7a55;color:#fff;border-radius:4px;padding:1px 6px;font-size:11px}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+    .info-item{background:#f8f7f3;padding:6px 10px;border-radius:4px}
+    .info-label{font-size:11px;color:#9a9894}
+    .info-val{font-size:13px;font-weight:600}
+    .note-box{background:#f8f7f3;border-radius:4px;padding:8px 10px;font-size:12px;margin-top:4px;white-space:pre-wrap}
+    .conclusion-box{background:#e3f5ed;border:1px solid #1a7a55;border-radius:6px;padding:10px 14px;margin-top:8px;font-weight:700}
+    .no-data{color:#9a9894;font-style:italic}
+    @media print{body{margin:0;padding:10px}}
+  </style></head><body>
+  <h1>📋 員工到職面談評核報告</h1>
+  <div class="info-grid">
+    <div class="info-item"><div class="info-label">員工姓名</div><div class="info-val">${emp.nameZh || '—'}</div></div>
+    <div class="info-item"><div class="info-label">職稱</div><div class="info-val">${emp.title || '—'}</div></div>
+    <div class="info-item"><div class="info-label">到職日期</div><div class="info-val">${emp.startDate || '—'}</div></div>
+    <div class="info-item"><div class="info-label">所屬公司</div><div class="info-val">${emp.companyName || '—'}</div></div>
+  </div>`;
+
+  for (let r = 1; r <= 3; r++) {
+    const rKey = 'round' + r;
+    const rData = interviews[rKey] || {};
+    const mgr = rData.managerEval || {};
+    const self = rData.selfEval || {};
+    html += `<h2>${roundNames[r]}</h2>`;
+
+    if (!mgr.submitted) {
+      html += `<p class="no-data">尚未完成主管評核</p>`;
+      continue;
+    }
+
+    html += `<div class="info-grid">
+      <div class="info-item"><div class="info-label">主管姓名</div><div class="info-val">${mgr.mgrName || '—'}</div></div>
+      <div class="info-item"><div class="info-label">評核日期</div><div class="info-val">${mgr.submittedAt ? mgr.submittedAt.substring(0,10) : '—'}</div></div>
+    </div>`;
+
+    // 軟性技能
+    if (Object.keys(mgr.softScores || {}).length > 0) {
+      html += `<h3>📋 軟性職場技能評核</h3>`;
+      html += `<table><tr><th>評估項目</th><th>主管評分</th>`;
+      if (r === 1 && self.type === 'soft') html += `<th>員工自評</th>`;
+      html += `</tr>`;
+      FORM_SOFT_SKILLS.forEach(s => {
+        const ms = (mgr.softScores || {})[s.id] || '—';
+        html += `<tr><td>${s.title}</td><td><span class="score-badge">${ms}</span> / 5</td>`;
+        if (r === 1 && self.type === 'soft') {
+          const ss = (self.scores || {})[s.id] || '—';
+          html += `<td>${ss} / 5</td>`;
+        }
+        html += `</tr>`;
+      });
+      html += `</table>`;
+      if (mgr.softTotal !== undefined) html += `<p><strong>軟性技能總分：${mgr.softTotal} / ${FORM_SOFT_SKILLS.length * 5}</strong></p>`;
+    }
+
+    // 硬性職能（第二、三次）
+    if (r >= 2 && Object.keys(mgr.hardScores || {}).length > 0) {
+      const jobKey = formMatchJobTitle(emp.title);
+      const hardSkills = (jobKey && FORM_HARD_SKILLS[jobKey]) ? FORM_HARD_SKILLS[jobKey] : [];
+      if (hardSkills.length > 0) {
+        html += `<h3>💼 職位硬性職能評核</h3>`;
+        html += `<table><tr><th>評估項目</th><th>主管評分</th>`;
+        if (r === 2 && self.type === 'hard') html += `<th>員工自評</th>`;
+        html += `</tr>`;
+        hardSkills.forEach(s => {
+          const ms = (mgr.hardScores || {})[s.id] || '—';
+          html += `<tr><td>${s.title}</td><td><span class="score-badge">${ms}</span> / 5</td>`;
+          if (r === 2 && self.type === 'hard') {
+            const ss = (self.scores || {})[s.id] || '—';
+            html += `<td>${ss} / 5</td>`;
+          }
+          html += `</tr>`;
+        });
+        html += `</table>`;
+        if (mgr.hardTotal !== undefined) html += `<p><strong>職能總分：${mgr.hardTotal} / ${hardSkills.length * 5}</strong></p>`;
+      }
+    }
+
+    // 備註與改善目標
+    const notes = mgr.notes || {};
+    if (notes.summary) html += `<h3>📝 面談摘要</h3><div class="note-box">${notes.summary}</div>`;
+    if (notes.soft) html += `<h3>軟性技能備註</h3><div class="note-box">${notes.soft}</div>`;
+    if (notes.hard) html += `<h3>職能備註</h3><div class="note-box">${notes.hard}</div>`;
+    if (notes.goal) html += `<h3>🎯 改善目標</h3><div class="note-box">${notes.goal}</div>`;
+
+    // 第三次：綜合評語與結論
+    if (r === 3) {
+      if (mgr.overallComment) html += `<h3>📋 綜合評語</h3><div class="note-box">${mgr.overallComment}</div>`;
+      if (mgr.conclusion) html += `<div class="conclusion-box">試用期結論：${conclusionMap[mgr.conclusion] || mgr.conclusion}</div>`;
+    }
+  }
+
+  html += `<p style="margin-top:30px;font-size:11px;color:#9a9894;border-top:0.5px solid #ddd;padding-top:8px">本報告由 HR 系統自動產生，僅供內部使用。列印日期：${new Date().toLocaleDateString('zh-TW')}</p>`;
+  html += `</body></html>`;
+
+  // 開啟新視窗列印
+  const win = window.open('', '_blank', 'width=800,height=900');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
 }
 
 async function refreshInterviewStatus() {
@@ -3335,17 +3497,30 @@ function meRenderForm() {
   if (selfEval && selfEval.submitted && selfEval.scores) meRenderSelfEval(selfEval);
   meRenderSoftSkills();
   const jobKey = formMatchJobTitle(meEmpData.title);
+  // 取得各區塊元素
+  const softCard = document.getElementById('me-soft-section');
+  const hardCard = document.getElementById('me-hard-section');
+
   if (meRound === 1) {
-    // 第一次：只有軟性技能，隱藏硬性職能區塊
-    const hardCard = document.querySelector('#me-form .fcard:has(#me-hard-area)');
+    // 第一次：只有軟性技能，隱藏硬性職能
+    if (softCard) softCard.style.display = 'block';
     if (hardCard) hardCard.style.display = 'none';
-    // 隱藏硬性職能備註
-    const hardNoteCard = document.getElementById('me-hard-note');
-    if (hardNoteCard && hardNoteCard.closest('.fcard')) hardNoteCard.closest('.fcard').querySelector('.fnote-area:last-child') && (hardNoteCard.closest('.fnote-area').style.display = 'none');
-  } else {
-    // 第二、三次：顯示硬性職能
+  } else if (meRound === 2) {
+    // 第二次：只有硬性職能（軟性技能以唯讀方式帶出第一次分數）
+    if (softCard) softCard.style.display = 'none';
+    if (hardCard) hardCard.style.display = 'block';
     if (jobKey && FORM_HARD_SKILLS[jobKey]) {
       document.getElementById('me-hard-desc').textContent = `職位：${meEmpData.title || jobKey}`;
+      meRenderHardSkills(FORM_HARD_SKILLS[jobKey]);
+    } else {
+      document.getElementById('me-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別職位，請手動填寫職位職能備註欄。</div>';
+    }
+  } else {
+    // 第三次：軟性技能複評 + 硬性職能複評（均顯示）
+    if (softCard) softCard.style.display = 'block';
+    if (hardCard) hardCard.style.display = 'block';
+    if (jobKey && FORM_HARD_SKILLS[jobKey]) {
+      document.getElementById('me-hard-desc').textContent = `職位：${meEmpData.title || jobKey}（試用期綜合評核）`;
       meRenderHardSkills(FORM_HARD_SKILLS[jobKey]);
     } else {
       document.getElementById('me-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別職位，請手動填寫職位職能備註欄。</div>';
@@ -3359,7 +3534,16 @@ function meRenderForm() {
         `<div class="falert falert-warn" style="margin-top:12px"><strong>📌 上次設定的改善目標：</strong><br>${formEscHtml(prevData.improvementTarget)}</div>`;
     }
   }
-  if (meRound === 3) document.getElementById('me-conclusion-card').style.display = 'block';
+  if (meRound === 3) {
+    document.getElementById('me-conclusion-card').style.display = 'block';
+    const overallCard = document.getElementById('me-overall-card');
+    if (overallCard) overallCard.style.display = 'block';
+    // 第三次標題改為試用期評核
+    const roundTitleEl = document.getElementById('me-round-title');
+    if (roundTitleEl) {
+      roundTitleEl.innerHTML = '<span class="fround-badge fbadge-3">第三次（試用期評核）</span> 試用期綜合評核表';
+    }
+  }
   meUpdateScoreSummary();
 }
 
@@ -3525,10 +3709,13 @@ function meUpdateScoreSummary() {
 }
 
 function submitManagerEval() {
-  const missingSoft = FORM_SOFT_SKILLS.filter(s => !meScores.soft[s.id]);
-  if (missingSoft.length > 0) {
-    alert('⚠️ 請完成所有軟性技能評分。\n\n尚未評分：' + missingSoft.map(s => s.title).join('、'));
-    return;
+  // 第一次和第三次才驗證軟性技能（第二次只評硬性職能）
+  if (meRound !== 2) {
+    const missingSoft = FORM_SOFT_SKILLS.filter(s => !meScores.soft[s.id]);
+    if (missingSoft.length > 0) {
+      alert('⚠️ 請完成所有軟性技能評分。\n\n尚未評分：' + missingSoft.map(s => s.title).join('、'));
+      return;
+    }
   }
   const jobKey = formMatchJobTitle(meEmpData.title);
   if (meRound >= 2 && jobKey && FORM_HARD_SKILLS[jobKey]) {
@@ -3566,6 +3753,7 @@ function submitManagerEval() {
   if (meRound === 3) {
     payload.conclusion = meConclusionVal;
     payload.conclusionNote = document.getElementById('me-conclusion-note').value.trim();
+    payload.overallComment = (document.getElementById('me-overall-comment') || {}).value || '';
   }
   const roundKey = 'round' + meRound;
   meDb.ref(`hr_ob/${meEmpKey}/interviews/${roundKey}/manager`).set(payload).then(() => {
