@@ -3038,7 +3038,7 @@ async function exportInterviewPDF() {
   for (let r = 1; r <= 3; r++) {
     const rKey = 'round' + r;
     const rData = interviews[rKey] || {};
-    const mgr = rData.managerEval || {};
+    const mgr = rData.manager || {};  // Firebase 儲存路徑為 manager，非 managerEval
     const self = rData.selfEval || {};
     html += `<h2>${roundNames[r]}</h2>`;
 
@@ -3068,7 +3068,8 @@ async function exportInterviewPDF() {
         html += `</tr>`;
       });
       html += `</table>`;
-      if (mgr.softTotal !== undefined) html += `<p><strong>軟性技能總分：${mgr.softTotal} / ${FORM_SOFT_SKILLS.length * 5}</strong></p>`;
+      const softTotalVal = mgr.softTotal !== undefined ? mgr.softTotal : (mgr.softAvg ? (mgr.softAvg * FORM_SOFT_SKILLS.length).toFixed(1) : null);
+      if (softTotalVal !== null) html += `<p><strong>軟性技能平均分：${mgr.softAvg || '—'} / 5</strong></p>`;
     }
 
     // 硬性職能（第二、三次）
@@ -3090,16 +3091,15 @@ async function exportInterviewPDF() {
           html += `</tr>`;
         });
         html += `</table>`;
-        if (mgr.hardTotal !== undefined) html += `<p><strong>職能總分：${mgr.hardTotal} / ${hardSkills.length * 5}</strong></p>`;
+        if (mgr.hardAvg !== undefined) html += `<p><strong>職能平均分：${mgr.hardAvg} / 5</strong></p>`;
       }
     }
 
-    // 備註與改善目標
-    const notes = mgr.notes || {};
-    if (notes.summary) html += `<h3>📝 面談摘要</h3><div class="note-box">${notes.summary}</div>`;
-    if (notes.soft) html += `<h3>軟性技能備註</h3><div class="note-box">${notes.soft}</div>`;
-    if (notes.hard) html += `<h3>職能備註</h3><div class="note-box">${notes.hard}</div>`;
-    if (notes.goal) html += `<h3>🎯 改善目標</h3><div class="note-box">${notes.goal}</div>`;
+    // 備註與改善目標（Firebase 儲存欄位名稱：interviewSummary, softOverallNote, hardOverallNote, improvementTarget）
+    if (mgr.interviewSummary) html += `<h3>📝 面談摘要</h3><div class="note-box">${mgr.interviewSummary}</div>`;
+    if (mgr.softOverallNote) html += `<h3>軟性技能備註</h3><div class="note-box">${mgr.softOverallNote}</div>`;
+    if (mgr.hardOverallNote) html += `<h3>職能備註</h3><div class="note-box">${mgr.hardOverallNote}</div>`;
+    if (mgr.improvementTarget) html += `<h3>🎯 改善目標</h3><div class="note-box">${mgr.improvementTarget}</div>`;
 
     // 第三次：綜合評語與結論
     if (r === 3) {
