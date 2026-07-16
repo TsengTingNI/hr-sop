@@ -3324,6 +3324,7 @@ let seDb = null, seEmpKey = null, seRound = null, seEmpData = {}, seSelfScores =
 function initSelfEvalForm(params) {
   seEmpKey = params.get('key');
   seRound = parseInt(params.get('round') || '1');
+  const seLinkTs = parseInt(params.get('ts') || '0'); // 連結產生時的時間戳記
   if (!seEmpKey || !seRound) { seShowError('連結無效，請聯繫 HR 重新產生連結。'); return; }
   const config = { ...FIREBASE_CONFIG, databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL, apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey };
   seDb = formInitFirebase(config);
@@ -3334,10 +3335,18 @@ function initSelfEvalForm(params) {
     seEmpData = val.emp;
     const interviews = val.interviews || {};
     const roundKey = 'round' + seRound;
-    if (interviews[roundKey] && interviews[roundKey].selfEval && interviews[roundKey].selfEval.submitted) {
+    const existingSelf = interviews[roundKey] && interviews[roundKey].selfEval;
+    // 若連結時間戳記比已提交時間更新，視為重新填寫（HR 重新產生連結）
+    if (existingSelf && existingSelf.submitted) {
+      const submittedTs = existingSelf.submittedAt ? new Date(existingSelf.submittedAt).getTime() : 0;
+      if (seLinkTs > submittedTs) {
+        // 新連結比舊提交更新，直接顯示空白表單
+        seRenderForm();
+        return;
+      }
       document.getElementById('se-loading').style.display = 'none';
       document.getElementById('se-success').style.display = 'block';
-      document.getElementById('se-success-desc').innerHTML = '您已於先前提交過本次自評。<br>如有疑問，請聯繫 HR。';
+      document.getElementById('se-success-desc').innerHTML = '您已於先前提交過本次自評。<br>如需重新填寫，請聯繫 HR 產生新連結。';
       return;
     }
     seRenderForm();
@@ -3453,6 +3462,7 @@ let meScores = { soft: {}, hard: {} }, meNotes = { soft: {}, hard: {} }, meConcl
 function initManagerEvalForm(params) {
   meEmpKey = params.get('key');
   meRound = parseInt(params.get('round') || '1');
+  const meLinkTs = parseInt(params.get('ts') || '0'); // 連結產生時的時間戳記
   if (!meEmpKey || !meRound) { meShowError('連結無效，請聯繫 HR 重新產生連結。'); return; }
   const config = { ...FIREBASE_CONFIG, databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL, apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey };
   meDb = formInitFirebase(config);
@@ -3463,10 +3473,18 @@ function initManagerEvalForm(params) {
     meEmpData = val.emp;
     meAllInterviews = val.interviews || {};
     const roundKey = 'round' + meRound;
-    if (meAllInterviews[roundKey] && meAllInterviews[roundKey].manager && meAllInterviews[roundKey].manager.submitted) {
+    const existingMgr = meAllInterviews[roundKey] && meAllInterviews[roundKey].manager;
+    // 若連結時間戳記比已提交時間更新，視為重新填寫（HR 重新產生連結）
+    if (existingMgr && existingMgr.submitted) {
+      const submittedTs = existingMgr.submittedAt ? new Date(existingMgr.submittedAt).getTime() : 0;
+      if (meLinkTs > submittedTs) {
+        // 新連結比舊提交更新，直接顯示空白表單
+        meRenderForm();
+        return;
+      }
       document.getElementById('me-loading').style.display = 'none';
       document.getElementById('me-success').style.display = 'block';
-      document.getElementById('me-success-desc').innerHTML = '此次面談評核已提交完畢。<br>如需修改，請聯繫 HR。';
+      document.getElementById('me-success-desc').innerHTML = '此次面談評核已提交完畢。<br>如需重新填寫，請聯繫 HR 產生新連結。';
       return;
     }
     meRenderForm();
