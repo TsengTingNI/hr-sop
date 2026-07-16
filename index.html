@@ -146,11 +146,212 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
   .sidebar{display:none}
   .content{padding:20px 16px}
 }
+
+/* ── 面談連結模組 ── */
+.interview-link-box{background:#f0efe9;border-radius:10px;padding:12px 14px;margin:8px 0 12px;border:0.5px solid rgba(0,0,0,0.08)}
+.ilink-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ilink-label{font-size:13px;font-weight:600;color:#3a3937}
+.ilink-actions{display:flex;gap:6px;flex-shrink:0}
+.ilink-url{display:flex;gap:6px;align-items:center;margin-top:6px}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:7px;border:0.5px solid rgba(0,0,0,0.15);background:#fff;color:#1a1917;cursor:pointer;font-family:inherit;font-weight:600;transition:all 0.1s;white-space:nowrap}
+.btn-sm:hover{background:#1a1917;color:#fff;border-color:#1a1917}
+.ilink-status-ok{color:#0f6e56;font-weight:600}
+.ilink-status-pending{color:#7a4f0a}
+
+/* ── 面談表單頁面（員工自評 & 主管評核）── */
+#app-self-eval,#app-manager-eval{display:none;min-height:100vh;background:#f4f3ef}
+#app-self-eval.active,#app-manager-eval.active{display:block}
+.form-container{max-width:680px;margin:0 auto;padding:32px 20px 80px}
+.form-container.wide{max-width:760px}
+.form-logo-row{text-align:center;margin-bottom:28px}
+.form-logo-row .title{font-size:22px;font-weight:700;letter-spacing:0.06em;margin-bottom:4px}
+.form-logo-row .sub{font-size:13px;color:#6b6966}
+.fcard{background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:14px;padding:24px;margin-bottom:16px}
+.fcard-title{font-size:16px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.fcard-desc{font-size:13px;color:#6b6966;margin-bottom:18px;line-height:1.6}
+.femp-info{background:#f8f7f3;border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:2.2;display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.femp-info strong{font-weight:700}
+.fsection-label{font-size:13px;font-weight:700;color:#1a1917;margin:20px 0 12px;padding-bottom:6px;border-bottom:1.5px solid #ebe9e3;display:flex;align-items:center;gap:6px}
+.fscore-item{margin-bottom:22px;padding-bottom:22px;border-bottom:0.5px solid #f0efe9}
+.fscore-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.fscore-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.fscore-title{font-size:14px;font-weight:600;flex:1}
+.self-score-badge{font-size:11px;padding:2px 8px;border-radius:99px;background:#e3eef8;color:#1a4f8a;white-space:nowrap;flex-shrink:0;font-weight:600}
+.fscore-desc{font-size:12px;color:#6b6966;margin-bottom:10px;line-height:1.5}
+.fscore-row{display:flex;gap:8px;flex-wrap:wrap}
+.fscore-btn{width:44px;height:44px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.12s;display:flex;align-items:center;justify-content:center;color:#6b6966}
+.fscore-btn:hover{border-color:#1a1917;color:#1a1917}
+.fscore-btn.selected{background:#1a1917;color:#fff;border-color:#1a1917}
+.fscore-labels{display:flex;justify-content:space-between;font-size:11px;color:#9a9894;margin-top:6px;padding:0 2px}
+.fnote-area{margin-top:10px}
+.fnote-area textarea{width:100%;padding:10px 12px;border:0.5px solid rgba(0,0,0,0.18);border-radius:9px;font-size:13px;font-family:inherit;background:#fff;color:#1a1917;outline:none;resize:vertical;min-height:70px;transition:border 0.1s;line-height:1.6}
+.fnote-area textarea:focus{border-color:#1a1917}
+.fnote-area label{font-size:12px;color:#6b6966;margin-bottom:4px;display:block}
+.falert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;border-left:3px solid;line-height:1.6}
+.falert-info{background:#e3eef8;color:#1a4f8a;border-color:#1a4f8a}
+.falert-success{background:#e3f5ed;color:#0f6e56;border-color:#1a7a55}
+.falert-warn{background:#fdf0d9;color:#7a4f0a;border-color:#c97a0a}
+.falert-danger{background:#fde8e8;color:#8a1a1a;border-color:#c72c2c}
+.fround-badge{display:inline-block;padding:3px 12px;border-radius:99px;font-size:12px;font-weight:700}
+.fbadge-1{background:#fdf0d9;color:#7a4f0a}
+.fbadge-2{background:#e3eef8;color:#1a4f8a}
+.fbadge-3{background:#e3f5ed;color:#0f6e56}
+.fhistory-card{background:#f8f7f3;border:0.5px solid rgba(0,0,0,0.08);border-radius:12px;padding:16px;margin-bottom:12px}
+.fhistory-round{font-size:13px;font-weight:700;margin-bottom:10px;color:#3a3937}
+.fhistory-table{width:100%;border-collapse:collapse;font-size:12px}
+.fhistory-table td{padding:5px 8px;border-bottom:0.5px solid rgba(0,0,0,0.06)}
+.fhistory-table td:first-child{color:#6b6966;width:55%}
+.fhistory-table td:last-child{font-weight:700;text-align:right}
+.fscore-bar-wrap{display:flex;align-items:center;gap:8px}
+.fscore-bar{flex:1;height:6px;background:#ebe9e3;border-radius:3px;overflow:hidden}
+.fscore-bar-fill{height:100%;border-radius:3px;background:#1a7a55}
+.fhistory-note{font-size:12px;color:#6b6966;margin-top:6px;padding:8px 10px;background:#fff;border-radius:6px;line-height:1.6}
+.ftotal-box{background:#f0efe9;border-radius:12px;padding:16px;margin-top:16px}
+.ftotal-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ftotal-label{font-size:13px;color:#6b6966}
+.ftotal-score{font-size:20px;font-weight:700;color:#1a7a55}
+.fconclusion-area{margin-top:16px}
+.fconclusion-area .fform-label{font-size:13px;font-weight:700;margin-bottom:8px;display:block}
+.fradio-group{display:flex;gap:10px;flex-wrap:wrap}
+.fradio-btn{padding:10px 18px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.12s;color:#6b6966}
+.fradio-btn:hover{border-color:#1a1917}
+.fradio-btn.selected-pass{background:#e3f5ed;color:#0f6e56;border-color:#1a7a55}
+.fradio-btn.selected-extend{background:#fdf0d9;color:#7a4f0a;border-color:#c97a0a}
+.fradio-btn.selected-fail{background:#fde8e8;color:#8a1a1a;border-color:#c72c2c}
+.fform-input,.fform-select{padding:9px 12px;border:0.5px solid rgba(0,0,0,0.18);border-radius:9px;font-size:14px;font-family:inherit;background:#fff;color:#1a1917;outline:none;transition:border 0.1s;width:100%}
+.fform-input:focus,.fform-select:focus{border-color:#1a1917}
+.fform-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fform-label{font-size:12px;font-weight:600;color:#3a3937;letter-spacing:0.02em}
+.fform-required{color:#c72c2c;margin-left:2px}
+@media(max-width:600px){.femp-info{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
 <div id="print-area" style="display:none"></div>
+
+<!-- ── 員工自評表單頁面 ── -->
+<div id="app-self-eval">
+  <div class="form-container">
+    <div class="form-logo-row">
+      <div class="title">&#x1F3E2; 艾爾斯 HR 系統</div>
+      <div class="sub">員工到職面談 — 自評表單</div>
+    </div>
+    <div id="se-loading" style="text-align:center;padding:60px 20px;color:#6b6966;font-size:14px">⏳ 載入中，請稍候...</div>
+    <div id="se-error" style="display:none"></div>
+    <div id="se-form" style="display:none">
+      <div class="fcard">
+        <div class="fcard-title" id="se-round-title">第 N 次面談自評</div>
+        <div class="fcard-desc">請依據您近期的實際工作表現，誠實填寫以下自評分數。此表單僅供主管面談時參考，不作為唯一評核依據。</div>
+        <div class="femp-info" id="se-emp-info"></div>
+        <div class="falert falert-info">📌 評分說明：<strong>5 分</strong>表現優異超越預期　<strong>4 分</strong>表現良好達到預期　<strong>3 分</strong>表現尚可部分需加強　<strong>2 分</strong>表現不足需明顯改善　<strong>1 分</strong>表現不佳需立即關注</div>
+      </div>
+      <div class="fcard">
+        <div class="fsection-label">📋 軟性職場技能自評</div>
+        <div id="se-soft-area"></div>
+      </div>
+      <div class="fcard">
+        <button class="btn btn-primary" id="se-submit-btn" onclick="submitSelfEval()">✅ 提交自評</button>
+        <div style="margin-top:10px;font-size:12px;color:#9a9894;text-align:center">提交後無法修改，請確認後再送出</div>
+      </div>
+    </div>
+    <div id="se-success" style="display:none">
+      <div class="fcard" style="text-align:center;padding:40px 24px">
+        <div style="font-size:56px;margin-bottom:16px">🎉</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:8px">自評已成功提交！</div>
+        <div style="font-size:14px;color:#6b6966;line-height:1.7" id="se-success-desc">感謝您完成自評。<br>主管在面談時將會參考您的自評分數，<br>請準備好與主管進行面談討論。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 主管評核表單頁面 ── -->
+<div id="app-manager-eval">
+  <div class="form-container wide">
+    <div class="form-logo-row">
+      <div class="title">&#x1F3E2; 艾爾斯 HR 系統</div>
+      <div class="sub">員工到職面談 — 主管評核表</div>
+    </div>
+    <div id="me-loading" style="text-align:center;padding:60px 20px;color:#6b6966;font-size:14px">⏳ 載入中，請稍候...</div>
+    <div id="me-error" style="display:none"></div>
+    <div id="me-form" style="display:none">
+      <div class="fcard">
+        <div class="fcard-title" id="me-round-title">第 N 次面談評核</div>
+        <div class="fcard-desc">請依據員工近期實際工作表現進行評分，並填寫具體觀察與建議。</div>
+        <div class="femp-info" id="me-emp-info"></div>
+        <div class="falert falert-info">📌 評分說明：<strong>5</strong> 超越預期　<strong>4</strong> 達到預期　<strong>3</strong> 部分需加強　<strong>2</strong> 需明顯改善　<strong>1</strong> 需立即關注</div>
+      </div>
+      <div class="fcard" id="me-history-card" style="display:none">
+        <div class="fcard-title">📊 歷次面談紀錄</div>
+        <div class="fcard-desc">以下為該員工前次面談的評核結果，供本次面談參考。</div>
+        <div id="me-history-area"></div>
+      </div>
+      <div class="fcard" id="me-self-eval-card" style="display:none">
+        <div class="fcard-title">👤 員工自評分數（參考）</div>
+        <div class="fcard-desc">員工已完成自評，以下為其自評分數，供面談時對照討論。</div>
+        <div id="me-self-eval-area"></div>
+      </div>
+      <div class="fcard">
+        <div class="fcard-title">🌱 軟性職場技能評核</div>
+        <div class="fcard-desc">評估員工在職場通用能力上的表現。</div>
+        <div id="me-soft-area"></div>
+        <div class="fnote-area" style="margin-top:16px">
+          <label>軟性技能整體備註（可填寫具體觀察或改善建議）</label>
+          <textarea id="me-soft-note" placeholder="例：溝通態度積極，但時間管理上仍需加強，建議下次面談前設定具體目標..."></textarea>
+        </div>
+      </div>
+      <div class="fcard">
+        <div class="fcard-title">💼 職位硬性職能評核</div>
+        <div class="fcard-desc" id="me-hard-desc">依據職位評估員工的專業能力表現。</div>
+        <div id="me-hard-area"></div>
+        <div class="fnote-area" style="margin-top:16px">
+          <label>職位職能整體備註（可填寫具體觀察或改善建議）</label>
+          <textarea id="me-hard-note" placeholder="例：產品知識掌握良好，但申請文件處理速度仍需提升..."></textarea>
+        </div>
+      </div>
+      <div class="fcard">
+        <div class="fcard-title">📝 面談紀錄</div>
+        <div class="fform-group">
+          <label class="fform-label">本次面談重點摘要<span class="fform-required">*</span></label>
+          <textarea class="fform-input" id="me-summary" style="min-height:90px;resize:vertical" placeholder="請記錄本次面談的主要討論內容、員工反饋等..."></textarea>
+        </div>
+        <div class="fform-group">
+          <label class="fform-label">改善目標與限期</label>
+          <textarea class="fform-input" id="me-improvement" style="min-height:70px;resize:vertical" placeholder="例：請於下次面談前（60天）提升客戶追蹤頻率..."></textarea>
+        </div>
+        <div id="me-prev-improvement"></div>
+      </div>
+      <div class="fcard" id="me-conclusion-card" style="display:none">
+        <div class="fcard-title">⚖️ 試用期評核結論</div>
+        <div class="fcard-desc">請綜合三次面談表現，給出試用期評核結論。</div>
+        <div class="fconclusion-area">
+          <label class="fform-label">評核結論<span class="fform-required">*</span></label>
+          <div class="fradio-group">
+            <div class="fradio-btn" id="me-conclusion-pass" onclick="mgrSelectConclusion('pass')">✅ 通過試用期，正式任用</div>
+            <div class="fradio-btn" id="me-conclusion-extend" onclick="mgrSelectConclusion('extend')">⏳ 延長試用期</div>
+            <div class="fradio-btn" id="me-conclusion-fail" onclick="mgrSelectConclusion('fail')">❌ 試用期未通過</div>
+          </div>
+        </div>
+        <div class="fnote-area" style="margin-top:16px">
+          <label>評核結論說明</label>
+          <textarea id="me-conclusion-note" placeholder="請說明評核結論的依據與後續處理方式..."></textarea>
+        </div>
+      </div>
+      <div class="fcard">
+        <div id="me-score-summary" style="margin-bottom:16px"></div>
+        <button class="btn btn-primary" id="me-submit-btn" onclick="submitManagerEval()">✅ 提交面談評核</button>
+        <div style="margin-top:10px;font-size:12px;color:#9a9894;text-align:center">提交後資料將儲存至系統，HR 可在後台查看</div>
+      </div>
+    </div>
+    <div id="me-success" style="display:none">
+      <div class="fcard" style="text-align:center;padding:40px 24px">
+        <div style="font-size:56px;margin-bottom:16px">✅</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:8px">面談評核已成功提交！</div>
+        <div style="font-size:14px;color:#6b6966;line-height:1.7" id="me-success-desc">感謝您完成面談評核。<br>HR 將會收到通知並跟進後續事宜。</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Welcome -->
 <div class="welcome" id="welcome">
@@ -939,22 +1140,105 @@ Sharon Tseng</div>
     }
     return `<div class="section-card">
     <div class="section-title">📅 試用期三次面談</div>
-    <div class="section-desc">面談日期已自動避開假日，順延至最近工作日。</div>
+    <div class="section-desc">面談日期已自動避開假日，順延至最近工作日。點擊「產生連結」後，將連結分別傳送給員工（自評）與主管（評核）。</div>
+
+    <!-- ── 第一次面談 ── -->
     <a href="${calUrl('【第一次試用期面談】'+emp.nameZh,d30)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
       <div class="cal-info"><div class="cal-title">第一次面談（30 天）</div><div class="cal-date">${fmtDate(d30)}（${['日','一','二','三','四','五','六'][d30.getDay()]}）</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
+    <div class="interview-link-box" id="ibox-1">
+      <div class="ilink-row">
+        <div class="ilink-label">👤 員工自評連結</div>
+        <div class="ilink-actions">
+          <button class="btn btn-sm" onclick="genInterviewLink(1,'self')">🔗 產生連結</button>
+        </div>
+      </div>
+      <div class="ilink-url" id="self-url-1" style="display:none">
+        <input type="text" id="self-url-input-1" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
+        <button class="btn btn-sm" onclick="copyLinkById('self-url-input-1')">📋 複製</button>
+      </div>
+      <div class="ilink-row" style="margin-top:8px">
+        <div class="ilink-label">🧑‍💼 主管評核連結</div>
+        <div class="ilink-actions">
+          <button class="btn btn-sm" onclick="genInterviewLink(1,'manager')">🔗 產生連結</button>
+        </div>
+      </div>
+      <div class="ilink-url" id="mgr-url-1" style="display:none">
+        <input type="text" id="mgr-url-input-1" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
+        <button class="btn btn-sm" onclick="copyLinkById('mgr-url-input-1')">📋 複製</button>
+      </div>
+      <div id="interview-status-1" style="margin-top:8px;font-size:12px;color:#6b6966"></div>
+    </div>
+
+    <!-- ── 第二次面談 ── -->
     <a href="${calUrl('【第二次試用期面談】'+emp.nameZh,d60)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
       <div class="cal-info"><div class="cal-title">第二次面談（60 天）</div><div class="cal-date">${fmtDate(d60)}（${['日','一','二','三','四','五','六'][d60.getDay()]}）</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
+    <div class="interview-link-box" id="ibox-2">
+      <div class="ilink-row">
+        <div class="ilink-label">👤 員工自評連結</div>
+        <div class="ilink-actions">
+          <button class="btn btn-sm" onclick="genInterviewLink(2,'self')">🔗 產生連結</button>
+        </div>
+      </div>
+      <div class="ilink-url" id="self-url-2" style="display:none">
+        <input type="text" id="self-url-input-2" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
+        <button class="btn btn-sm" onclick="copyLinkById('self-url-input-2')">📋 複製</button>
+      </div>
+      <div class="ilink-row" style="margin-top:8px">
+        <div class="ilink-label">🧑‍💼 主管評核連結</div>
+        <div class="ilink-actions">
+          <button class="btn btn-sm" onclick="genInterviewLink(2,'manager')">🔗 產生連結</button>
+        </div>
+      </div>
+      <div class="ilink-url" id="mgr-url-2" style="display:none">
+        <input type="text" id="mgr-url-input-2" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
+        <button class="btn btn-sm" onclick="copyLinkById('mgr-url-input-2')">📋 複製</button>
+      </div>
+      <div id="interview-status-2" style="margin-top:8px;font-size:12px;color:#6b6966"></div>
+    </div>
+
+    <!-- ── 第三次面談（試用期評核）── -->
     <a href="${calUrl('【第三次試用期面談／評核】'+emp.nameZh,d90)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
       <div class="cal-info"><div class="cal-title">第三次面談＋評核（90 天）</div><div class="cal-date">${fmtDate(d90)}（${['日','一','二','三','四','五','六'][d90.getDay()]}）</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
+    <div class="interview-link-box" id="ibox-3">
+      <div class="ilink-row">
+        <div class="ilink-label">👤 員工自評連結</div>
+        <div class="ilink-actions">
+          <button class="btn btn-sm" onclick="genInterviewLink(3,'self')">🔗 產生連結</button>
+        </div>
+      </div>
+      <div class="ilink-url" id="self-url-3" style="display:none">
+        <input type="text" id="self-url-input-3" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
+        <button class="btn btn-sm" onclick="copyLinkById('self-url-input-3')">📋 複製</button>
+      </div>
+      <div class="ilink-row" style="margin-top:8px">
+        <div class="ilink-label">🧑‍💼 主管評核連結</div>
+        <div class="ilink-actions">
+          <button class="btn btn-sm" onclick="genInterviewLink(3,'manager')">🔗 產生連結</button>
+        </div>
+      </div>
+      <div class="ilink-url" id="mgr-url-3" style="display:none">
+        <input type="text" id="mgr-url-input-3" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
+        <button class="btn btn-sm" onclick="copyLinkById('mgr-url-input-3')">📋 複製</button>
+      </div>
+      <div id="interview-status-3" style="margin-top:8px;font-size:12px;color:#6b6966"></div>
+    </div>
+
+    <!-- ── 面談進度總覽 ── -->
+    <div id="interview-overview" style="margin-top:16px;padding:14px 16px;background:#f8f7f3;border-radius:10px;font-size:13px">
+      <div style="font-weight:700;margin-bottom:8px">📊 面談進度總覽</div>
+      <div id="interview-overview-content" style="color:#6b6966">點擊「產生連結」後，進度將在此顯示。</div>
+      <button class="btn" style="margin-top:10px;font-size:12px;padding:7px 14px;width:auto" onclick="refreshInterviewStatus()">🔄 重新整理進度</button>
+    </div>
+
     <div style="margin-top:16px">${ci('bday','✅ 試用期通過後：至 NUEIP 為 <strong>'+emp.nameZh+'</strong> 匯入生日假','試用期評核通過後執行，未勾選將出現在待辦 PDF 中')}</div>
     <div class="btn-row">
       <button class="btn btn-green" onclick="printObSummary()">📄 匯出入職追蹤 PDF</button>
@@ -2621,6 +2905,667 @@ function copyEl(id){
     const t=document.createElement('textarea');t.value=el.innerText;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('✅ 已複製！');
   });
 }
+// ============================================================
+// 面談連結模組
+// ============================================================
+
+// 面談表單的基礎 URL（請將兩個 HTML 檔案與本檔案放在同一目錄）
+const INTERVIEW_BASE_URL = (function(){
+  const loc = window.location.href;
+  const dir = loc.substring(0, loc.lastIndexOf('/') + 1);
+  return dir;
+})();
+
+const SELF_FORM_FILE = 'self-eval.html';
+const MGR_FORM_FILE  = 'manager-eval.html';
+
+function buildInterviewUrl(formFile, round) {
+  if (!currentKey) return null;
+  // 合併版：所有表單都在同一個 index.html，透過 mode 參數切換
+  const modeMap = { 'self-eval.html': 'self-eval', 'manager-eval.html': 'manager-eval' };
+  const mode = modeMap[formFile] || formFile;
+  const params = new URLSearchParams({
+    mode:  mode,
+    key:   currentKey,
+    round: String(round),
+    fbUrl: FIREBASE_CONFIG.databaseURL,
+    fbKey: FIREBASE_CONFIG.apiKey,
+  });
+  // 取得 index.html 的完整 URL（去掉現有 query string）
+  const baseUrl = window.location.href.split('?')[0];
+  return baseUrl + '?' + params.toString();
+}
+
+function genInterviewLink(round, type) {
+  if (!currentKey || !emp.nameZh) {
+    alert('⚠️ 請先填寫員工資料（步驟 1）並同步完成。');
+    return;
+  }
+  const formFile = type === 'self' ? SELF_FORM_FILE : MGR_FORM_FILE;
+  const url = buildInterviewUrl(formFile, round);
+  if (!url) return;
+
+  const urlBoxId  = (type === 'self' ? 'self-url-' : 'mgr-url-') + round;
+  const inputId   = (type === 'self' ? 'self-url-input-' : 'mgr-url-input-') + round;
+  const urlBox    = document.getElementById(urlBoxId);
+  const inputEl   = document.getElementById(inputId);
+
+  if (urlBox && inputEl) {
+    inputEl.value = url;
+    urlBox.style.display = 'flex';
+  }
+  refreshInterviewStatus();
+}
+
+function copyLinkById(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  const url = el.value;
+  navigator.clipboard.writeText(url).then(() => alert('✅ 連結已複製！請傳送給對應人員。')).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = url;
+    document.body.appendChild(t);
+    t.select();
+    document.execCommand('copy');
+    document.body.removeChild(t);
+    alert('✅ 連結已複製！');
+  });
+}
+
+async function refreshInterviewStatus() {
+  if (!currentKey || !db) return;
+  try {
+    const snap = await db.ref('hr_ob/' + currentKey + '/interviews').once('value');
+    const interviews = snap.val() || {};
+    const overviewEl = document.getElementById('interview-overview-content');
+    let overviewHtml = '';
+
+    for (let r = 1; r <= 3; r++) {
+      const rKey = 'round' + r;
+      const rNames = { 1: '第一次（30天）', 2: '第二次（60天）', 3: '第三次（試用期評核）' };
+      const rData = interviews[rKey] || {};
+      const selfDone = rData.selfEval && rData.selfEval.submitted;
+      const mgrDone  = rData.manager  && rData.manager.submitted;
+      const selfIcon = selfDone ? '✅' : '⏳';
+      const mgrIcon  = mgrDone  ? '✅' : '⏳';
+
+      const statusEl = document.getElementById('interview-status-' + r);
+      if (statusEl) {
+        let statusHtml = '';
+        if (selfDone) statusHtml += '<span class="ilink-status-ok">✅ 員工自評已提交</span>&nbsp;&nbsp;';
+        if (mgrDone)  statusHtml += '<span class="ilink-status-ok">✅ 主管評核已提交</span>';
+        if (!selfDone && !mgrDone) statusHtml = '<span class="ilink-status-pending">⏳ 尚未提交</span>';
+        statusEl.innerHTML = statusHtml;
+      }
+
+      const mgrData = rData.manager || {};
+      const totalAvg = mgrData.totalAvg ? mgrData.totalAvg.toFixed(1) : '—';
+      const conclusionMap = { pass: '✅ 通過試用期', extend: '⏳ 延長試用期', fail: '❌ 試用期未通過' };
+      const conclusionStr = mgrData.conclusion ? conclusionMap[mgrData.conclusion] || '' : '';
+
+      overviewHtml += `<div style="margin-bottom:8px;padding:8px 10px;background:#fff;border-radius:7px;font-size:12px">
+        <strong>${rNames[r]}</strong>&nbsp;
+        ${selfIcon} 自評&nbsp;
+        ${mgrIcon} 主管評核
+        ${mgrDone ? '&nbsp;&nbsp;綜合分：<strong>' + totalAvg + '</strong>/5' : ''}
+        ${conclusionStr ? '&nbsp;&nbsp;' + conclusionStr : ''}
+      </div>`;
+    }
+
+    if (overviewEl) overviewEl.innerHTML = overviewHtml || '尚無面談紀錄。';
+  } catch(e) {
+    console.warn('refreshInterviewStatus error:', e);
+  }
+}
+
+
+// ============================================================
+// 面談表單模組（員工自評 & 主管評核）— 合併版
+// ============================================================
+
+// ── 路由：頁面載入時判斷是否為表單模式 ──
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode'); // 'self-eval' or 'manager-eval'
+  if (!mode) return; // 一般 HR 主系統，不做任何事
+
+  // 隱藏主系統所有介面
+  document.addEventListener('DOMContentLoaded', function() {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.style.display = 'none';
+    ['onboard','offboard','layoff','dashboard'].forEach(function(f) {
+      const el = document.getElementById('app-' + f);
+      if (el) el.style.display = 'none';
+    });
+
+    if (mode === 'self-eval') {
+      const el = document.getElementById('app-self-eval');
+      if (el) el.classList.add('active');
+      initSelfEvalForm(params);
+    } else if (mode === 'manager-eval') {
+      const el = document.getElementById('app-manager-eval');
+      if (el) el.classList.add('active');
+      initManagerEvalForm(params);
+    }
+  });
+})();
+
+// ── 軟性技能定義 ──
+const FORM_SOFT_SKILLS = [
+  { id: 'attitude', title: '工作態度與責任感',   desc: '主動積極、準時完成交辦事項、對工作有責任心' },
+  { id: 'learning', title: '學習意願與適應力',   desc: '面對新知識、新流程的吸收速度與調整能力' },
+  { id: 'comm',     title: '內部溝通與協作',     desc: '與同事、主管的溝通品質，跨部門協作意願' },
+  { id: 'time',     title: '時間管理與工作效率', desc: '任務優先順序安排、如期交付、多工處理能力' },
+  { id: 'problem',  title: '問題解決能力',       desc: '遇到困難時的應對方式，是否能主動提出解法' },
+  { id: 'sop',      title: '遵守規範與 SOP',     desc: '對公司制度、流程、保密規定的遵循程度' },
+  { id: 'stress',   title: '情緒穩定與抗壓性',   desc: '面對高壓或突發狀況時的情緒管理能力' },
+];
+
+// ── 硬性職能定義 ──
+const FORM_HARD_SKILLS = {
+  '顧問': [
+    { id: 'h1', title: '客戶需求理解與諮詢技巧', desc: '能否精準掌握學生背景與目標' },
+    { id: 'h2', title: '產品知識掌握', desc: '海外學校、課程、申請流程的熟悉度' },
+    { id: 'h3', title: '申請文件處理能力', desc: '文件完整性、正確性、時效性' },
+    { id: 'h4', title: '客戶關係維護', desc: '定期追蹤、回覆速度、客戶滿意度' },
+    { id: 'h5', title: '業績目標達成率', desc: '招生量、成交率' },
+  ],
+  '行政顧問': [
+    { id: 'h1', title: '產品知識掌握', desc: '海外學校、課程、申請流程的熟悉度' },
+    { id: 'h2', title: '申請文件處理能力', desc: '文件完整性、正確性、時效性' },
+    { id: 'h3', title: '行政流程執行能力', desc: 'SOP 遵循、文件歸檔、系統操作' },
+    { id: 'h4', title: '顧問支援配合度', desc: '協助顧問的即時性與完整性' },
+    { id: 'h5', title: '客戶應對基礎能力', desc: '電話、Email 應對的禮貌與正確性' },
+  ],
+  '數位行銷': [
+    { id: 'h1', title: '廣告投放操作能力', desc: 'FB / IG / Threads / Dcard / Google Ads 實際操作熟悉度' },
+    { id: 'h2', title: '數據分析與報表能力', desc: '能否解讀廣告成效並提出優化建議' },
+    { id: 'h3', title: 'SEO 基礎知識與執行', desc: '關鍵字規劃、文章／內容優化' },
+    { id: 'h4', title: '品牌行銷策略理解', desc: '符合公司品牌調性的行銷規劃能力' },
+    { id: 'h5', title: '廠商溝通與專案管理', desc: '與外部廠商的溝通協調能力' },
+    { id: 'h6', title: '文案撰寫能力', desc: '活動／展覽文案吸引力、語氣符合品牌調性' },
+  ],
+  '影片剪輯': [
+    { id: 'h1', title: '剪輯軟體操作能力', desc: 'Premiere / Final Cut / CapCut 等熟練度' },
+    { id: 'h2', title: '影片節奏與敘事感', desc: '剪輯流暢度、符合品牌風格' },
+    { id: 'h3', title: '字幕、特效、調色品質', desc: '後製細節處理能力' },
+    { id: 'h4', title: '素材管理與檔案整理', desc: '命名規則、雲端歸檔習慣' },
+    { id: 'h5', title: '如期交付與修改配合度', desc: '時程掌控、接受回饋的態度' },
+    { id: 'h6', title: '專案管理與溝通技能', desc: '影片企劃、腳本文案內容、拍攝內容安排與接洽' },
+  ],
+  '設計專員': [
+    { id: 'h1', title: '設計軟體操作能力', desc: 'Illustrator / Photoshop 等熟練度' },
+    { id: 'h2', title: '視覺美感與品牌一致性', desc: '設計風格是否符合公司品牌' },
+    { id: 'h3', title: '印刷品規格掌握', desc: '出血、外框、完稿、CMYK 校色、解析度等基礎知識' },
+    { id: 'h4', title: '數位素材製作效率', desc: '按時完成各類設計需求' },
+    { id: 'h5', title: '接受修改與溝通能力', desc: '需求理解、執行修改的靈活度' },
+  ],
+  '社群行銷': [
+    { id: 'h1', title: '社群平台操作熟悉度', desc: 'IG / FB / YouTube / 小紅書等發文與後台管理' },
+    { id: 'h2', title: '文案撰寫能力', desc: '貼文吸引力、語氣符合品牌調性' },
+    { id: 'h3', title: '成效追蹤與數據解讀', desc: '觸及率、互動率的分析能力' },
+    { id: 'h4', title: '基礎拍攝與剪輯能力', desc: '短影音製作的基本執行力' },
+    { id: 'h5', title: '趨勢敏感度', desc: '對時事、社群趨勢的掌握與應用能力' },
+    { id: 'h6', title: '與廠商和網紅的對接能力', desc: '與網紅或外部廠商的溝通協調能力' },
+  ],
+  '財務專員': [
+    { id: 'h1', title: '帳務處理正確性', desc: '收支記帳、核銷的準確度' },
+    { id: 'h2', title: '發票與應收付款管理', desc: '開立、核對、追蹤的完整性' },
+    { id: 'h3', title: '報表製作能力', desc: '統計報表的格式與數據正確性' },
+    { id: 'h4', title: '稅務基礎知識', desc: '營業稅、營所稅等申報流程的熟悉度' },
+    { id: 'h5', title: '財務軟體與 Excel 操作能力', desc: '工具使用熟練度' },
+  ],
+  '人資暨出納專員': [
+    { id: 'h1', title: '招募流程執行能力', desc: '刊登、篩選、安排面試的完整度' },
+    { id: 'h2', title: '勞健保與人事法令掌握', desc: '加退保、勞退、勞動法令正確性' },
+    { id: 'h3', title: 'NUEIP 系統操作熟悉度', desc: '考勤、薪資、排班等功能' },
+    { id: 'h4', title: '薪資計算正確性', desc: '加班費、獎金、津貼計算的準確度' },
+    { id: 'h5', title: '外籍人員事務處理', desc: '工作簽證、居留證等行政流程熟悉度' },
+  ],
+  '行政櫃台': [
+    { id: 'h1', title: '前台接待與電話應對品質', desc: '禮貌、應對流暢度' },
+    { id: 'h2', title: '文件歸檔與資料管理', desc: '整理正確性、查找效率' },
+    { id: 'h3', title: '行政庶務執行能力', desc: '採購、快遞、會議室安排等' },
+    { id: 'h4', title: '系統資料維護', desc: '線上資料庫更新的正確性與即時性' },
+    { id: 'h5', title: '多工處理能力', desc: '同時應對多項行政需求的穩定性' },
+  ],
+  '史丹利招生顧問': [
+    { id: 'h1', title: '客戶需求理解與諮詢技巧', desc: '能否精準掌握學生背景與目標' },
+    { id: 'h2', title: '產品知識掌握', desc: '課程、招生流程的熟悉度' },
+    { id: 'h3', title: '申請文件處理能力', desc: '文件完整性、正確性、時效性' },
+    { id: 'h4', title: '客戶關係維護', desc: '定期追蹤學員學習近況、回覆速度' },
+    { id: 'h5', title: '業績目標達成率', desc: '招生量、成交率' },
+  ],
+  '遊學團專案專員': [
+    { id: 'h1', title: '行程規劃與報價能力', desc: '行程表、報價單的完整性與吸引力' },
+    { id: 'h2', title: '海外供應商聯繫能力', desc: '英文溝通、確認細節的能力' },
+    { id: 'h3', title: '專案時程控管', desc: '各節點如期完成、文件整理完整度' },
+    { id: 'h4', title: '突發狀況應變能力', desc: '航班異動、緊急事件的處理能力' },
+    { id: 'h5', title: '客戶服務品質', desc: '家長與學生諮詢的回覆速度與品質' },
+    { id: 'h6', title: '標案提案簡報與即時答詢能力', desc: '課程方案包裝與亮點闡述能力' },
+  ],
+};
+
+function formMatchJobTitle(title) {
+  if (!title) return null;
+  const t = title.trim();
+  for (const key of Object.keys(FORM_HARD_SKILLS)) {
+    if (t.includes(key) || key.includes(t)) return key;
+  }
+  if (t.includes('顧問') && !t.includes('行政')) return '顧問';
+  if (t.includes('行政') && t.includes('顧問')) return '行政顧問';
+  if (t.includes('行銷') && t.includes('數位')) return '數位行銷';
+  if (t.includes('影片') || t.includes('剪輯')) return '影片剪輯';
+  if (t.includes('設計')) return '設計專員';
+  if (t.includes('社群')) return '社群行銷';
+  if (t.includes('財務')) return '財務專員';
+  if (t.includes('人資')) return '人資暨出納專員';
+  if (t.includes('行政') || t.includes('櫃台')) return '行政櫃台';
+  if (t.includes('史丹利') || t.includes('招生')) return '史丹利招生顧問';
+  if (t.includes('遊學')) return '遊學團專案專員';
+  return null;
+}
+
+function formEscHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formInitFirebase(config) {
+  try {
+    if (!firebase.apps || !firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+    return firebase.database();
+  } catch(e) {
+    console.error('formInitFirebase error:', e);
+    return null;
+  }
+}
+
+// ============================================================
+// 員工自評模組
+// ============================================================
+let seDb = null, seEmpKey = null, seRound = null, seEmpData = {}, seSelfScores = {};
+
+function initSelfEvalForm(params) {
+  seEmpKey = params.get('key');
+  seRound = parseInt(params.get('round') || '1');
+
+  if (!seEmpKey || !seRound) {
+    seShowError('連結無效，請聯繫 HR 重新產生連結。');
+    return;
+  }
+
+  const config = {
+    ...FIREBASE_CONFIG,
+    databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL,
+    apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey,
+  };
+
+  seDb = formInitFirebase(config);
+  if (!seDb) { seShowError('系統初始化失敗，請重新整理頁面。'); return; }
+
+  seDb.ref('hr_ob/' + seEmpKey).once('value').then(function(snap) {
+    const val = snap.val();
+    if (!val || !val.emp) { seShowError('找不到員工資料，請聯繫 HR 確認連結是否正確。'); return; }
+    seEmpData = val.emp;
+    const interviews = val.interviews || {};
+    const roundKey = 'round' + seRound;
+    if (interviews[roundKey] && interviews[roundKey].selfEval && interviews[roundKey].selfEval.submitted) {
+      document.getElementById('se-loading').style.display = 'none';
+      document.getElementById('se-success').style.display = 'block';
+      document.getElementById('se-success-desc').innerHTML = '您已於先前提交過本次自評。<br>如有疑問，請聯繫 HR。';
+      return;
+    }
+    seRenderForm();
+  }).catch(function(e) { seShowError('讀取資料失敗：' + e.message); });
+}
+
+function seShowError(msg) {
+  document.getElementById('se-loading').style.display = 'none';
+  const el = document.getElementById('se-error');
+  el.style.display = 'block';
+  el.innerHTML = '<div class="fcard"><div class="falert falert-danger">❌ ' + msg + '</div></div>';
+}
+
+function seRenderForm() {
+  document.getElementById('se-loading').style.display = 'none';
+  document.getElementById('se-form').style.display = 'block';
+  const roundNames = { 1: '第一次（到職 30 天）', 2: '第二次（到職 60 天）', 3: '第三次（試用期評核）' };
+  document.getElementById('se-round-title').innerHTML =
+    '<span class="fround-badge fbadge-' + seRound + '">' + (roundNames[seRound] || '第 ' + seRound + ' 次') + '</span> 面談自評';
+  document.getElementById('se-emp-info').innerHTML =
+    '<div><strong>姓名：</strong>' + (seEmpData.nameZh || '—') + '</div>' +
+    '<div><strong>職稱：</strong>' + (seEmpData.title || '—') + '</div>' +
+    '<div><strong>到職日：</strong>' + (seEmpData.startDate || '—') + '</div>' +
+    '<div><strong>所屬公司：</strong>' + (seEmpData.companyName || '—') + '</div>';
+  const area = document.getElementById('se-soft-area');
+  area.innerHTML = FORM_SOFT_SKILLS.map(function(skill) { return seRenderScoreItem(skill); }).join('');
+}
+
+function seRenderScoreItem(skill) {
+  const btns = [1,2,3,4,5].map(function(s) {
+    return '<button class="fscore-btn" id="se_' + skill.id + '_' + s + '" onclick="seSelectScore('' + skill.id + '',' + s + ')">' + s + '</button>';
+  }).join('');
+  return '<div class="fscore-item">' +
+    '<div class="fscore-title">' + skill.title + '</div>' +
+    '<div class="fscore-desc">' + skill.desc + '</div>' +
+    '<div class="fscore-row">' + btns + '</div>' +
+    '<div class="fscore-labels"><span>1 需立即關注</span><span>5 超越預期</span></div>' +
+    '</div>';
+}
+
+function seSelectScore(skillId, score) {
+  [1,2,3,4,5].forEach(function(s) {
+    const btn = document.getElementById('se_' + skillId + '_' + s);
+    if (btn) btn.classList.remove('selected');
+  });
+  const btn = document.getElementById('se_' + skillId + '_' + score);
+  if (btn) btn.classList.add('selected');
+  seSelfScores[skillId] = score;
+}
+
+function submitSelfEval() {
+  const missing = FORM_SOFT_SKILLS.filter(function(s) { return !seSelfScores[s.id]; });
+  if (missing.length > 0) {
+    alert('⚠️ 請完成所有評分項目後再提交。
+
+尚未評分：' + missing.map(function(s) { return s.title; }).join('、'));
+    return;
+  }
+  const btn = document.getElementById('se-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+  const roundKey = 'round' + seRound;
+  const payload = { submitted: true, submittedAt: new Date().toISOString(), scores: seSelfScores };
+  seDb.ref('hr_ob/' + seEmpKey + '/interviews/' + roundKey + '/selfEval').set(payload).then(function() {
+    document.getElementById('se-form').style.display = 'none';
+    document.getElementById('se-success').style.display = 'block';
+  }).catch(function(e) {
+    btn.disabled = false;
+    btn.textContent = '✅ 提交自評';
+    alert('❌ 提交失敗：' + e.message + '
+請重試或聯繫 HR。');
+  });
+}
+
+// ============================================================
+// 主管評核模組
+// ============================================================
+let meDb = null, meEmpKey = null, meRound = null, meEmpData = {}, meAllInterviews = {};
+let meScores = { soft: {}, hard: {} }, meNotes = { soft: {}, hard: {} }, meConclusionVal = null;
+
+function initManagerEvalForm(params) {
+  meEmpKey = params.get('key');
+  meRound = parseInt(params.get('round') || '1');
+
+  if (!meEmpKey || !meRound) {
+    meShowError('連結無效，請聯繫 HR 重新產生連結。');
+    return;
+  }
+
+  const config = {
+    ...FIREBASE_CONFIG,
+    databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL,
+    apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey,
+  };
+
+  meDb = formInitFirebase(config);
+  if (!meDb) { meShowError('系統初始化失敗，請重新整理頁面。'); return; }
+
+  meDb.ref('hr_ob/' + meEmpKey).once('value').then(function(snap) {
+    const val = snap.val();
+    if (!val || !val.emp) { meShowError('找不到員工資料，請聯繫 HR 確認連結是否正確。'); return; }
+    meEmpData = val.emp;
+    meAllInterviews = val.interviews || {};
+    const roundKey = 'round' + meRound;
+    if (meAllInterviews[roundKey] && meAllInterviews[roundKey].manager && meAllInterviews[roundKey].manager.submitted) {
+      document.getElementById('me-loading').style.display = 'none';
+      document.getElementById('me-success').style.display = 'block';
+      document.getElementById('me-success-desc').innerHTML = '此次面談評核已提交完畢。<br>如需修改，請聯繫 HR。';
+      return;
+    }
+    meRenderForm();
+  }).catch(function(e) { meShowError('讀取資料失敗：' + e.message); });
+}
+
+function meShowError(msg) {
+  document.getElementById('me-loading').style.display = 'none';
+  const el = document.getElementById('me-error');
+  el.style.display = 'block';
+  el.innerHTML = '<div class="fcard"><div class="falert falert-danger">❌ ' + msg + '</div></div>';
+}
+
+function meRenderForm() {
+  document.getElementById('me-loading').style.display = 'none';
+  document.getElementById('me-form').style.display = 'block';
+  const roundNames = { 1: '第一次（到職 30 天）', 2: '第二次（到職 60 天）', 3: '第三次（試用期評核）' };
+  document.getElementById('me-round-title').innerHTML =
+    '<span class="fround-badge fbadge-' + meRound + '">' + (roundNames[meRound] || '第 ' + meRound + ' 次') + '</span> 面談評核';
+  document.getElementById('me-emp-info').innerHTML =
+    '<div><strong>姓名：</strong>' + (meEmpData.nameZh || '—') + '</div>' +
+    '<div><strong>職稱：</strong>' + (meEmpData.title || '—') + '</div>' +
+    '<div><strong>到職日：</strong>' + (meEmpData.startDate || '—') + '</div>' +
+    '<div><strong>所屬公司：</strong>' + (meEmpData.companyName || '—') + '</div>';
+
+  if (meRound >= 2) meRenderHistory();
+
+  const roundKey = 'round' + meRound;
+  const selfEval = meAllInterviews[roundKey] && meAllInterviews[roundKey].selfEval;
+  if (selfEval && selfEval.submitted && selfEval.scores) meRenderSelfEval(selfEval.scores);
+
+  meRenderSoftSkills();
+
+  const jobKey = formMatchJobTitle(meEmpData.title);
+  if (jobKey && FORM_HARD_SKILLS[jobKey]) {
+    document.getElementById('me-hard-desc').textContent = '職位：' + (meEmpData.title || jobKey);
+    meRenderHardSkills(FORM_HARD_SKILLS[jobKey]);
+  } else {
+    document.getElementById('me-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別職位，請手動填寫職位職能備註欄。</div>';
+  }
+
+  if (meRound >= 2) {
+    const prevKey = 'round' + (meRound - 1);
+    const prevData = meAllInterviews[prevKey] && meAllInterviews[prevKey].manager;
+    if (prevData && prevData.improvementTarget) {
+      document.getElementById('me-prev-improvement').innerHTML =
+        '<div class="falert falert-warn" style="margin-top:12px"><strong>📌 上次設定的改善目標：</strong><br>' + formEscHtml(prevData.improvementTarget) + '</div>';
+    }
+  }
+
+  if (meRound === 3) document.getElementById('me-conclusion-card').style.display = 'block';
+  meUpdateScoreSummary();
+}
+
+function meRenderHistory() {
+  const histCard = document.getElementById('me-history-card');
+  const histArea = document.getElementById('me-history-area');
+  let html = '';
+  for (let r = 1; r < meRound; r++) {
+    const rKey = 'round' + r;
+    const rData = meAllInterviews[rKey];
+    const rNames = { 1: '第一次面談（30 天）', 2: '第二次面談（60 天）' };
+    const rName = rNames[r] || '第 ' + r + ' 次面談';
+    if (!rData || !rData.manager || !rData.manager.submitted) {
+      html += '<div class="fhistory-card"><div class="fhistory-round">' + rName + '</div><div style="font-size:12px;color:#9a9894">尚無紀錄</div></div>';
+      continue;
+    }
+    const mgr = rData.manager;
+    const selfSc = (rData.selfEval && rData.selfEval.scores) || {};
+    const softVals = Object.values(mgr.softScores || {}).filter(function(v) { return v > 0; });
+    const hardVals = Object.values(mgr.hardScores || {}).filter(function(v) { return v > 0; });
+    const softAvg = softVals.length ? (softVals.reduce(function(a,b){return a+b;},0)/softVals.length).toFixed(1) : '—';
+    const hardAvg = hardVals.length ? (hardVals.reduce(function(a,b){return a+b;},0)/hardVals.length).toFixed(1) : '—';
+    html += '<div class="fhistory-card"><div class="fhistory-round">📅 ' + rName + '</div>' +
+      '<table class="fhistory-table">' +
+      '<tr><td>軟性技能平均分</td><td><div class="fscore-bar-wrap"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:' + (softAvg!=='—'?softAvg/5*100:0) + '%"></div></div><strong>' + softAvg + ' / 5</strong></div></td></tr>' +
+      '<tr><td>職位職能平均分</td><td><div class="fscore-bar-wrap"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:' + (hardAvg!=='—'?hardAvg/5*100:0) + '%"></div></div><strong>' + hardAvg + ' / 5</strong></div></td></tr>' +
+      '</table>';
+    if (Object.keys(mgr.softScores || {}).length > 0) {
+      html += '<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">軟性技能明細</div><table class="fhistory-table">';
+      FORM_SOFT_SKILLS.forEach(function(s) {
+        const mgScore = (mgr.softScores || {})[s.id] || '—';
+        const selfScore = selfSc[s.id] ? '（自評：' + selfSc[s.id] + '）' : '';
+        html += '<tr><td>' + s.title + '</td><td><strong>' + mgScore + '</strong> <span style="color:#9a9894;font-size:11px">' + selfScore + '</span></td></tr>';
+      });
+      html += '</table>';
+    }
+    if (mgr.softOverallNote) html += '<div class="fhistory-note">💬 軟性技能備註：' + formEscHtml(mgr.softOverallNote) + '</div>';
+    if (mgr.hardOverallNote) html += '<div class="fhistory-note">💬 職能備註：' + formEscHtml(mgr.hardOverallNote) + '</div>';
+    if (mgr.interviewSummary) html += '<div class="fhistory-note">📝 面談摘要：' + formEscHtml(mgr.interviewSummary) + '</div>';
+    if (mgr.improvementTarget) html += '<div class="fhistory-note">🎯 改善目標：' + formEscHtml(mgr.improvementTarget) + '</div>';
+    html += '</div>';
+  }
+  if (html) { histCard.style.display = 'block'; histArea.innerHTML = html; }
+}
+
+function meRenderSelfEval(scores) {
+  const card = document.getElementById('me-self-eval-card');
+  const area = document.getElementById('me-self-eval-area');
+  card.style.display = 'block';
+  let html = '<table class="fhistory-table">';
+  FORM_SOFT_SKILLS.forEach(function(s) {
+    html += '<tr><td>' + s.title + '</td><td><strong>' + (scores[s.id] || '—') + '</strong> / 5</td></tr>';
+  });
+  html += '</table>';
+  area.innerHTML = html;
+}
+
+function meRenderSoftSkills() {
+  const area = document.getElementById('me-soft-area');
+  const roundKey = 'round' + meRound;
+  const selfSc = (meAllInterviews[roundKey] && meAllInterviews[roundKey].selfEval && meAllInterviews[roundKey].selfEval.scores) || {};
+  area.innerHTML = FORM_SOFT_SKILLS.map(function(skill) {
+    const badge = selfSc[skill.id] ? '<span class="self-score-badge">員工自評：' + selfSc[skill.id] + '</span>' : '';
+    return meRenderScoreItem(skill, 'soft', badge);
+  }).join('');
+}
+
+function meRenderHardSkills(skills) {
+  document.getElementById('me-hard-area').innerHTML = skills.map(function(skill) {
+    return meRenderScoreItem(skill, 'hard', '');
+  }).join('');
+}
+
+function meRenderScoreItem(skill, prefix, extraBadge) {
+  const btns = [1,2,3,4,5].map(function(s) {
+    return '<button class="fscore-btn" id="me_' + prefix + '_' + skill.id + '_' + s + '" onclick="meSelectScore('' + prefix + '','' + skill.id + '',' + s + ')">' + s + '</button>';
+  }).join('');
+  return '<div class="fscore-item">' +
+    '<div class="fscore-header"><div class="fscore-title">' + skill.title + '</div>' + extraBadge + '</div>' +
+    '<div class="fscore-desc">' + skill.desc + '</div>' +
+    '<div class="fscore-row">' + btns + '</div>' +
+    '<div class="fscore-labels"><span>1 需立即關注</span><span>5 超越預期</span></div>' +
+    '<div class="fnote-area" style="margin-top:8px"><textarea id="me_note_' + prefix + '_' + skill.id + '" placeholder="備註（可選填）" style="min-height:50px;width:100%;padding:8px 10px;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;outline:none" oninput="meSaveNote('' + prefix + '','' + skill.id + '',this.value)"></textarea></div>' +
+    '</div>';
+}
+
+function meSelectScore(prefix, skillId, score) {
+  [1,2,3,4,5].forEach(function(s) {
+    const btn = document.getElementById('me_' + prefix + '_' + skillId + '_' + s);
+    if (btn) btn.classList.remove('selected');
+  });
+  const btn = document.getElementById('me_' + prefix + '_' + skillId + '_' + score);
+  if (btn) btn.classList.add('selected');
+  meScores[prefix][skillId] = score;
+  meUpdateScoreSummary();
+}
+
+function meSaveNote(prefix, skillId, val) {
+  if (!meNotes[prefix]) meNotes[prefix] = {};
+  meNotes[prefix][skillId] = val;
+}
+
+function mgrSelectConclusion(val) {
+  meConclusionVal = val;
+  ['pass','extend','fail'].forEach(function(v) {
+    const el = document.getElementById('me-conclusion-' + v);
+    if (el) el.className = 'fradio-btn';
+  });
+  const el = document.getElementById('me-conclusion-' + val);
+  if (el) el.classList.add('selected-' + val);
+}
+
+function meUpdateScoreSummary() {
+  const softVals = Object.values(meScores.soft).filter(function(v){return v>0;});
+  const hardVals = Object.values(meScores.hard).filter(function(v){return v>0;});
+  const softAvg = softVals.length ? (softVals.reduce(function(a,b){return a+b;},0)/softVals.length).toFixed(1) : '—';
+  const hardAvg = hardVals.length ? (hardVals.reduce(function(a,b){return a+b;},0)/hardVals.length).toFixed(1) : '—';
+  const allVals = softVals.concat(hardVals);
+  const totalAvg = allVals.length ? (allVals.reduce(function(a,b){return a+b;},0)/allVals.length).toFixed(1) : '—';
+  document.getElementById('me-score-summary').innerHTML =
+    '<div class="ftotal-box">' +
+    '<div class="ftotal-row"><span class="ftotal-label">軟性技能平均</span><span class="ftotal-score">' + softAvg + ' / 5</span></div>' +
+    '<div class="ftotal-row"><span class="ftotal-label">職位職能平均</span><span class="ftotal-score">' + hardAvg + ' / 5</span></div>' +
+    '<div class="ftotal-row" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px"><span class="ftotal-label" style="font-weight:700">綜合平均分</span><span class="ftotal-score" style="font-size:26px">' + totalAvg + ' / 5</span></div>' +
+    '</div>';
+}
+
+function submitManagerEval() {
+  const missingSoft = FORM_SOFT_SKILLS.filter(function(s){return !meScores.soft[s.id];});
+  if (missingSoft.length > 0) {
+    alert('⚠️ 請完成所有軟性技能評分。
+
+尚未評分：' + missingSoft.map(function(s){return s.title;}).join('、'));
+    return;
+  }
+  const jobKey = formMatchJobTitle(meEmpData.title);
+  if (jobKey && FORM_HARD_SKILLS[jobKey]) {
+    const missingHard = FORM_HARD_SKILLS[jobKey].filter(function(s){return !meScores.hard[s.id];});
+    if (missingHard.length > 0) {
+      alert('⚠️ 請完成所有職位職能評分。
+
+尚未評分：' + missingHard.map(function(s){return s.title;}).join('、'));
+      return;
+    }
+  }
+  const summary = document.getElementById('me-summary').value.trim();
+  if (!summary) { alert('⚠️ 請填寫面談重點摘要。'); return; }
+  if (meRound === 3 && !meConclusionVal) { alert('⚠️ 請選擇試用期評核結論。'); return; }
+
+  const btn = document.getElementById('me-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  const softVals = Object.values(meScores.soft).filter(function(v){return v>0;});
+  const hardVals = Object.values(meScores.hard).filter(function(v){return v>0;});
+  const softAvg = softVals.length ? parseFloat((softVals.reduce(function(a,b){return a+b;},0)/softVals.length).toFixed(2)) : 0;
+  const hardAvg = hardVals.length ? parseFloat((hardVals.reduce(function(a,b){return a+b;},0)/hardVals.length).toFixed(2)) : 0;
+  const allVals = softVals.concat(hardVals);
+  const totalAvg = allVals.length ? parseFloat((allVals.reduce(function(a,b){return a+b;},0)/allVals.length).toFixed(2)) : 0;
+
+  const payload = {
+    submitted: true,
+    submittedAt: new Date().toISOString(),
+    softScores: meScores.soft,
+    hardScores: meScores.hard,
+    softNotes: meNotes.soft || {},
+    hardNotes: meNotes.hard || {},
+    softOverallNote: document.getElementById('me-soft-note').value.trim(),
+    hardOverallNote: document.getElementById('me-hard-note').value.trim(),
+    interviewSummary: summary,
+    improvementTarget: document.getElementById('me-improvement').value.trim(),
+    softAvg: softAvg,
+    hardAvg: hardAvg,
+    totalAvg: totalAvg,
+  };
+  if (meRound === 3) {
+    payload.conclusion = meConclusionVal;
+    payload.conclusionNote = document.getElementById('me-conclusion-note').value.trim();
+  }
+  const roundKey = 'round' + meRound;
+  meDb.ref('hr_ob/' + meEmpKey + '/interviews/' + roundKey + '/manager').set(payload).then(function() {
+    document.getElementById('me-form').style.display = 'none';
+    document.getElementById('me-success').style.display = 'block';
+  }).catch(function(e) {
+    btn.disabled = false;
+    btn.textContent = '✅ 提交面談評核';
+    alert('❌ 提交失敗：' + e.message + '
+請重試或聯繫 HR。');
+  });
+}
+
 initFirebase();
 </script>
 </body>
