@@ -158,7 +158,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
 .ilink-status-ok{color:#0f6e56;font-weight:600}
 .ilink-status-pending{color:#7a4f0a}
 
-/* ── 面談表單頁面（員工自評 & 主管評核）── */
+/* ── 面談表單頁面 ── */
 #app-self-eval,#app-manager-eval{display:none;min-height:100vh;background:#f4f3ef}
 #app-self-eval.active,#app-manager-eval.active{display:block}
 .form-container{max-width:680px;margin:0 auto;padding:32px 20px 80px}
@@ -224,6 +224,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
 .fform-label{font-size:12px;font-weight:600;color:#3a3937;letter-spacing:0.02em}
 .fform-required{color:#c72c2c;margin-left:2px}
 @media(max-width:600px){.femp-info{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -297,7 +298,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
         <div id="me-soft-area"></div>
         <div class="fnote-area" style="margin-top:16px">
           <label>軟性技能整體備註（可填寫具體觀察或改善建議）</label>
-          <textarea id="me-soft-note" placeholder="例：溝通態度積極，但時間管理上仍需加強，建議下次面談前設定具體目標..."></textarea>
+          <textarea id="me-soft-note" placeholder="例：溝通態度積極，但時間管理上仍需加強..."></textarea>
         </div>
       </div>
       <div class="fcard">
@@ -352,6 +353,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
     </div>
   </div>
 </div>
+
 
 <!-- Welcome -->
 <div class="welcome" id="welcome">
@@ -1140,105 +1142,86 @@ Sharon Tseng</div>
     }
     return `<div class="section-card">
     <div class="section-title">📅 試用期三次面談</div>
-    <div class="section-desc">面談日期已自動避開假日，順延至最近工作日。點擊「產生連結」後，將連結分別傳送給員工（自評）與主管（評核）。</div>
-
-    <!-- ── 第一次面談 ── -->
+    <div class="section-desc">面談日期已自動避開假日，順延至最近工作日。</div>
     <a href="${calUrl('【第一次試用期面談】'+emp.nameZh,d30)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
       <div class="cal-info"><div class="cal-title">第一次面談（30 天）</div><div class="cal-date">${fmtDate(d30)}（${['日','一','二','三','四','五','六'][d30.getDay()]}）</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
-    <div class="interview-link-box" id="ibox-1">
+    <div class="interview-link-box">
       <div class="ilink-row">
-        <div class="ilink-label">👤 員工自評連結</div>
+        <span class="ilink-label">🔗 第一次面談連結</span>
         <div class="ilink-actions">
-          <button class="btn btn-sm" onclick="genInterviewLink(1,'self')">🔗 產生連結</button>
+          <button class="btn-sm" onclick="genInterviewLink(1,'self')">📋 員工自評</button>
+          <button class="btn-sm" onclick="genInterviewLink(1,'manager')">📝 主管評核</button>
+          <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
       <div class="ilink-url" id="self-url-1" style="display:none">
-        <input type="text" id="self-url-input-1" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
-        <button class="btn btn-sm" onclick="copyLinkById('self-url-input-1')">📋 複製</button>
-      </div>
-      <div class="ilink-row" style="margin-top:8px">
-        <div class="ilink-label">🧑‍💼 主管評核連結</div>
-        <div class="ilink-actions">
-          <button class="btn btn-sm" onclick="genInterviewLink(1,'manager')">🔗 產生連結</button>
-        </div>
+        <input id="self-url-input-1" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
+        <button class="btn-sm" onclick="copyLinkById('self-url-input-1')">📋 複製</button>
       </div>
       <div class="ilink-url" id="mgr-url-1" style="display:none">
-        <input type="text" id="mgr-url-input-1" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
-        <button class="btn btn-sm" onclick="copyLinkById('mgr-url-input-1')">📋 複製</button>
+        <input id="mgr-url-input-1" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
+        <button class="btn-sm" onclick="copyLinkById('mgr-url-input-1')">📋 複製</button>
       </div>
-      <div id="interview-status-1" style="margin-top:8px;font-size:12px;color:#6b6966"></div>
+      <div id="interview-status-1" style="font-size:12px;margin-top:6px"></div>
     </div>
-
-    <!-- ── 第二次面談 ── -->
     <a href="${calUrl('【第二次試用期面談】'+emp.nameZh,d60)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
       <div class="cal-info"><div class="cal-title">第二次面談（60 天）</div><div class="cal-date">${fmtDate(d60)}（${['日','一','二','三','四','五','六'][d60.getDay()]}）</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
-    <div class="interview-link-box" id="ibox-2">
+    <div class="interview-link-box">
       <div class="ilink-row">
-        <div class="ilink-label">👤 員工自評連結</div>
+        <span class="ilink-label">🔗 第二次面談連結</span>
         <div class="ilink-actions">
-          <button class="btn btn-sm" onclick="genInterviewLink(2,'self')">🔗 產生連結</button>
+          <button class="btn-sm" onclick="genInterviewLink(2,'self')">📋 員工自評</button>
+          <button class="btn-sm" onclick="genInterviewLink(2,'manager')">📝 主管評核</button>
+          <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
       <div class="ilink-url" id="self-url-2" style="display:none">
-        <input type="text" id="self-url-input-2" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
-        <button class="btn btn-sm" onclick="copyLinkById('self-url-input-2')">📋 複製</button>
-      </div>
-      <div class="ilink-row" style="margin-top:8px">
-        <div class="ilink-label">🧑‍💼 主管評核連結</div>
-        <div class="ilink-actions">
-          <button class="btn btn-sm" onclick="genInterviewLink(2,'manager')">🔗 產生連結</button>
-        </div>
+        <input id="self-url-input-2" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
+        <button class="btn-sm" onclick="copyLinkById('self-url-input-2')">📋 複製</button>
       </div>
       <div class="ilink-url" id="mgr-url-2" style="display:none">
-        <input type="text" id="mgr-url-input-2" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
-        <button class="btn btn-sm" onclick="copyLinkById('mgr-url-input-2')">📋 複製</button>
+        <input id="mgr-url-input-2" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
+        <button class="btn-sm" onclick="copyLinkById('mgr-url-input-2')">📋 複製</button>
       </div>
-      <div id="interview-status-2" style="margin-top:8px;font-size:12px;color:#6b6966"></div>
+      <div id="interview-status-2" style="font-size:12px;margin-top:6px"></div>
     </div>
-
-    <!-- ── 第三次面談（試用期評核）── -->
     <a href="${calUrl('【第三次試用期面談／評核】'+emp.nameZh,d90)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
       <div class="cal-info"><div class="cal-title">第三次面談＋評核（90 天）</div><div class="cal-date">${fmtDate(d90)}（${['日','一','二','三','四','五','六'][d90.getDay()]}）</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
-    <div class="interview-link-box" id="ibox-3">
+    <div class="interview-link-box">
       <div class="ilink-row">
-        <div class="ilink-label">👤 員工自評連結</div>
+        <span class="ilink-label">🔗 第三次面談連結（試用期評核）</span>
         <div class="ilink-actions">
-          <button class="btn btn-sm" onclick="genInterviewLink(3,'self')">🔗 產生連結</button>
+          <button class="btn-sm" onclick="genInterviewLink(3,'self')">📋 員工自評</button>
+          <button class="btn-sm" onclick="genInterviewLink(3,'manager')">📝 主管評核</button>
+          <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
       <div class="ilink-url" id="self-url-3" style="display:none">
-        <input type="text" id="self-url-input-3" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
-        <button class="btn btn-sm" onclick="copyLinkById('self-url-input-3')">📋 複製</button>
-      </div>
-      <div class="ilink-row" style="margin-top:8px">
-        <div class="ilink-label">🧑‍💼 主管評核連結</div>
-        <div class="ilink-actions">
-          <button class="btn btn-sm" onclick="genInterviewLink(3,'manager')">🔗 產生連結</button>
-        </div>
+        <input id="self-url-input-3" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
+        <button class="btn-sm" onclick="copyLinkById('self-url-input-3')">📋 複製</button>
       </div>
       <div class="ilink-url" id="mgr-url-3" style="display:none">
-        <input type="text" id="mgr-url-input-3" readonly onclick="this.select()" style="flex:1;padding:7px 10px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;font-family:monospace;background:#f8f7f3;outline:none">
-        <button class="btn btn-sm" onclick="copyLinkById('mgr-url-input-3')">📋 複製</button>
+        <input id="mgr-url-input-3" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
+        <button class="btn-sm" onclick="copyLinkById('mgr-url-input-3')">📋 複製</button>
       </div>
-      <div id="interview-status-3" style="margin-top:8px;font-size:12px;color:#6b6966"></div>
+      <div id="interview-status-3" style="font-size:12px;margin-top:6px"></div>
     </div>
-
-    <!-- ── 面談進度總覽 ── -->
-    <div id="interview-overview" style="margin-top:16px;padding:14px 16px;background:#f8f7f3;border-radius:10px;font-size:13px">
-      <div style="font-weight:700;margin-bottom:8px">📊 面談進度總覽</div>
-      <div id="interview-overview-content" style="color:#6b6966">點擊「產生連結」後，進度將在此顯示。</div>
-      <button class="btn" style="margin-top:10px;font-size:12px;padding:7px 14px;width:auto" onclick="refreshInterviewStatus()">🔄 重新整理進度</button>
+    <div class="interview-link-box" style="background:#e3f5ed;border-color:#1a7a55">
+      <div class="ilink-row">
+        <span class="ilink-label" style="color:#0f6e56">📊 面談進度總覽</span>
+        <button class="btn-sm" onclick="refreshInterviewStatus()" style="color:#0f6e56">🔄 更新</button>
+      </div>
+      <div id="interview-overview-content" style="font-size:12px;margin-top:8px;color:#3a3937">點擊「更新」查看最新進度。</div>
     </div>
-
     <div style="margin-top:16px">${ci('bday','✅ 試用期通過後：至 NUEIP 為 <strong>'+emp.nameZh+'</strong> 匯入生日假','試用期評核通過後執行，未勾選將出現在待辦 PDF 中')}</div>
     <div class="btn-row">
       <button class="btn btn-green" onclick="printObSummary()">📄 匯出入職追蹤 PDF</button>
@@ -2908,20 +2891,14 @@ function copyEl(id){
 // ============================================================
 // 面談連結模組
 // ============================================================
-
-// 面談表單的基礎 URL（請將兩個 HTML 檔案與本檔案放在同一目錄）
 const INTERVIEW_BASE_URL = (function(){
   const loc = window.location.href;
   const dir = loc.substring(0, loc.lastIndexOf('/') + 1);
   return dir;
 })();
 
-const SELF_FORM_FILE = 'self-eval.html';
-const MGR_FORM_FILE  = 'manager-eval.html';
-
 function buildInterviewUrl(formFile, round) {
   if (!currentKey) return null;
-  // 合併版：所有表單都在同一個 index.html，透過 mode 參數切換
   const modeMap = { 'self-eval.html': 'self-eval', 'manager-eval.html': 'manager-eval' };
   const mode = modeMap[formFile] || formFile;
   const params = new URLSearchParams({
@@ -2931,7 +2908,6 @@ function buildInterviewUrl(formFile, round) {
     fbUrl: FIREBASE_CONFIG.databaseURL,
     fbKey: FIREBASE_CONFIG.apiKey,
   });
-  // 取得 index.html 的完整 URL（去掉現有 query string）
   const baseUrl = window.location.href.split('?')[0];
   return baseUrl + '?' + params.toString();
 }
@@ -2941,15 +2917,13 @@ function genInterviewLink(round, type) {
     alert('⚠️ 請先填寫員工資料（步驟 1）並同步完成。');
     return;
   }
-  const formFile = type === 'self' ? SELF_FORM_FILE : MGR_FORM_FILE;
+  const formFile = type === 'self' ? 'self-eval.html' : 'manager-eval.html';
   const url = buildInterviewUrl(formFile, round);
   if (!url) return;
-
   const urlBoxId  = (type === 'self' ? 'self-url-' : 'mgr-url-') + round;
   const inputId   = (type === 'self' ? 'self-url-input-' : 'mgr-url-input-') + round;
   const urlBox    = document.getElementById(urlBoxId);
   const inputEl   = document.getElementById(inputId);
-
   if (urlBox && inputEl) {
     inputEl.value = url;
     urlBox.style.display = 'flex';
@@ -2979,7 +2953,6 @@ async function refreshInterviewStatus() {
     const interviews = snap.val() || {};
     const overviewEl = document.getElementById('interview-overview-content');
     let overviewHtml = '';
-
     for (let r = 1; r <= 3; r++) {
       const rKey = 'round' + r;
       const rNames = { 1: '第一次（30天）', 2: '第二次（60天）', 3: '第三次（試用期評核）' };
@@ -2988,7 +2961,6 @@ async function refreshInterviewStatus() {
       const mgrDone  = rData.manager  && rData.manager.submitted;
       const selfIcon = selfDone ? '✅' : '⏳';
       const mgrIcon  = mgrDone  ? '✅' : '⏳';
-
       const statusEl = document.getElementById('interview-status-' + r);
       if (statusEl) {
         let statusHtml = '';
@@ -2997,12 +2969,10 @@ async function refreshInterviewStatus() {
         if (!selfDone && !mgrDone) statusHtml = '<span class="ilink-status-pending">⏳ 尚未提交</span>';
         statusEl.innerHTML = statusHtml;
       }
-
       const mgrData = rData.manager || {};
       const totalAvg = mgrData.totalAvg ? mgrData.totalAvg.toFixed(1) : '—';
       const conclusionMap = { pass: '✅ 通過試用期', extend: '⏳ 延長試用期', fail: '❌ 試用期未通過' };
       const conclusionStr = mgrData.conclusion ? conclusionMap[mgrData.conclusion] || '' : '';
-
       overviewHtml += `<div style="margin-bottom:8px;padding:8px 10px;background:#fff;border-radius:7px;font-size:12px">
         <strong>${rNames[r]}</strong>&nbsp;
         ${selfIcon} 自評&nbsp;
@@ -3011,13 +2981,11 @@ async function refreshInterviewStatus() {
         ${conclusionStr ? '&nbsp;&nbsp;' + conclusionStr : ''}
       </div>`;
     }
-
     if (overviewEl) overviewEl.innerHTML = overviewHtml || '尚無面談紀錄。';
   } catch(e) {
     console.warn('refreshInterviewStatus error:', e);
   }
 }
-
 
 // ============================================================
 // 面談表單模組（員工自評 & 主管評核）— 合併版
@@ -3026,31 +2994,32 @@ async function refreshInterviewStatus() {
 // ── 路由：頁面載入時判斷是否為表單模式 ──
 (function() {
   const params = new URLSearchParams(window.location.search);
-  const mode = params.get('mode'); // 'self-eval' or 'manager-eval'
-  if (!mode) return; // 一般 HR 主系統，不做任何事
-
-  // 隱藏主系統所有介面
-  document.addEventListener('DOMContentLoaded', function() {
+  const mode = params.get('mode');
+  if (!mode) return;
+  function doRoute() {
     const welcome = document.getElementById('welcome');
     if (welcome) welcome.style.display = 'none';
     ['onboard','offboard','layoff','dashboard'].forEach(function(f) {
       const el = document.getElementById('app-' + f);
       if (el) el.style.display = 'none';
     });
-
     if (mode === 'self-eval') {
       const el = document.getElementById('app-self-eval');
-      if (el) el.classList.add('active');
+      if (el) { el.style.display = 'block'; el.classList.add('active'); }
       initSelfEvalForm(params);
     } else if (mode === 'manager-eval') {
       const el = document.getElementById('app-manager-eval');
-      if (el) el.classList.add('active');
+      if (el) { el.style.display = 'block'; el.classList.add('active'); }
       initManagerEvalForm(params);
     }
-  });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', doRoute);
+  } else {
+    doRoute();
+  }
 })();
 
-// ── 軟性技能定義 ──
 const FORM_SOFT_SKILLS = [
   { id: 'attitude', title: '工作態度與責任感',   desc: '主動積極、準時完成交辦事項、對工作有責任心' },
   { id: 'learning', title: '學習意願與適應力',   desc: '面對新知識、新流程的吸收速度與調整能力' },
@@ -3061,7 +3030,6 @@ const FORM_SOFT_SKILLS = [
   { id: 'stress',   title: '情緒穩定與抗壓性',   desc: '面對高壓或突發狀況時的情緒管理能力' },
 ];
 
-// ── 硬性職能定義 ──
 const FORM_HARD_SKILLS = {
   '顧問': [
     { id: 'h1', title: '客戶需求理解與諮詢技巧', desc: '能否精準掌握學生背景與目標' },
@@ -3173,39 +3141,21 @@ function formEscHtml(str) {
 
 function formInitFirebase(config) {
   try {
-    if (!firebase.apps || !firebase.apps.length) {
-      firebase.initializeApp(config);
-    }
+    if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(config);
     return firebase.database();
-  } catch(e) {
-    console.error('formInitFirebase error:', e);
-    return null;
-  }
+  } catch(e) { console.error('formInitFirebase error:', e); return null; }
 }
 
-// ============================================================
-// 員工自評模組
-// ============================================================
+// ── 員工自評模組 ──
 let seDb = null, seEmpKey = null, seRound = null, seEmpData = {}, seSelfScores = {};
 
 function initSelfEvalForm(params) {
   seEmpKey = params.get('key');
   seRound = parseInt(params.get('round') || '1');
-
-  if (!seEmpKey || !seRound) {
-    seShowError('連結無效，請聯繫 HR 重新產生連結。');
-    return;
-  }
-
-  const config = {
-    ...FIREBASE_CONFIG,
-    databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL,
-    apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey,
-  };
-
+  if (!seEmpKey || !seRound) { seShowError('連結無效，請聯繫 HR 重新產生連結。'); return; }
+  const config = { ...FIREBASE_CONFIG, databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL, apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey };
   seDb = formInitFirebase(config);
   if (!seDb) { seShowError('系統初始化失敗，請重新整理頁面。'); return; }
-
   seDb.ref('hr_ob/' + seEmpKey).once('value').then(function(snap) {
     const val = snap.val();
     if (!val || !val.emp) { seShowError('找不到員工資料，請聯繫 HR 確認連結是否正確。'); return; }
@@ -3226,7 +3176,7 @@ function seShowError(msg) {
   document.getElementById('se-loading').style.display = 'none';
   const el = document.getElementById('se-error');
   el.style.display = 'block';
-  el.innerHTML = '<div class="fcard"><div class="falert falert-danger">❌ ' + msg + '</div></div>';
+  el.innerHTML = `<div class="fcard"><div class="falert falert-danger">❌ ${msg}</div></div>`;
 }
 
 function seRenderForm() {
@@ -3234,86 +3184,66 @@ function seRenderForm() {
   document.getElementById('se-form').style.display = 'block';
   const roundNames = { 1: '第一次（到職 30 天）', 2: '第二次（到職 60 天）', 3: '第三次（試用期評核）' };
   document.getElementById('se-round-title').innerHTML =
-    '<span class="fround-badge fbadge-' + seRound + '">' + (roundNames[seRound] || '第 ' + seRound + ' 次') + '</span> 面談自評';
+    `<span class="fround-badge fbadge-${seRound}">${roundNames[seRound] || '第 ' + seRound + ' 次'}</span> 面談自評`;
   document.getElementById('se-emp-info').innerHTML =
-    '<div><strong>姓名：</strong>' + (seEmpData.nameZh || '—') + '</div>' +
-    '<div><strong>職稱：</strong>' + (seEmpData.title || '—') + '</div>' +
-    '<div><strong>到職日：</strong>' + (seEmpData.startDate || '—') + '</div>' +
-    '<div><strong>所屬公司：</strong>' + (seEmpData.companyName || '—') + '</div>';
-  const area = document.getElementById('se-soft-area');
-  area.innerHTML = FORM_SOFT_SKILLS.map(function(skill) { return seRenderScoreItem(skill); }).join('');
+    `<div><strong>姓名：</strong>${seEmpData.nameZh || '—'}</div>` +
+    `<div><strong>職稱：</strong>${seEmpData.title || '—'}</div>` +
+    `<div><strong>到職日：</strong>${seEmpData.startDate || '—'}</div>` +
+    `<div><strong>所屬公司：</strong>${seEmpData.companyName || '—'}</div>`;
+  document.getElementById('se-soft-area').innerHTML = FORM_SOFT_SKILLS.map(seRenderScoreItem).join('');
 }
 
 function seRenderScoreItem(skill) {
-  const btns = [1,2,3,4,5].map(function(s) {
-    return '<button class="fscore-btn" id="se_' + skill.id + '_' + s + '" onclick="seSelectScore('' + skill.id + '',' + s + ')">' + s + '</button>';
-  }).join('');
-  return '<div class="fscore-item">' +
-    '<div class="fscore-title">' + skill.title + '</div>' +
-    '<div class="fscore-desc">' + skill.desc + '</div>' +
-    '<div class="fscore-row">' + btns + '</div>' +
-    '<div class="fscore-labels"><span>1 需立即關注</span><span>5 超越預期</span></div>' +
-    '</div>';
+  const btns = [1,2,3,4,5].map(s =>
+    `<button class="fscore-btn" id="se_${skill.id}_${s}" onclick="seSelectScore('${skill.id}',${s})">${s}</button>`
+  ).join('');
+  return `<div class="fscore-item">
+    <div class="fscore-title">${skill.title}</div>
+    <div class="fscore-desc">${skill.desc}</div>
+    <div class="fscore-row">${btns}</div>
+    <div class="fscore-labels"><span>1 需立即關注</span><span>5 超越預期</span></div>
+  </div>`;
 }
 
 function seSelectScore(skillId, score) {
-  [1,2,3,4,5].forEach(function(s) {
-    const btn = document.getElementById('se_' + skillId + '_' + s);
+  [1,2,3,4,5].forEach(s => {
+    const btn = document.getElementById(`se_${skillId}_${s}`);
     if (btn) btn.classList.remove('selected');
   });
-  const btn = document.getElementById('se_' + skillId + '_' + score);
+  const btn = document.getElementById(`se_${skillId}_${score}`);
   if (btn) btn.classList.add('selected');
   seSelfScores[skillId] = score;
 }
 
 function submitSelfEval() {
-  const missing = FORM_SOFT_SKILLS.filter(function(s) { return !seSelfScores[s.id]; });
+  const missing = FORM_SOFT_SKILLS.filter(s => !seSelfScores[s.id]);
   if (missing.length > 0) {
-    alert('⚠️ 請完成所有評分項目後再提交。
-
-尚未評分：' + missing.map(function(s) { return s.title; }).join('、'));
+    alert('⚠️ 請完成所有評分項目後再提交。\n\n尚未評分：' + missing.map(s => s.title).join('、'));
     return;
   }
   const btn = document.getElementById('se-submit-btn');
-  btn.disabled = true;
-  btn.textContent = '提交中...';
+  btn.disabled = true; btn.textContent = '提交中...';
   const roundKey = 'round' + seRound;
-  const payload = { submitted: true, submittedAt: new Date().toISOString(), scores: seSelfScores };
-  seDb.ref('hr_ob/' + seEmpKey + '/interviews/' + roundKey + '/selfEval').set(payload).then(function() {
+  seDb.ref(`hr_ob/${seEmpKey}/interviews/${roundKey}/selfEval`).set({ submitted: true, submittedAt: new Date().toISOString(), scores: seSelfScores }).then(() => {
     document.getElementById('se-form').style.display = 'none';
     document.getElementById('se-success').style.display = 'block';
-  }).catch(function(e) {
-    btn.disabled = false;
-    btn.textContent = '✅ 提交自評';
-    alert('❌ 提交失敗：' + e.message + '
-請重試或聯繫 HR。');
+  }).catch(e => {
+    btn.disabled = false; btn.textContent = '✅ 提交自評';
+    alert('❌ 提交失敗：' + e.message + '\n請重試或聯繫 HR。');
   });
 }
 
-// ============================================================
-// 主管評核模組
-// ============================================================
+// ── 主管評核模組 ──
 let meDb = null, meEmpKey = null, meRound = null, meEmpData = {}, meAllInterviews = {};
 let meScores = { soft: {}, hard: {} }, meNotes = { soft: {}, hard: {} }, meConclusionVal = null;
 
 function initManagerEvalForm(params) {
   meEmpKey = params.get('key');
   meRound = parseInt(params.get('round') || '1');
-
-  if (!meEmpKey || !meRound) {
-    meShowError('連結無效，請聯繫 HR 重新產生連結。');
-    return;
-  }
-
-  const config = {
-    ...FIREBASE_CONFIG,
-    databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL,
-    apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey,
-  };
-
+  if (!meEmpKey || !meRound) { meShowError('連結無效，請聯繫 HR 重新產生連結。'); return; }
+  const config = { ...FIREBASE_CONFIG, databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL, apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey };
   meDb = formInitFirebase(config);
   if (!meDb) { meShowError('系統初始化失敗，請重新整理頁面。'); return; }
-
   meDb.ref('hr_ob/' + meEmpKey).once('value').then(function(snap) {
     const val = snap.val();
     if (!val || !val.emp) { meShowError('找不到員工資料，請聯繫 HR 確認連結是否正確。'); return; }
@@ -3334,7 +3264,7 @@ function meShowError(msg) {
   document.getElementById('me-loading').style.display = 'none';
   const el = document.getElementById('me-error');
   el.style.display = 'block';
-  el.innerHTML = '<div class="fcard"><div class="falert falert-danger">❌ ' + msg + '</div></div>';
+  el.innerHTML = `<div class="fcard"><div class="falert falert-danger">❌ ${msg}</div></div>`;
 }
 
 function meRenderForm() {
@@ -3342,38 +3272,32 @@ function meRenderForm() {
   document.getElementById('me-form').style.display = 'block';
   const roundNames = { 1: '第一次（到職 30 天）', 2: '第二次（到職 60 天）', 3: '第三次（試用期評核）' };
   document.getElementById('me-round-title').innerHTML =
-    '<span class="fround-badge fbadge-' + meRound + '">' + (roundNames[meRound] || '第 ' + meRound + ' 次') + '</span> 面談評核';
+    `<span class="fround-badge fbadge-${meRound}">${roundNames[meRound] || '第 ' + meRound + ' 次'}</span> 面談評核`;
   document.getElementById('me-emp-info').innerHTML =
-    '<div><strong>姓名：</strong>' + (meEmpData.nameZh || '—') + '</div>' +
-    '<div><strong>職稱：</strong>' + (meEmpData.title || '—') + '</div>' +
-    '<div><strong>到職日：</strong>' + (meEmpData.startDate || '—') + '</div>' +
-    '<div><strong>所屬公司：</strong>' + (meEmpData.companyName || '—') + '</div>';
-
+    `<div><strong>姓名：</strong>${meEmpData.nameZh || '—'}</div>` +
+    `<div><strong>職稱：</strong>${meEmpData.title || '—'}</div>` +
+    `<div><strong>到職日：</strong>${meEmpData.startDate || '—'}</div>` +
+    `<div><strong>所屬公司：</strong>${meEmpData.companyName || '—'}</div>`;
   if (meRound >= 2) meRenderHistory();
-
   const roundKey = 'round' + meRound;
   const selfEval = meAllInterviews[roundKey] && meAllInterviews[roundKey].selfEval;
   if (selfEval && selfEval.submitted && selfEval.scores) meRenderSelfEval(selfEval.scores);
-
   meRenderSoftSkills();
-
   const jobKey = formMatchJobTitle(meEmpData.title);
   if (jobKey && FORM_HARD_SKILLS[jobKey]) {
-    document.getElementById('me-hard-desc').textContent = '職位：' + (meEmpData.title || jobKey);
+    document.getElementById('me-hard-desc').textContent = `職位：${meEmpData.title || jobKey}`;
     meRenderHardSkills(FORM_HARD_SKILLS[jobKey]);
   } else {
     document.getElementById('me-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別職位，請手動填寫職位職能備註欄。</div>';
   }
-
   if (meRound >= 2) {
     const prevKey = 'round' + (meRound - 1);
     const prevData = meAllInterviews[prevKey] && meAllInterviews[prevKey].manager;
     if (prevData && prevData.improvementTarget) {
       document.getElementById('me-prev-improvement').innerHTML =
-        '<div class="falert falert-warn" style="margin-top:12px"><strong>📌 上次設定的改善目標：</strong><br>' + formEscHtml(prevData.improvementTarget) + '</div>';
+        `<div class="falert falert-warn" style="margin-top:12px"><strong>📌 上次設定的改善目標：</strong><br>${formEscHtml(prevData.improvementTarget)}</div>`;
     }
   }
-
   if (meRound === 3) document.getElementById('me-conclusion-card').style.display = 'block';
   meUpdateScoreSummary();
 }
@@ -3386,35 +3310,36 @@ function meRenderHistory() {
     const rKey = 'round' + r;
     const rData = meAllInterviews[rKey];
     const rNames = { 1: '第一次面談（30 天）', 2: '第二次面談（60 天）' };
-    const rName = rNames[r] || '第 ' + r + ' 次面談';
+    const rName = rNames[r] || `第 ${r} 次面談`;
     if (!rData || !rData.manager || !rData.manager.submitted) {
-      html += '<div class="fhistory-card"><div class="fhistory-round">' + rName + '</div><div style="font-size:12px;color:#9a9894">尚無紀錄</div></div>';
+      html += `<div class="fhistory-card"><div class="fhistory-round">${rName}</div><div style="font-size:12px;color:#9a9894">尚無紀錄</div></div>`;
       continue;
     }
     const mgr = rData.manager;
     const selfSc = (rData.selfEval && rData.selfEval.scores) || {};
-    const softVals = Object.values(mgr.softScores || {}).filter(function(v) { return v > 0; });
-    const hardVals = Object.values(mgr.hardScores || {}).filter(function(v) { return v > 0; });
-    const softAvg = softVals.length ? (softVals.reduce(function(a,b){return a+b;},0)/softVals.length).toFixed(1) : '—';
-    const hardAvg = hardVals.length ? (hardVals.reduce(function(a,b){return a+b;},0)/hardVals.length).toFixed(1) : '—';
-    html += '<div class="fhistory-card"><div class="fhistory-round">📅 ' + rName + '</div>' +
-      '<table class="fhistory-table">' +
-      '<tr><td>軟性技能平均分</td><td><div class="fscore-bar-wrap"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:' + (softAvg!=='—'?softAvg/5*100:0) + '%"></div></div><strong>' + softAvg + ' / 5</strong></div></td></tr>' +
-      '<tr><td>職位職能平均分</td><td><div class="fscore-bar-wrap"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:' + (hardAvg!=='—'?hardAvg/5*100:0) + '%"></div></div><strong>' + hardAvg + ' / 5</strong></div></td></tr>' +
-      '</table>';
+    const softVals = Object.values(mgr.softScores || {}).filter(v => v > 0);
+    const hardVals = Object.values(mgr.hardScores || {}).filter(v => v > 0);
+    const softAvg = softVals.length ? (softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(1) : '—';
+    const hardAvg = hardVals.length ? (hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(1) : '—';
+    html += `<div class="fhistory-card">
+      <div class="fhistory-round">📅 ${rName}</div>
+      <table class="fhistory-table">
+        <tr><td>軟性技能平均分</td><td><div class="fscore-bar-wrap"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:${softAvg!=='—'?softAvg/5*100:0}%"></div></div><strong>${softAvg} / 5</strong></div></td></tr>
+        <tr><td>職位職能平均分</td><td><div class="fscore-bar-wrap"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:${hardAvg!=='—'?hardAvg/5*100:0}%"></div></div><strong>${hardAvg} / 5</strong></div></td></tr>
+      </table>`;
     if (Object.keys(mgr.softScores || {}).length > 0) {
-      html += '<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">軟性技能明細</div><table class="fhistory-table">';
-      FORM_SOFT_SKILLS.forEach(function(s) {
+      html += `<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">軟性技能明細</div><table class="fhistory-table">`;
+      FORM_SOFT_SKILLS.forEach(s => {
         const mgScore = (mgr.softScores || {})[s.id] || '—';
-        const selfScore = selfSc[s.id] ? '（自評：' + selfSc[s.id] + '）' : '';
-        html += '<tr><td>' + s.title + '</td><td><strong>' + mgScore + '</strong> <span style="color:#9a9894;font-size:11px">' + selfScore + '</span></td></tr>';
+        const selfScore = selfSc[s.id] ? `（自評：${selfSc[s.id]}）` : '';
+        html += `<tr><td>${s.title}</td><td><strong>${mgScore}</strong> <span style="color:#9a9894;font-size:11px">${selfScore}</span></td></tr>`;
       });
       html += '</table>';
     }
-    if (mgr.softOverallNote) html += '<div class="fhistory-note">💬 軟性技能備註：' + formEscHtml(mgr.softOverallNote) + '</div>';
-    if (mgr.hardOverallNote) html += '<div class="fhistory-note">💬 職能備註：' + formEscHtml(mgr.hardOverallNote) + '</div>';
-    if (mgr.interviewSummary) html += '<div class="fhistory-note">📝 面談摘要：' + formEscHtml(mgr.interviewSummary) + '</div>';
-    if (mgr.improvementTarget) html += '<div class="fhistory-note">🎯 改善目標：' + formEscHtml(mgr.improvementTarget) + '</div>';
+    if (mgr.softOverallNote) html += `<div class="fhistory-note">💬 軟性技能備註：${formEscHtml(mgr.softOverallNote)}</div>`;
+    if (mgr.hardOverallNote) html += `<div class="fhistory-note">💬 職能備註：${formEscHtml(mgr.hardOverallNote)}</div>`;
+    if (mgr.interviewSummary) html += `<div class="fhistory-note">📝 面談摘要：${formEscHtml(mgr.interviewSummary)}</div>`;
+    if (mgr.improvementTarget) html += `<div class="fhistory-note">🎯 改善目標：${formEscHtml(mgr.improvementTarget)}</div>`;
     html += '</div>';
   }
   if (html) { histCard.style.display = 'block'; histArea.innerHTML = html; }
@@ -3425,8 +3350,8 @@ function meRenderSelfEval(scores) {
   const area = document.getElementById('me-self-eval-area');
   card.style.display = 'block';
   let html = '<table class="fhistory-table">';
-  FORM_SOFT_SKILLS.forEach(function(s) {
-    html += '<tr><td>' + s.title + '</td><td><strong>' + (scores[s.id] || '—') + '</strong> / 5</td></tr>';
+  FORM_SOFT_SKILLS.forEach(s => {
+    html += `<tr><td>${s.title}</td><td><strong>${scores[s.id] || '—'}</strong> / 5</td></tr>`;
   });
   html += '</table>';
   area.innerHTML = html;
@@ -3436,37 +3361,37 @@ function meRenderSoftSkills() {
   const area = document.getElementById('me-soft-area');
   const roundKey = 'round' + meRound;
   const selfSc = (meAllInterviews[roundKey] && meAllInterviews[roundKey].selfEval && meAllInterviews[roundKey].selfEval.scores) || {};
-  area.innerHTML = FORM_SOFT_SKILLS.map(function(skill) {
-    const badge = selfSc[skill.id] ? '<span class="self-score-badge">員工自評：' + selfSc[skill.id] + '</span>' : '';
+  area.innerHTML = FORM_SOFT_SKILLS.map(skill => {
+    const badge = selfSc[skill.id] ? `<span class="self-score-badge">員工自評：${selfSc[skill.id]}</span>` : '';
     return meRenderScoreItem(skill, 'soft', badge);
   }).join('');
 }
 
 function meRenderHardSkills(skills) {
-  document.getElementById('me-hard-area').innerHTML = skills.map(function(skill) {
-    return meRenderScoreItem(skill, 'hard', '');
-  }).join('');
+  document.getElementById('me-hard-area').innerHTML = skills.map(skill => meRenderScoreItem(skill, 'hard', '')).join('');
 }
 
 function meRenderScoreItem(skill, prefix, extraBadge) {
-  const btns = [1,2,3,4,5].map(function(s) {
-    return '<button class="fscore-btn" id="me_' + prefix + '_' + skill.id + '_' + s + '" onclick="meSelectScore('' + prefix + '','' + skill.id + '',' + s + ')">' + s + '</button>';
-  }).join('');
-  return '<div class="fscore-item">' +
-    '<div class="fscore-header"><div class="fscore-title">' + skill.title + '</div>' + extraBadge + '</div>' +
-    '<div class="fscore-desc">' + skill.desc + '</div>' +
-    '<div class="fscore-row">' + btns + '</div>' +
-    '<div class="fscore-labels"><span>1 需立即關注</span><span>5 超越預期</span></div>' +
-    '<div class="fnote-area" style="margin-top:8px"><textarea id="me_note_' + prefix + '_' + skill.id + '" placeholder="備註（可選填）" style="min-height:50px;width:100%;padding:8px 10px;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;outline:none" oninput="meSaveNote('' + prefix + '','' + skill.id + '',this.value)"></textarea></div>' +
-    '</div>';
+  const btns = [1,2,3,4,5].map(s =>
+    `<button class="fscore-btn" id="me_${prefix}_${skill.id}_${s}" onclick="meSelectScore('${prefix}','${skill.id}',${s})">${s}</button>`
+  ).join('');
+  return `<div class="fscore-item">
+    <div class="fscore-header"><div class="fscore-title">${skill.title}</div>${extraBadge}</div>
+    <div class="fscore-desc">${skill.desc}</div>
+    <div class="fscore-row">${btns}</div>
+    <div class="fscore-labels"><span>1 需立即關注</span><span>5 超越預期</span></div>
+    <div class="fnote-area" style="margin-top:8px">
+      <textarea id="me_note_${prefix}_${skill.id}" placeholder="備註（可選填）" style="min-height:50px;width:100%;padding:8px 10px;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;outline:none" oninput="meSaveNote('${prefix}','${skill.id}',this.value)"></textarea>
+    </div>
+  </div>`;
 }
 
 function meSelectScore(prefix, skillId, score) {
-  [1,2,3,4,5].forEach(function(s) {
-    const btn = document.getElementById('me_' + prefix + '_' + skillId + '_' + s);
+  [1,2,3,4,5].forEach(s => {
+    const btn = document.getElementById(`me_${prefix}_${skillId}_${s}`);
     if (btn) btn.classList.remove('selected');
   });
-  const btn = document.getElementById('me_' + prefix + '_' + skillId + '_' + score);
+  const btn = document.getElementById(`me_${prefix}_${skillId}_${score}`);
   if (btn) btn.classList.add('selected');
   meScores[prefix][skillId] = score;
   meUpdateScoreSummary();
@@ -3479,7 +3404,7 @@ function meSaveNote(prefix, skillId, val) {
 
 function mgrSelectConclusion(val) {
   meConclusionVal = val;
-  ['pass','extend','fail'].forEach(function(v) {
+  ['pass','extend','fail'].forEach(v => {
     const el = document.getElementById('me-conclusion-' + v);
     if (el) el.className = 'fradio-btn';
   });
@@ -3488,35 +3413,31 @@ function mgrSelectConclusion(val) {
 }
 
 function meUpdateScoreSummary() {
-  const softVals = Object.values(meScores.soft).filter(function(v){return v>0;});
-  const hardVals = Object.values(meScores.hard).filter(function(v){return v>0;});
-  const softAvg = softVals.length ? (softVals.reduce(function(a,b){return a+b;},0)/softVals.length).toFixed(1) : '—';
-  const hardAvg = hardVals.length ? (hardVals.reduce(function(a,b){return a+b;},0)/hardVals.length).toFixed(1) : '—';
-  const allVals = softVals.concat(hardVals);
-  const totalAvg = allVals.length ? (allVals.reduce(function(a,b){return a+b;},0)/allVals.length).toFixed(1) : '—';
-  document.getElementById('me-score-summary').innerHTML =
-    '<div class="ftotal-box">' +
-    '<div class="ftotal-row"><span class="ftotal-label">軟性技能平均</span><span class="ftotal-score">' + softAvg + ' / 5</span></div>' +
-    '<div class="ftotal-row"><span class="ftotal-label">職位職能平均</span><span class="ftotal-score">' + hardAvg + ' / 5</span></div>' +
-    '<div class="ftotal-row" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px"><span class="ftotal-label" style="font-weight:700">綜合平均分</span><span class="ftotal-score" style="font-size:26px">' + totalAvg + ' / 5</span></div>' +
-    '</div>';
+  const softVals = Object.values(meScores.soft).filter(v => v > 0);
+  const hardVals = Object.values(meScores.hard).filter(v => v > 0);
+  const softAvg = softVals.length ? (softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(1) : '—';
+  const hardAvg = hardVals.length ? (hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(1) : '—';
+  const allVals = [...softVals, ...hardVals];
+  const totalAvg = allVals.length ? (allVals.reduce((a,b) => a+b, 0)/allVals.length).toFixed(1) : '—';
+  document.getElementById('me-score-summary').innerHTML = `
+    <div class="ftotal-box">
+      <div class="ftotal-row"><span class="ftotal-label">軟性技能平均</span><span class="ftotal-score">${softAvg} / 5</span></div>
+      <div class="ftotal-row"><span class="ftotal-label">職位職能平均</span><span class="ftotal-score">${hardAvg} / 5</span></div>
+      <div class="ftotal-row" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px"><span class="ftotal-label" style="font-weight:700">綜合平均分</span><span class="ftotal-score" style="font-size:26px">${totalAvg} / 5</span></div>
+    </div>`;
 }
 
 function submitManagerEval() {
-  const missingSoft = FORM_SOFT_SKILLS.filter(function(s){return !meScores.soft[s.id];});
+  const missingSoft = FORM_SOFT_SKILLS.filter(s => !meScores.soft[s.id]);
   if (missingSoft.length > 0) {
-    alert('⚠️ 請完成所有軟性技能評分。
-
-尚未評分：' + missingSoft.map(function(s){return s.title;}).join('、'));
+    alert('⚠️ 請完成所有軟性技能評分。\n\n尚未評分：' + missingSoft.map(s => s.title).join('、'));
     return;
   }
   const jobKey = formMatchJobTitle(meEmpData.title);
   if (jobKey && FORM_HARD_SKILLS[jobKey]) {
-    const missingHard = FORM_HARD_SKILLS[jobKey].filter(function(s){return !meScores.hard[s.id];});
+    const missingHard = FORM_HARD_SKILLS[jobKey].filter(s => !meScores.hard[s.id]);
     if (missingHard.length > 0) {
-      alert('⚠️ 請完成所有職位職能評分。
-
-尚未評分：' + missingHard.map(function(s){return s.title;}).join('、'));
+      alert('⚠️ 請完成所有職位職能評分。\n\n尚未評分：' + missingHard.map(s => s.title).join('、'));
       return;
     }
   }
@@ -3525,44 +3446,36 @@ function submitManagerEval() {
   if (meRound === 3 && !meConclusionVal) { alert('⚠️ 請選擇試用期評核結論。'); return; }
 
   const btn = document.getElementById('me-submit-btn');
-  btn.disabled = true;
-  btn.textContent = '提交中...';
+  btn.disabled = true; btn.textContent = '提交中...';
 
-  const softVals = Object.values(meScores.soft).filter(function(v){return v>0;});
-  const hardVals = Object.values(meScores.hard).filter(function(v){return v>0;});
-  const softAvg = softVals.length ? parseFloat((softVals.reduce(function(a,b){return a+b;},0)/softVals.length).toFixed(2)) : 0;
-  const hardAvg = hardVals.length ? parseFloat((hardVals.reduce(function(a,b){return a+b;},0)/hardVals.length).toFixed(2)) : 0;
-  const allVals = softVals.concat(hardVals);
-  const totalAvg = allVals.length ? parseFloat((allVals.reduce(function(a,b){return a+b;},0)/allVals.length).toFixed(2)) : 0;
+  const softVals = Object.values(meScores.soft).filter(v => v > 0);
+  const hardVals = Object.values(meScores.hard).filter(v => v > 0);
+  const softAvg = softVals.length ? parseFloat((softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(2)) : 0;
+  const hardAvg = hardVals.length ? parseFloat((hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(2)) : 0;
+  const allVals = [...softVals, ...hardVals];
+  const totalAvg = allVals.length ? parseFloat((allVals.reduce((a,b) => a+b, 0)/allVals.length).toFixed(2)) : 0;
 
   const payload = {
-    submitted: true,
-    submittedAt: new Date().toISOString(),
-    softScores: meScores.soft,
-    hardScores: meScores.hard,
-    softNotes: meNotes.soft || {},
-    hardNotes: meNotes.hard || {},
+    submitted: true, submittedAt: new Date().toISOString(),
+    softScores: meScores.soft, hardScores: meScores.hard,
+    softNotes: meNotes.soft || {}, hardNotes: meNotes.hard || {},
     softOverallNote: document.getElementById('me-soft-note').value.trim(),
     hardOverallNote: document.getElementById('me-hard-note').value.trim(),
     interviewSummary: summary,
     improvementTarget: document.getElementById('me-improvement').value.trim(),
-    softAvg: softAvg,
-    hardAvg: hardAvg,
-    totalAvg: totalAvg,
+    softAvg, hardAvg, totalAvg,
   };
   if (meRound === 3) {
     payload.conclusion = meConclusionVal;
     payload.conclusionNote = document.getElementById('me-conclusion-note').value.trim();
   }
   const roundKey = 'round' + meRound;
-  meDb.ref('hr_ob/' + meEmpKey + '/interviews/' + roundKey + '/manager').set(payload).then(function() {
+  meDb.ref(`hr_ob/${meEmpKey}/interviews/${roundKey}/manager`).set(payload).then(() => {
     document.getElementById('me-form').style.display = 'none';
     document.getElementById('me-success').style.display = 'block';
-  }).catch(function(e) {
-    btn.disabled = false;
-    btn.textContent = '✅ 提交面談評核';
-    alert('❌ 提交失敗：' + e.message + '
-請重試或聯繫 HR。');
+  }).catch(e => {
+    btn.disabled = false; btn.textContent = '✅ 提交面談評核';
+    alert('❌ 提交失敗：' + e.message + '\n請重試或聯繫 HR。');
   });
 }
 
