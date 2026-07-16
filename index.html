@@ -247,9 +247,14 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
         <div class="femp-info" id="se-emp-info"></div>
         <div class="falert falert-info">📌 評分說明：<strong>5 分</strong>表現優異超越預期　<strong>4 分</strong>表現良好達到預期　<strong>3 分</strong>表現尚可部分需加強　<strong>2 分</strong>表現不足需明顯改善　<strong>1 分</strong>表現不佳需立即關注</div>
       </div>
-      <div class="fcard">
+      <div class="fcard" id="se-soft-card">
         <div class="fsection-label">📋 軟性職場技能自評</div>
         <div id="se-soft-area"></div>
+      </div>
+      <div class="fcard" id="se-hard-card" style="display:none">
+        <div class="fsection-label">💼 職位硬性職能自評</div>
+        <div class="fcard-desc" id="se-hard-desc">請依據您對自身專業能力的實際表現進行評估。</div>
+        <div id="se-hard-area"></div>
       </div>
       <div class="fcard">
         <button class="btn btn-primary" id="se-submit-btn" onclick="submitSelfEval()">✅ 提交自評</button>
@@ -941,8 +946,8 @@ Dear ${emp.nameZh},
 您好！我是艾爾斯負責人事與出納的 Sharon，非常歡迎你加入艾爾斯/史丹利的大家庭。期待接下來與你的合作！
 
 📅 報到日期：${emp.startDate}
-📍 報到地點：${getAddr(emp.cid)}
 ⏰ 報到時間：9:30
+📍 報到地點：${getAddr(emp.cid)}
 
 到職當天請直接找我報到，我會協助您辦理入職流程，包含：核對入職文件、打卡系統教學，以及帶您認識公司環境和同事。接著，您的主管會開始帶您熟悉工作內容及流程。
 
@@ -1157,6 +1162,7 @@ Sharon Tseng</div>
           <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
+      <div style="font-size:11px;color:#9a9894;margin-top:4px">💡 每次點擊按鈕都會產生新連結，舊連結自動失效</div>
       <div class="ilink-url" id="self-url-1" style="display:none">
         <input id="self-url-input-1" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
         <button class="btn-sm" onclick="copyLinkById('self-url-input-1')">📋 複製</button>
@@ -1176,11 +1182,12 @@ Sharon Tseng</div>
       <div class="ilink-row">
         <span class="ilink-label">🔗 第二次面談連結</span>
         <div class="ilink-actions">
-          <button class="btn-sm" onclick="genInterviewLink(2,'self')">📋 員工自評</button>
+          <button class="btn-sm" onclick="genInterviewLink(2,'self')">📋 員工自評（職能）</button>
           <button class="btn-sm" onclick="genInterviewLink(2,'manager')">📝 主管評核</button>
           <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
+      <div style="font-size:11px;color:#9a9894;margin-top:4px">💡 每次點擊按鈕都會產生新連結，舊連結自動失效</div>
       <div class="ilink-url" id="self-url-2" style="display:none">
         <input id="self-url-input-2" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
         <button class="btn-sm" onclick="copyLinkById('self-url-input-2')">📋 複製</button>
@@ -1200,11 +1207,11 @@ Sharon Tseng</div>
       <div class="ilink-row">
         <span class="ilink-label">🔗 第三次面談連結（試用期評核）</span>
         <div class="ilink-actions">
-          <button class="btn-sm" onclick="genInterviewLink(3,'self')">📋 員工自評</button>
           <button class="btn-sm" onclick="genInterviewLink(3,'manager')">📝 主管評核</button>
           <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
+      <div style="font-size:11px;color:#9a9894;margin-top:4px">💡 第三次僅主管評核，每次點擊都會產生新連結，舊連結自動失效</div>
       <div class="ilink-url" id="self-url-3" style="display:none">
         <input id="self-url-input-3" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
         <button class="btn-sm" onclick="copyLinkById('self-url-input-3')">📋 複製</button>
@@ -2901,10 +2908,13 @@ function buildInterviewUrl(formFile, round) {
   if (!currentKey) return null;
   const modeMap = { 'self-eval.html': 'self-eval', 'manager-eval.html': 'manager-eval' };
   const mode = modeMap[formFile] || formFile;
+  // ts = 時間戳記，確保每次產生的連結都不同，舊連結自動失效
+  const ts = Date.now();
   const params = new URLSearchParams({
     mode:  mode,
     key:   currentKey,
     round: String(round),
+    ts:    String(ts),
     fbUrl: FIREBASE_CONFIG.databaseURL,
     fbKey: FIREBASE_CONFIG.apiKey,
   });
@@ -3147,7 +3157,7 @@ function formInitFirebase(config) {
 }
 
 // ── 員工自評模組 ──
-let seDb = null, seEmpKey = null, seRound = null, seEmpData = {}, seSelfScores = {};
+let seDb = null, seEmpKey = null, seRound = null, seEmpData = {}, seSelfScores = {}, seHardScores = {}, seHardSkills = [];
 
 function initSelfEvalForm(params) {
   seEmpKey = params.get('key');
@@ -3190,12 +3200,32 @@ function seRenderForm() {
     `<div><strong>職稱：</strong>${seEmpData.title || '—'}</div>` +
     `<div><strong>到職日：</strong>${seEmpData.startDate || '—'}</div>` +
     `<div><strong>所屬公司：</strong>${seEmpData.companyName || '—'}</div>`;
-  document.getElementById('se-soft-area').innerHTML = FORM_SOFT_SKILLS.map(seRenderScoreItem).join('');
+
+  if (seRound === 1) {
+    // 第一次：只顯示軟性技能自評
+    document.getElementById('se-soft-card').style.display = 'block';
+    document.getElementById('se-hard-card').style.display = 'none';
+    document.getElementById('se-soft-area').innerHTML = FORM_SOFT_SKILLS.map(s => seRenderScoreItem(s, 'soft')).join('');
+  } else if (seRound === 2) {
+    // 第二次：只顯示硬性職能自評
+    document.getElementById('se-soft-card').style.display = 'none';
+    document.getElementById('se-hard-card').style.display = 'block';
+    const jobKey = formMatchJobTitle(seEmpData.title);
+    if (jobKey && FORM_HARD_SKILLS[jobKey]) {
+      document.getElementById('se-hard-desc').textContent = `職位：${seEmpData.title || jobKey}　請依據您對自身專業能力的實際表現進行評估。`;
+      document.getElementById('se-hard-area').innerHTML = FORM_HARD_SKILLS[jobKey].map(s => seRenderScoreItem(s, 'hard')).join('');
+      seHardSkills = FORM_HARD_SKILLS[jobKey];
+    } else {
+      document.getElementById('se-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別您的職位，請聯繫 HR 確認。</div>';
+      seHardSkills = [];
+    }
+  }
 }
 
-function seRenderScoreItem(skill) {
+function seRenderScoreItem(skill, prefix) {
+  const p = prefix || 'soft';
   const btns = [1,2,3,4,5].map(s =>
-    `<button class="fscore-btn" id="se_${skill.id}_${s}" onclick="seSelectScore('${skill.id}',${s})">${s}</button>`
+    `<button class="fscore-btn" id="se_${p}_${skill.id}_${s}" onclick="seSelectScore('${skill.id}',${s},'${p}')">${s}</button>`
   ).join('');
   return `<div class="fscore-item">
     <div class="fscore-title">${skill.title}</div>
@@ -3205,26 +3235,47 @@ function seRenderScoreItem(skill) {
   </div>`;
 }
 
-function seSelectScore(skillId, score) {
+function seSelectScore(skillId, score, prefix) {
+  const p = prefix || 'soft';
   [1,2,3,4,5].forEach(s => {
-    const btn = document.getElementById(`se_${skillId}_${s}`);
+    const btn = document.getElementById(`se_${p}_${skillId}_${s}`);
     if (btn) btn.classList.remove('selected');
   });
-  const btn = document.getElementById(`se_${skillId}_${score}`);
+  const btn = document.getElementById(`se_${p}_${skillId}_${score}`);
   if (btn) btn.classList.add('selected');
-  seSelfScores[skillId] = score;
+  if (p === 'hard') {
+    seHardScores[skillId] = score;
+  } else {
+    seSelfScores[skillId] = score;
+  }
 }
 
 function submitSelfEval() {
-  const missing = FORM_SOFT_SKILLS.filter(s => !seSelfScores[s.id]);
-  if (missing.length > 0) {
-    alert('⚠️ 請完成所有評分項目後再提交。\n\n尚未評分：' + missing.map(s => s.title).join('、'));
+  let payload = {};
+  if (seRound === 1) {
+    // 第一次：驗證軟性技能
+    const missing = FORM_SOFT_SKILLS.filter(s => !seSelfScores[s.id]);
+    if (missing.length > 0) {
+      alert('⚠️ 請完成所有評分項目後再提交。\n\n尚未評分：' + missing.map(s => s.title).join('、'));
+      return;
+    }
+    payload = { submitted: true, submittedAt: new Date().toISOString(), type: 'soft', scores: seSelfScores };
+  } else if (seRound === 2) {
+    // 第二次：驗證硬性職能
+    const missing = seHardSkills.filter(s => !seHardScores[s.id]);
+    if (missing.length > 0) {
+      alert('⚠️ 請完成所有職能評分項目後再提交。\n\n尚未評分：' + missing.map(s => s.title).join('、'));
+      return;
+    }
+    payload = { submitted: true, submittedAt: new Date().toISOString(), type: 'hard', scores: seHardScores };
+  } else {
+    alert('⚠️ 第三次面談不需要員工自評。');
     return;
   }
   const btn = document.getElementById('se-submit-btn');
   btn.disabled = true; btn.textContent = '提交中...';
   const roundKey = 'round' + seRound;
-  seDb.ref(`hr_ob/${seEmpKey}/interviews/${roundKey}/selfEval`).set({ submitted: true, submittedAt: new Date().toISOString(), scores: seSelfScores }).then(() => {
+  seDb.ref(`hr_ob/${seEmpKey}/interviews/${roundKey}/selfEval`).set(payload).then(() => {
     document.getElementById('se-form').style.display = 'none';
     document.getElementById('se-success').style.display = 'block';
   }).catch(e => {
@@ -3281,14 +3332,24 @@ function meRenderForm() {
   if (meRound >= 2) meRenderHistory();
   const roundKey = 'round' + meRound;
   const selfEval = meAllInterviews[roundKey] && meAllInterviews[roundKey].selfEval;
-  if (selfEval && selfEval.submitted && selfEval.scores) meRenderSelfEval(selfEval.scores);
+  if (selfEval && selfEval.submitted && selfEval.scores) meRenderSelfEval(selfEval);
   meRenderSoftSkills();
   const jobKey = formMatchJobTitle(meEmpData.title);
-  if (jobKey && FORM_HARD_SKILLS[jobKey]) {
-    document.getElementById('me-hard-desc').textContent = `職位：${meEmpData.title || jobKey}`;
-    meRenderHardSkills(FORM_HARD_SKILLS[jobKey]);
+  if (meRound === 1) {
+    // 第一次：只有軟性技能，隱藏硬性職能區塊
+    const hardCard = document.querySelector('#me-form .fcard:has(#me-hard-area)');
+    if (hardCard) hardCard.style.display = 'none';
+    // 隱藏硬性職能備註
+    const hardNoteCard = document.getElementById('me-hard-note');
+    if (hardNoteCard && hardNoteCard.closest('.fcard')) hardNoteCard.closest('.fcard').querySelector('.fnote-area:last-child') && (hardNoteCard.closest('.fnote-area').style.display = 'none');
   } else {
-    document.getElementById('me-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別職位，請手動填寫職位職能備註欄。</div>';
+    // 第二、三次：顯示硬性職能
+    if (jobKey && FORM_HARD_SKILLS[jobKey]) {
+      document.getElementById('me-hard-desc').textContent = `職位：${meEmpData.title || jobKey}`;
+      meRenderHardSkills(FORM_HARD_SKILLS[jobKey]);
+    } else {
+      document.getElementById('me-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別職位，請手動填寫職位職能備註欄。</div>';
+    }
   }
   if (meRound >= 2) {
     const prevKey = 'round' + (meRound - 1);
@@ -3331,7 +3392,24 @@ function meRenderHistory() {
       html += `<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">軟性技能明細</div><table class="fhistory-table">`;
       FORM_SOFT_SKILLS.forEach(s => {
         const mgScore = (mgr.softScores || {})[s.id] || '—';
-        const selfScore = selfSc[s.id] ? `（自評：${selfSc[s.id]}）` : '';
+        // 第一次自評是軟性技能，第二次自評是硬性職能
+        const selfType = (rData.selfEval && rData.selfEval.type) || 'soft';
+        const selfScore = (selfType === 'soft' && selfSc[s.id]) ? `（自評：${selfSc[s.id]}）` : '';
+        html += `<tr><td>${s.title}</td><td><strong>${mgScore}</strong> <span style="color:#9a9894;font-size:11px">${selfScore}</span></td></tr>`;
+      });
+      html += '</table>';
+    }
+    // 顯示硬性職能明細（第二次起才有）
+    if (Object.keys(mgr.hardScores || {}).length > 0) {
+      const jobKey2 = formMatchJobTitle(meEmpData.title);
+      const hardSkills2 = (jobKey2 && FORM_HARD_SKILLS[jobKey2]) ? FORM_HARD_SKILLS[jobKey2] : [];
+      // 第二次的自評是硬性職能
+      const selfType2 = (rData.selfEval && rData.selfEval.type) || 'soft';
+      const hardSelfSc = (selfType2 === 'hard' && rData.selfEval && rData.selfEval.scores) ? rData.selfEval.scores : {};
+      html += `<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">職位職能明細</div><table class="fhistory-table">`;
+      hardSkills2.forEach(s => {
+        const mgScore = (mgr.hardScores || {})[s.id] || '—';
+        const selfScore = hardSelfSc[s.id] ? `（自評：${hardSelfSc[s.id]}）` : '';
         html += `<tr><td>${s.title}</td><td><strong>${mgScore}</strong> <span style="color:#9a9894;font-size:11px">${selfScore}</span></td></tr>`;
       });
       html += '</table>';
@@ -3345,14 +3423,33 @@ function meRenderHistory() {
   if (html) { histCard.style.display = 'block'; histArea.innerHTML = html; }
 }
 
-function meRenderSelfEval(scores) {
+function meRenderSelfEval(selfEvalData) {
   const card = document.getElementById('me-self-eval-card');
   const area = document.getElementById('me-self-eval-area');
+  const titleEl = card.querySelector('.fcard-title');
   card.style.display = 'block';
+  const scores = selfEvalData.scores || selfEvalData; // 兼容舊格式
+  const evalType = selfEvalData.type || 'soft';
   let html = '<table class="fhistory-table">';
-  FORM_SOFT_SKILLS.forEach(s => {
-    html += `<tr><td>${s.title}</td><td><strong>${scores[s.id] || '—'}</strong> / 5</td></tr>`;
-  });
+  if (evalType === 'hard') {
+    // 第二次：顯示硬性職能自評
+    if (titleEl) titleEl.textContent = '👤 員工硬性職能自評（參考）';
+    const jobKey = formMatchJobTitle(meEmpData.title);
+    const skills = (jobKey && FORM_HARD_SKILLS[jobKey]) ? FORM_HARD_SKILLS[jobKey] : [];
+    if (skills.length > 0) {
+      skills.forEach(s => {
+        html += `<tr><td>${s.title}</td><td><strong>${scores[s.id] || '—'}</strong> / 5</td></tr>`;
+      });
+    } else {
+      html += `<tr><td colspan="2" style="color:#9a9894">無法識別職位職能項目</td></tr>`;
+    }
+  } else {
+    // 第一次：顯示軟性技能自評
+    if (titleEl) titleEl.textContent = '👤 員工軟性技能自評（參考）';
+    FORM_SOFT_SKILLS.forEach(s => {
+      html += `<tr><td>${s.title}</td><td><strong>${scores[s.id] || '—'}</strong> / 5</td></tr>`;
+    });
+  }
   html += '</table>';
   area.innerHTML = html;
 }
@@ -3434,7 +3531,8 @@ function submitManagerEval() {
     return;
   }
   const jobKey = formMatchJobTitle(meEmpData.title);
-  if (jobKey && FORM_HARD_SKILLS[jobKey]) {
+  if (meRound >= 2 && jobKey && FORM_HARD_SKILLS[jobKey]) {
+    // 第二、三次才驗證硬性職能
     const missingHard = FORM_HARD_SKILLS[jobKey].filter(s => !meScores.hard[s.id]);
     if (missingHard.length > 0) {
       alert('⚠️ 請完成所有職位職能評分。\n\n尚未評分：' + missingHard.map(s => s.title).join('、'));
