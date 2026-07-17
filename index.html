@@ -327,26 +327,49 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
         </div>
         <div id="me-prev-improvement"></div>
       </div>
+      <!-- 第三次專用：試用期綜合評核區塊（預設隱藏，由 meRenderForm 控制顯示） -->
+      <div class="fcard" id="me-round3-block" style="display:none">
+        <div class="fcard-title">🎯 試用期整體表現評分</div>
+        <div class="fcard-desc">請綜合三個月的整體表現，給予一個綜合評分。</div>
+        <div class="fradio-group" style="flex-wrap:wrap;gap:8px;margin-top:12px">
+          <div class="fradio-btn" id="me-r3-score-5" onclick="meR3SelectScore(5)">5 表現優異，超越預期</div>
+          <div class="fradio-btn" id="me-r3-score-4" onclick="meR3SelectScore(4)">4 表現良好，達到預期</div>
+          <div class="fradio-btn" id="me-r3-score-3" onclick="meR3SelectScore(3)">3 表現尚可，部分需加強</div>
+          <div class="fradio-btn" id="me-r3-score-2" onclick="meR3SelectScore(2)">2 表現不足，需明顯改善</div>
+          <div class="fradio-btn" id="me-r3-score-1" onclick="meR3SelectScore(1)">1 表現不佳，需立即關注</div>
+        </div>
+        <div style="margin-top:16px">
+          <label class="fform-label">軟性技能總評（文字）<span class="fform-required">*</span></label>
+          <textarea class="fform-input" id="me-r3-soft-review" style="min-height:70px;resize:vertical" placeholder="請綜合前兩次面談的軟性技能表現，用文字描述整體評價..."></textarea>
+        </div>
+        <div style="margin-top:12px">
+          <label class="fform-label">職位職能總評（文字）<span class="fform-required">*</span></label>
+          <textarea class="fform-input" id="me-r3-hard-review" style="min-height:70px;resize:vertical" placeholder="請綜合第二次面談的職位職能表現，用文字描述整體評價..."></textarea>
+        </div>
+        <div style="margin-top:12px">
+          <label class="fform-label">具體貢獻與亮點</label>
+          <textarea class="fform-input" id="me-r3-highlights" style="min-height:60px;resize:vertical" placeholder="記錄試用期間的具體成就、表現特別出色之處..."></textarea>
+        </div>
+        <div style="margin-top:12px">
+          <label class="fform-label">待改善事項</label>
+          <textarea class="fform-input" id="me-r3-improvements" style="min-height:60px;resize:vertical" placeholder="記錄仍需加強的部分，供正式任用後的發展方向參考..."></textarea>
+        </div>
+      </div>
       <div class="fcard" id="me-conclusion-card" style="display:none">
         <div class="fcard-title">⚖️ 試用期評核結論</div>
         <div class="fcard-desc">請綜合三次面談表現，給出試用期評核結論。</div>
         <div class="fconclusion-area">
           <label class="fform-label">評核結論<span class="fform-required">*</span></label>
           <div class="fradio-group">
-            <div class="fradio-btn" id="me-conclusion-pass" onclick="mgrSelectConclusion('pass')">✅ 通過試用期，建議正式任用</div>
-            <div class="fradio-btn" id="me-conclusion-extend" onclick="mgrSelectConclusion('extend')">⏳ 延長試用期（請於備註說明原因與改善目標）</div>
-            <div class="fradio-btn" id="me-conclusion-fail" onclick="mgrSelectConclusion('fail')">❌ 試用期未通過，終止試用（請於備註說明原因）</div>
+            <div class="fradio-btn" id="me-conclusion-pass" onclick="mgrSelectConclusion('pass')">&#x2705; 通過試用期，建議正式任用</div>
+            <div class="fradio-btn" id="me-conclusion-extend" onclick="mgrSelectConclusion('extend')">&#x23f3; 延長試用期（請於備註說明原因與改善目標）</div>
+            <div class="fradio-btn" id="me-conclusion-fail" onclick="mgrSelectConclusion('fail')">&#x274c; 試用期未通過，終止試用（請於備註說明原因）</div>
           </div>
         </div>
         <div class="fnote-area" style="margin-top:16px">
           <label>評核結論說明</label>
           <textarea id="me-conclusion-note" placeholder="請說明評核結論的依據與後續處理方式..."></textarea>
         </div>
-      </div>
-      <div class="fcard" id="me-overall-card" style="display:none">
-        <div class="fcard-title">📝 綜合評語</div>
-        <div class="fcard-desc">請針對員工試用期整體表現，填寫綜合評語（優點、待改善之處、對未來的期許）：</div>
-        <textarea id="me-overall-comment" rows="5" placeholder="例如：XX 在試用期間展現出良好的學習態度，專業技能已達基本要求。建議未來在時間管理上持續精進..." style="width:100%;box-sizing:border-box;border:0.5px solid #ddd;border-radius:6px;padding:8px;font-size:13px;font-family:inherit;resize:vertical;margin-top:8px"></textarea>
       </div>
       <div class="fcard">
         <div id="me-score-summary" style="margin-bottom:16px"></div>
@@ -3035,10 +3058,104 @@ async function exportInterviewPDF() {
     <div class="info-item"><div class="info-label">所屬公司</div><div class="info-val">${emp.companyName || '—'}</div></div>
   </div>`;
 
+  // 先收集三次分數供折線圖使用
+  const chartData = { soft: [], hard: [], overall: [], labels: [] };
+  for (let r = 1; r <= 3; r++) {
+    const rKey = 'round' + r;
+    const mgr = (interviews[rKey] || {}).manager || {};
+    if (mgr.submitted) {
+      chartData.labels.push(r === 1 ? '第一次\n(30天)' : r === 2 ? '第二次\n(60天)' : '試用期\n(90天)');
+      chartData.soft.push(r <= 2 ? (mgr.softAvg || null) : null);
+      chartData.hard.push(r >= 2 && r <= 2 ? (mgr.hardAvg || null) : null);
+      chartData.overall.push(r === 3 ? (mgr.overallScore || null) : (mgr.totalAvg || null));
+    }
+  }
+
+  // 產生 SVG 折線圖
+  function makeSVGChart() {
+    const W = 560, H = 200, padL = 50, padR = 20, padT = 20, padB = 50;
+    const gW = W - padL - padR, gH = H - padT - padB;
+    const rounds = [1, 2, 3];
+    const labels = ['第一次 (30天)', '第二次 (60天)', '試用期 (90天)'];
+    const r1mgr = (interviews.round1 || {}).manager || {};
+    const r2mgr = (interviews.round2 || {}).manager || {};
+    const r3mgr = (interviews.round3 || {}).manager || {};
+    const softPts = [
+      r1mgr.submitted ? r1mgr.softAvg : null,
+      r2mgr.submitted ? r2mgr.softAvg : null,
+      null
+    ];
+    const hardPts = [
+      null,
+      r2mgr.submitted ? r2mgr.hardAvg : null,
+      null
+    ];
+    const overallPts = [
+      r1mgr.submitted ? r1mgr.totalAvg : null,
+      r2mgr.submitted ? r2mgr.totalAvg : null,
+      r3mgr.submitted ? r3mgr.overallScore : null
+    ];
+    function xPos(i) { return padL + (i / 2) * gW; }
+    function yPos(v) { return padT + gH - ((v - 1) / 4) * gH; }
+    function makeLine(pts, color) {
+      const validPts = pts.map((v, i) => v !== null ? [xPos(i), yPos(v)] : null).filter(Boolean);
+      if (validPts.length < 1) return '';
+      let d = validPts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+      let dots = validPts.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2"/>`).join('');
+      let lbls = validPts.map((p, i) => {
+        const origIdx = pts.findIndex((v, j) => v !== null && validPts.slice(0, i+1).filter(Boolean).length === j+1 - (pts.slice(0,j).filter(v2 => v2 === null).length));
+        const val = pts[pts.map((v,j) => v !== null ? j : -1).filter(j => j >= 0)[i]];
+        return `<text x="${p[0].toFixed(1)}" y="${(p[1]-10).toFixed(1)}" text-anchor="middle" font-size="11" fill="${color}" font-weight="700">${val !== null ? val.toFixed(1) : ''}</text>`;
+      }).join('');
+      return `<path d="${d}" stroke="${color}" stroke-width="2.5" fill="none" stroke-dasharray="${color === '#c8a96e' ? '6,3' : 'none'}"/>${dots}${lbls}`;
+    }
+    // 簡化標籤計算
+    function makeSimpleLine(pts, color, dash) {
+      let svgParts = '';
+      let prevP = null;
+      pts.forEach((v, i) => {
+        if (v === null) { prevP = null; return; }
+        const cx = xPos(i), cy = yPos(v);
+        if (prevP) svgParts += `<line x1="${prevP[0].toFixed(1)}" y1="${prevP[1].toFixed(1)}" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}" stroke="${color}" stroke-width="2.5" ${dash ? 'stroke-dasharray="6,3"' : ''}/>` ;
+        svgParts += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+        svgParts += `<text x="${cx.toFixed(1)}" y="${(cy - 10).toFixed(1)}" text-anchor="middle" font-size="11" fill="${color}" font-weight="700">${parseFloat(v).toFixed(1)}</text>`;
+        prevP = [cx, cy];
+      });
+      return svgParts;
+    }
+    // Y軸刻度
+    let yAxis = '';
+    for (let v = 1; v <= 5; v++) {
+      const y = yPos(v);
+      yAxis += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${(W-padR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="#ebe9e3" stroke-width="1"/>`;
+      yAxis += `<text x="${(padL-6).toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#9a9894">${v}</text>`;
+    }
+    // X軸標籤
+    let xAxis = '';
+    labels.forEach((lb, i) => {
+      const x = xPos(i);
+      xAxis += `<text x="${x.toFixed(1)}" y="${(H - padB + 18).toFixed(1)}" text-anchor="middle" font-size="11" fill="#5a5754">${lb}</text>`;
+    });
+    const svgContent = `
+      <rect width="${W}" height="${H}" fill="#fff"/>
+      ${yAxis}
+      ${makeSimpleLine(softPts, '#1a7a55', false)}
+      ${makeSimpleLine(hardPts, '#1a4f8a', false)}
+      ${makeSimpleLine(overallPts, '#c8a96e', true)}
+      ${xAxis}
+      <text x="${padL}" y="${(padT-5).toFixed(1)}" font-size="11" fill="#1a7a55">&#9632; 軟性技能平均</text>
+      <text x="${(padL+120).toFixed(1)}" y="${(padT-5).toFixed(1)}" font-size="11" fill="#1a4f8a">&#9632; 職能平均</text>
+      <text x="${(padL+220).toFixed(1)}" y="${(padT-5).toFixed(1)}" font-size="11" fill="#c8a96e">&#9632; 綜合平均</text>
+    `;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${svgContent}</svg>`;
+  }
+
+  html += `<h2>📈 三次面談分數趨勢圖</h2><div style="margin:12px 0">${makeSVGChart()}</div>`;
+
   for (let r = 1; r <= 3; r++) {
     const rKey = 'round' + r;
     const rData = interviews[rKey] || {};
-    const mgr = rData.manager || {};  // Firebase 儲存路徑為 manager，非 managerEval
+    const mgr = rData.manager || {};
     const self = rData.selfEval || {};
     html += `<h2>${roundNames[r]}</h2>`;
 
@@ -3048,63 +3165,63 @@ async function exportInterviewPDF() {
     }
 
     html += `<div class="info-grid">
-      <div class="info-item"><div class="info-label">主管姓名</div><div class="info-val">${mgr.mgrName || '—'}</div></div>
       <div class="info-item"><div class="info-label">評核日期</div><div class="info-val">${mgr.submittedAt ? mgr.submittedAt.substring(0,10) : '—'}</div></div>
     </div>`;
 
-    // 軟性技能
-    if (Object.keys(mgr.softScores || {}).length > 0) {
-      html += `<h3>📋 軟性職場技能評核</h3>`;
-      html += `<table><tr><th>評估項目</th><th>主管評分</th>`;
-      if (r === 1 && self.type === 'soft') html += `<th>員工自評</th>`;
-      html += `</tr>`;
-      FORM_SOFT_SKILLS.forEach(s => {
-        const ms = (mgr.softScores || {})[s.id] || '—';
-        html += `<tr><td>${s.title}</td><td><span class="score-badge">${ms}</span> / 5</td>`;
-        if (r === 1 && self.type === 'soft') {
-          const ss = (self.scores || {})[s.id] || '—';
-          html += `<td>${ss} / 5</td>`;
-        }
-        html += `</tr>`;
-      });
-      html += `</table>`;
-      const softTotalVal = mgr.softTotal !== undefined ? mgr.softTotal : (mgr.softAvg ? (mgr.softAvg * FORM_SOFT_SKILLS.length).toFixed(1) : null);
-      if (softTotalVal !== null) html += `<p><strong>軟性技能平均分：${mgr.softAvg || '—'} / 5</strong></p>`;
-    }
-
-    // 硬性職能（第二、三次）
-    if (r >= 2 && Object.keys(mgr.hardScores || {}).length > 0) {
-      const jobKey = formMatchJobTitle(emp.title);
-      const hardSkills = (jobKey && FORM_HARD_SKILLS[jobKey]) ? FORM_HARD_SKILLS[jobKey] : [];
-      if (hardSkills.length > 0) {
-        html += `<h3>💼 職位硬性職能評核</h3>`;
+    if (r === 3) {
+      // 第三次：綜合評核結構
+      const scoreLabels = { 5: '表現優異，超越預期', 4: '表現良好，達到預期', 3: '表現尚可，部分需加強', 2: '表現不足，需明顯改善', 1: '表現不佳，需立即關注' };
+      html += `<p><strong>試用期整體表現評分：<span class="score-badge">${mgr.overallScore || '—'}</span> / 5 ${scoreLabels[mgr.overallScore] ? '(' + scoreLabels[mgr.overallScore] + ')' : ''}</strong></p>`;
+      if (mgr.softReview) html += `<h3>🌱 軟性技能總評</h3><div class="note-box">${mgr.softReview}</div>`;
+      if (mgr.hardReview) html += `<h3>💼 職位職能總評</h3><div class="note-box">${mgr.hardReview}</div>`;
+      if (mgr.highlights) html += `<h3>⭐ 具體貢獻與亮點</h3><div class="note-box">${mgr.highlights}</div>`;
+      if (mgr.areasToImprove) html += `<h3>📋 待改善事項</h3><div class="note-box">${mgr.areasToImprove}</div>`;
+      if (mgr.conclusionNote) html += `<h3>評核結論說明</h3><div class="note-box">${mgr.conclusionNote}</div>`;
+      if (mgr.conclusion) html += `<div class="conclusion-box">試用期結論：${conclusionMap[mgr.conclusion] || mgr.conclusion}</div>`;
+    } else {
+      // 第一、二次：評分結構
+      if (Object.keys(mgr.softScores || {}).length > 0) {
+        html += `<h3>📋 軟性職場技能評核</h3>`;
         html += `<table><tr><th>評估項目</th><th>主管評分</th>`;
-        if (r === 2 && self.type === 'hard') html += `<th>員工自評</th>`;
+        if (r === 1 && self.type === 'soft') html += `<th>員工自評</th>`;
         html += `</tr>`;
-        hardSkills.forEach(s => {
-          const ms = (mgr.hardScores || {})[s.id] || '—';
+        FORM_SOFT_SKILLS.forEach(s => {
+          const ms = (mgr.softScores || {})[s.id] || '—';
           html += `<tr><td>${s.title}</td><td><span class="score-badge">${ms}</span> / 5</td>`;
-          if (r === 2 && self.type === 'hard') {
+          if (r === 1 && self.type === 'soft') {
             const ss = (self.scores || {})[s.id] || '—';
             html += `<td>${ss} / 5</td>`;
           }
           html += `</tr>`;
         });
         html += `</table>`;
-        if (mgr.hardAvg !== undefined) html += `<p><strong>職能平均分：${mgr.hardAvg} / 5</strong></p>`;
+        if (mgr.softAvg) html += `<p><strong>軟性技能平均分：${mgr.softAvg} / 5</strong></p>`;
       }
-    }
-
-    // 備註與改善目標（Firebase 儲存欄位名稱：interviewSummary, softOverallNote, hardOverallNote, improvementTarget）
-    if (mgr.interviewSummary) html += `<h3>📝 面談摘要</h3><div class="note-box">${mgr.interviewSummary}</div>`;
-    if (mgr.softOverallNote) html += `<h3>軟性技能備註</h3><div class="note-box">${mgr.softOverallNote}</div>`;
-    if (mgr.hardOverallNote) html += `<h3>職能備註</h3><div class="note-box">${mgr.hardOverallNote}</div>`;
-    if (mgr.improvementTarget) html += `<h3>🎯 改善目標</h3><div class="note-box">${mgr.improvementTarget}</div>`;
-
-    // 第三次：綜合評語與結論
-    if (r === 3) {
-      if (mgr.overallComment) html += `<h3>📋 綜合評語</h3><div class="note-box">${mgr.overallComment}</div>`;
-      if (mgr.conclusion) html += `<div class="conclusion-box">試用期結論：${conclusionMap[mgr.conclusion] || mgr.conclusion}</div>`;
+      if (r === 2 && Object.keys(mgr.hardScores || {}).length > 0) {
+        const jobKey = formMatchJobTitle(emp.title);
+        const hardSkills = (jobKey && FORM_HARD_SKILLS[jobKey]) ? FORM_HARD_SKILLS[jobKey] : [];
+        if (hardSkills.length > 0) {
+          html += `<h3>💼 職位硬性職能評核</h3>`;
+          html += `<table><tr><th>評估項目</th><th>主管評分</th>`;
+          if (self.type === 'hard') html += `<th>員工自評</th>`;
+          html += `</tr>`;
+          hardSkills.forEach(s => {
+            const ms = (mgr.hardScores || {})[s.id] || '—';
+            html += `<tr><td>${s.title}</td><td><span class="score-badge">${ms}</span> / 5</td>`;
+            if (self.type === 'hard') {
+              const ss = (self.scores || {})[s.id] || '—';
+              html += `<td>${ss} / 5</td>`;
+            }
+            html += `</tr>`;
+          });
+          html += `</table>`;
+          if (mgr.hardAvg) html += `<p><strong>職能平均分：${mgr.hardAvg} / 5</strong></p>`;
+        }
+      }
+      if (mgr.interviewSummary) html += `<h3>📝 面談摘要</h3><div class="note-box">${mgr.interviewSummary}</div>`;
+      if (mgr.softOverallNote) html += `<h3>軟性技能備註</h3><div class="note-box">${mgr.softOverallNote}</div>`;
+      if (mgr.hardOverallNote) html += `<h3>職能備註</h3><div class="note-box">${mgr.hardOverallNote}</div>`;
+      if (mgr.improvementTarget) html += `<h3>🎯 改善目標</h3><div class="note-box">${mgr.improvementTarget}</div>`;
     }
   }
 
@@ -3534,15 +3651,14 @@ function meRenderForm() {
       document.getElementById('me-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別職位，請手動填寫職位職能備註欄。</div>';
     }
   } else {
-    // 第三次：軟性技能複評 + 硬性職能複評（均顯示）
-    if (softCard) softCard.style.display = 'block';
-    if (hardCard) hardCard.style.display = 'block';
-    if (jobKey && FORM_HARD_SKILLS[jobKey]) {
-      document.getElementById('me-hard-desc').textContent = `職位：${meEmpData.title || jobKey}（試用期綜合評核）`;
-      meRenderHardSkills(FORM_HARD_SKILLS[jobKey]);
-    } else {
-      document.getElementById('me-hard-area').innerHTML = '<div class="falert falert-warn">⚠️ 系統未能自動識別職位，請手動填寫職位職能備註欄。</div>';
-    }
+    // 第三次：隱藏軟硬技能評分區，改為綜合評語結構
+    if (softCard) softCard.style.display = 'none';
+    if (hardCard) hardCard.style.display = 'none';
+    const r3Block = document.getElementById('me-round3-block');
+    if (r3Block) r3Block.style.display = 'block';
+    // 隔藏面談摘要與改善目標欄位（第三次不需要）
+    const summaryCard = document.getElementById('me-summary');
+    if (summaryCard) summaryCard.closest('.fcard').style.display = 'none';
   }
   if (meRound >= 2) {
     const prevKey = 'round' + (meRound - 1);
@@ -3726,52 +3842,86 @@ function meUpdateScoreSummary() {
     </div>`;
 }
 
+let meR3OverallScore = 0;
+function meR3SelectScore(score) {
+  meR3OverallScore = score;
+  [1,2,3,4,5].forEach(s => {
+    const btn = document.getElementById('me-r3-score-' + s);
+    if (btn) btn.className = 'fradio-btn';
+  });
+  const btn = document.getElementById('me-r3-score-' + score);
+  if (btn) btn.classList.add('selected-pass');
+}
+
 function submitManagerEval() {
-  // 第一次和第三次才驗證軟性技能（第二次只評硬性職能）
-  if (meRound !== 2) {
-    const missingSoft = FORM_SOFT_SKILLS.filter(s => !meScores.soft[s.id]);
-    if (missingSoft.length > 0) {
-      alert('⚠️ 請完成所有軟性技能評分。\n\n尚未評分：' + missingSoft.map(s => s.title).join('、'));
-      return;
+  if (meRound === 3) {
+    // 第三次：驗證綜合評核欄位
+    if (!meR3OverallScore) { alert('⚠️ 請選擇試用期整體表現評分。'); return; }
+    const softReview = document.getElementById('me-r3-soft-review').value.trim();
+    const hardReview = document.getElementById('me-r3-hard-review').value.trim();
+    if (!softReview) { alert('⚠️ 請填寫軟性技能總評。'); return; }
+    if (!hardReview) { alert('⚠️ 請填寫職位職能總評。'); return; }
+    if (!meConclusionVal) { alert('⚠️ 請選擇試用期評核結論。'); return; }
+  } else {
+    // 第一次：驗證軟性技能
+    if (meRound === 1) {
+      const missingSoft = FORM_SOFT_SKILLS.filter(s => !meScores.soft[s.id]);
+      if (missingSoft.length > 0) {
+        alert('⚠️ 請完成所有軟性技能評分。\n\n尚未評分：' + missingSoft.map(s => s.title).join('、'));
+        return;
+      }
     }
-  }
-  const jobKey = formMatchJobTitle(meEmpData.title);
-  if (meRound >= 2 && jobKey && FORM_HARD_SKILLS[jobKey]) {
-    // 第二、三次才驗證硬性職能
-    const missingHard = FORM_HARD_SKILLS[jobKey].filter(s => !meScores.hard[s.id]);
-    if (missingHard.length > 0) {
-      alert('⚠️ 請完成所有職位職能評分。\n\n尚未評分：' + missingHard.map(s => s.title).join('、'));
-      return;
+    // 第二次：驗證硬性職能
+    if (meRound === 2) {
+      const jobKey2 = formMatchJobTitle(meEmpData.title);
+      if (jobKey2 && FORM_HARD_SKILLS[jobKey2]) {
+        const missingHard = FORM_HARD_SKILLS[jobKey2].filter(s => !meScores.hard[s.id]);
+        if (missingHard.length > 0) {
+          alert('⚠️ 請完成所有職位職能評分。\n\n尚未評分：' + missingHard.map(s => s.title).join('、'));
+          return;
+        }
+      }
     }
+    const summary = document.getElementById('me-summary').value.trim();
+    if (!summary) { alert('⚠️ 請填寫面談重點摘要。'); return; }
   }
-  const summary = document.getElementById('me-summary').value.trim();
-  if (!summary) { alert('⚠️ 請填寫面談重點摘要。'); return; }
-  if (meRound === 3 && !meConclusionVal) { alert('⚠️ 請選擇試用期評核結論。'); return; }
 
   const btn = document.getElementById('me-submit-btn');
   btn.disabled = true; btn.textContent = '提交中...';
 
-  const softVals = Object.values(meScores.soft).filter(v => v > 0);
-  const hardVals = Object.values(meScores.hard).filter(v => v > 0);
-  const softAvg = softVals.length ? parseFloat((softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(2)) : 0;
-  const hardAvg = hardVals.length ? parseFloat((hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(2)) : 0;
-  const allVals = [...softVals, ...hardVals];
-  const totalAvg = allVals.length ? parseFloat((allVals.reduce((a,b) => a+b, 0)/allVals.length).toFixed(2)) : 0;
-
-  const payload = {
-    submitted: true, submittedAt: new Date().toISOString(),
-    softScores: meScores.soft, hardScores: meScores.hard,
-    softNotes: meNotes.soft || {}, hardNotes: meNotes.hard || {},
-    softOverallNote: document.getElementById('me-soft-note').value.trim(),
-    hardOverallNote: document.getElementById('me-hard-note').value.trim(),
-    interviewSummary: summary,
-    improvementTarget: document.getElementById('me-improvement').value.trim(),
-    softAvg, hardAvg, totalAvg,
-  };
+  let payload;
   if (meRound === 3) {
-    payload.conclusion = meConclusionVal;
-    payload.conclusionNote = document.getElementById('me-conclusion-note').value.trim();
-    payload.overallComment = (document.getElementById('me-overall-comment') || {}).value || '';
+    // 第三次：綜合評核結構
+    payload = {
+      submitted: true, submittedAt: new Date().toISOString(),
+      overallScore: meR3OverallScore,
+      softReview: document.getElementById('me-r3-soft-review').value.trim(),
+      hardReview: document.getElementById('me-r3-hard-review').value.trim(),
+      highlights: document.getElementById('me-r3-highlights').value.trim(),
+      areasToImprove: document.getElementById('me-r3-improvements').value.trim(),
+      conclusion: meConclusionVal,
+      conclusionNote: document.getElementById('me-conclusion-note').value.trim(),
+    };
+  } else {
+    // 第一、二次：評分結構
+    const softVals = Object.values(meScores.soft).filter(v => v > 0);
+    const hardVals = Object.values(meScores.hard).filter(v => v > 0);
+    const softAvg = softVals.length ? parseFloat((softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(2)) : 0;
+    const hardAvg = hardVals.length ? parseFloat((hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(2)) : 0;
+    const allVals = [...softVals, ...hardVals];
+    const totalAvg = allVals.length ? parseFloat((allVals.reduce((a,b) => a+b, 0)/allVals.length).toFixed(2)) : 0;
+    const summaryEl = document.getElementById('me-summary');
+    const improvEl = document.getElementById('me-improvement');
+    payload = {
+      submitted: true, submittedAt: new Date().toISOString(),
+      softScores: meScores.soft, hardScores: meScores.hard,
+      softNotes: meNotes.soft || {}, hardNotes: meNotes.hard || {},
+      softOverallNote: (document.getElementById('me-soft-note') || {}).value || '',
+      hardOverallNote: (document.getElementById('me-hard-note') || {}).value || '',
+      interviewSummary: summaryEl ? summaryEl.value.trim() : '',
+      improvementTarget: improvEl ? improvEl.value.trim() : '',
+      softAvg, hardAvg, totalAvg,
+    };
   }
   const roundKey = 'round' + meRound;
   meDb.ref(`hr_ob/${meEmpKey}/interviews/${roundKey}/manager`).set(payload).then(() => {
