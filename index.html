@@ -3864,18 +3864,39 @@ function mgrSelectConclusion(val) {
 }
 
 function meUpdateScoreSummary() {
-  const softVals = Object.values(meScores.soft).filter(v => v > 0);
-  const hardVals = Object.values(meScores.hard).filter(v => v > 0);
-  const softAvg = softVals.length ? (softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(1) : '—';
-  const hardAvg = hardVals.length ? (hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(1) : '—';
-  const allVals = [...softVals, ...hardVals];
-  const totalAvg = allVals.length ? (allVals.reduce((a,b) => a+b, 0)/allVals.length).toFixed(1) : '—';
-  document.getElementById('me-score-summary').innerHTML = `
-    <div class="ftotal-box">
-      <div class="ftotal-row"><span class="ftotal-label">軟性技能平均</span><span class="ftotal-score">${softAvg} / 5</span></div>
-      <div class="ftotal-row"><span class="ftotal-label">職位職能平均</span><span class="ftotal-score">${hardAvg} / 5</span></div>
-      <div class="ftotal-row" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px"><span class="ftotal-label" style="font-weight:700">綜合平均分</span><span class="ftotal-score" style="font-size:26px">${totalAvg} / 5</span></div>
-    </div>`;
+  // 第一次：從當次 meScores.soft 計算；第二次：從當次 meScores.hard 計算
+  // 第三次：無評分，改從歷史資料（round1 軟性、round2 硬性）帶入
+  let softAvg, hardAvg, totalAvg;
+  if (meRound === 3) {
+    const r1mgr = (meAllInterviews.round1 || {}).manager || {};
+    const r2mgr = (meAllInterviews.round2 || {}).manager || {};
+    const r1SoftVals = Object.values(r1mgr.softScores || {}).filter(v => v > 0);
+    const r2HardVals = Object.values(r2mgr.hardScores || {}).filter(v => v > 0);
+    softAvg = r1SoftVals.length ? (r1SoftVals.reduce((a,b) => a+b, 0)/r1SoftVals.length).toFixed(1) : '—';
+    hardAvg = r2HardVals.length ? (r2HardVals.reduce((a,b) => a+b, 0)/r2HardVals.length).toFixed(1) : '—';
+    const allVals3 = [...r1SoftVals, ...r2HardVals];
+    totalAvg = allVals3.length ? (allVals3.reduce((a,b) => a+b, 0)/allVals3.length).toFixed(1) : '—';
+  } else {
+    const softVals = Object.values(meScores.soft).filter(v => v > 0);
+    const hardVals = Object.values(meScores.hard).filter(v => v > 0);
+    softAvg = softVals.length ? (softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(1) : '—';
+    hardAvg = hardVals.length ? (hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(1) : '—';
+    const allVals = [...softVals, ...hardVals];
+    totalAvg = allVals.length ? (allVals.reduce((a,b) => a+b, 0)/allVals.length).toFixed(1) : '—';
+  }
+  // 第一次只顯示軟性技能平均；第二次只顯示職能平均；第三次顯示兩者 + 綜合
+  let summaryHtml = '<div class="ftotal-box">';
+  if (meRound === 1) {
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label">軟性技能平均</span><span class="ftotal-score">${softAvg} / 5</span></div>`;
+  } else if (meRound === 2) {
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label">職位職能平均</span><span class="ftotal-score">${hardAvg} / 5</span></div>`;
+  } else {
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label">軟性技能平均（第一次）</span><span class="ftotal-score">${softAvg} / 5</span></div>`;
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label">職位職能平均（第二次）</span><span class="ftotal-score">${hardAvg} / 5</span></div>`;
+    summaryHtml += `<div class="ftotal-row" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px"><span class="ftotal-label" style="font-weight:700">綜合平均分</span><span class="ftotal-score" style="font-size:26px">${totalAvg} / 5</span></div>`;
+  }
+  summaryHtml += '</div>';
+  document.getElementById('me-score-summary').innerHTML = summaryHtml;
 }
 
 let meR3OverallScore = 0;
