@@ -2695,9 +2695,20 @@ function printOffCert(){
   const s=new Date(emp.startDate),e=new Date(emp.endDate);
   const logoSrc=getLogo(emp.cid);
   const coName=emp.companyName||'';
-  const yrs=Math.floor((e-s)/(1000*60*60*24*365.25));
-  const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-yrs)*12);
-  const tenure=yrs>0?yrs+' 年 '+mos+' 個月':mos+' 個月';
+  // 精確年資計算：年、月、天
+  (function(){
+    let yrs=e.getFullYear()-s.getFullYear();
+    let mos=e.getMonth()-s.getMonth();
+    let days=e.getDate()-s.getDate();
+    if(days<0){mos--;const prev=new Date(e.getFullYear(),e.getMonth(),0);days+=prev.getDate();}
+    if(mos<0){yrs--;mos+=12;}
+    const parts=[];
+    if(yrs>0)parts.push(yrs+' 年');
+    if(mos>0)parts.push(mos+' 個月');
+    if(days>0)parts.push(days+' 天');
+    window._tenure=parts.length?parts.join(' '):'1 天';
+  })();
+  const tenure=window._tenure;
 
   function fmtYMD(d){
     if(!d) return '—';
@@ -2839,9 +2850,20 @@ function printLayoffNotice(){
 
 function printLayoffCert(){
   const s=new Date(emp.startDate),e=new Date(emp.endDate);
-  const yrs=Math.floor((e-s)/(1000*60*60*24*365.25));
-  const mos=Math.round(((e-s)/(1000*60*60*24*365.25)-yrs)*12);
-  const tenure=yrs>0?`${yrs} 年 ${mos} 個月`:`${mos} 個月`;
+  // 精確年資計算：年、月、天
+  (function(){
+    let yrs=e.getFullYear()-s.getFullYear();
+    let mos=e.getMonth()-s.getMonth();
+    let days=e.getDate()-s.getDate();
+    if(days<0){mos--;const prev=new Date(e.getFullYear(),e.getMonth(),0);days+=prev.getDate();}
+    if(mos<0){yrs--;mos+=12;}
+    const parts=[];
+    if(yrs>0)parts.push(yrs+' 年');
+    if(mos>0)parts.push(mos+' 個月');
+    if(days>0)parts.push(days+' 天');
+    window._tenure=parts.length?parts.join(' '):'1 天';
+  })();
+  const tenure=window._tenure;
   const logoSrc=getLogo(emp.cid);
   const pdfHtml=`<div class="pdf-doc">
     <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:30px">
@@ -2960,11 +2982,14 @@ function genInterviewLink(round, type) {
   const url = buildInterviewUrl(formFile, round);
   if (!url) return;
 
-  // 直接複製到剪貼簿，並顯示連結（不依賴 DOM 重渲染後的狀態）
-  const typeLabel = type === 'self' ? '員工自評' : '主管評核';
-  const roundLabel = ['', '第一次', '第二次', '第三次'][round] || ('第' + round + '次');
+  // 將此次的 ts 儲存到 Firebase，作為「最新連結時間戳」
+  const tsMatch = url.match(/[?&]ts=([^&]+)/);
+  if (tsMatch && db) {
+    const tsVal = tsMatch[1];
+    const tsPath = 'hr_ob/' + currentKey + '/interviews/round' + round + '/' + (type === 'self' ? 'selfLinkTs' : 'mgrLinkTs');
+    db.ref(tsPath).set(tsVal);
+  }
 
-  // 嘗試寫入剪貼簿
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {
       showLinkBox(round, type, url);
@@ -3448,24 +3473,30 @@ function initSelfEvalForm(params) {
   if (!seDb) { seShowError('系統初始化失敗，請重新整理頁面。'); return; }
   seDb.ref('hr_ob/' + seEmpKey).once('value').then(function(snap) {
     const val = snap.val();
-    if (!val || !val.emp) { seShowError('找不到員工資料，請聯繫 HR 確認連結是否正確。'); return; }
+    if (!val || !val.emp) { seShowError('找不到員工資料，請聯絡 HR 確認連結是否正確。'); return; }
     seEmpData = val.emp;
     const interviews = val.interviews || {};
     const roundKey = 'round' + seRound;
-    const existingSelf = interviews[roundKey] && interviews[roundKey].selfEval;
-    // 若連結時間戳記比已提交時間更新，視為重新填寫（HR 重新產生連結）
-    if (existingSelf && existingSelf.submitted) {
-      const submittedTs = existingSelf.submittedAt ? new Date(existingSelf.submittedAt).getTime() : 0;
-      if (seLinkTs > submittedTs) {
-        // 新連結比舊提交更新，直接顯示空白表單
-        seRenderForm();
-        return;
-      }
+    const roundData = interviews[roundKey] || {};
+    const existingSelf = roundData.selfEval;
+    // 比對 Firebase 中儲存的「最新連結 ts」
+    const latestTs = String(roundData.selfLinkTs || '0');
+    const currentTs = String(seLinkTs || '0');
+    if (currentTs !== latestTs && latestTs !== '0') {
+      // 連結已過期（HR 已產生更新的連結）
       document.getElementById('se-loading').style.display = 'none';
       document.getElementById('se-success').style.display = 'block';
-      document.getElementById('se-success-desc').innerHTML = '您已於先前提交過本次自評。<br>如需重新填寫，請聯繫 HR 產生新連結。';
+      document.getElementById('se-success-desc').innerHTML = '此連結已過期。<br>請聯絡 HR 產生新連結。';
       return;
     }
+    if (existingSelf && existingSelf.submitted) {
+      // 連結為最新且已提交
+      document.getElementById('se-loading').style.display = 'none';
+      document.getElementById('se-success').style.display = 'block';
+      document.getElementById('se-success-desc').innerHTML = '您已完成本次自評，感謝您的配合！<br>如需重新填寫，請聯絡 HR 產生新連結。';
+      return;
+    }
+    // 連結為最新且尚未提交，顯示空白表單
     seRenderForm();
   }).catch(function(e) { seShowError('讀取資料失敗：' + e.message); });
 }
@@ -3586,24 +3617,30 @@ function initManagerEvalForm(params) {
   if (!meDb) { meShowError('系統初始化失敗，請重新整理頁面。'); return; }
   meDb.ref('hr_ob/' + meEmpKey).once('value').then(function(snap) {
     const val = snap.val();
-    if (!val || !val.emp) { meShowError('找不到員工資料，請聯繫 HR 確認連結是否正確。'); return; }
+    if (!val || !val.emp) { meShowError('找不到員工資料，請聯絡 HR 確認連結是否正確。'); return; }
     meEmpData = val.emp;
     meAllInterviews = val.interviews || {};
     const roundKey = 'round' + meRound;
-    const existingMgr = meAllInterviews[roundKey] && meAllInterviews[roundKey].manager;
-    // 若連結時間戳記比已提交時間更新，視為重新填寫（HR 重新產生連結）
-    if (existingMgr && existingMgr.submitted) {
-      const submittedTs = existingMgr.submittedAt ? new Date(existingMgr.submittedAt).getTime() : 0;
-      if (meLinkTs > submittedTs) {
-        // 新連結比舊提交更新，直接顯示空白表單
-        meRenderForm();
-        return;
-      }
+    const roundData = meAllInterviews[roundKey] || {};
+    const existingMgr = roundData.manager;
+    // 比對 Firebase 中儲存的「最新連結 ts」
+    const latestTs = String(roundData.mgrLinkTs || '0');
+    const currentTs = String(meLinkTs || '0');
+    if (currentTs !== latestTs && latestTs !== '0') {
+      // 連結已過期（HR 已產生更新的連結）
       document.getElementById('me-loading').style.display = 'none';
       document.getElementById('me-success').style.display = 'block';
-      document.getElementById('me-success-desc').innerHTML = '此次面談評核已提交完畢。<br>如需重新填寫，請聯繫 HR 產生新連結。';
+      document.getElementById('me-success-desc').innerHTML = '此連結已過期。<br>請聯絡 HR 產生新連結。';
       return;
     }
+    if (existingMgr && existingMgr.submitted) {
+      // 連結為最新且已提交
+      document.getElementById('me-loading').style.display = 'none';
+      document.getElementById('me-success').style.display = 'block';
+      document.getElementById('me-success-desc').innerHTML = '此次面談評核已提交完畢，感謝您的配合！<br>如需重新填寫，請聯絡 HR 產生新連結。';
+      return;
+    }
+    // 連結為最新且尚未提交，顯示空白表單
     meRenderForm();
   }).catch(function(e) { meShowError('讀取資料失敗：' + e.message); });
 }
