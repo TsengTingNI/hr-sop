@@ -3096,54 +3096,39 @@ async function exportInterviewPDF() {
     }
   }
 
-  // 產生 SVG 折線圖
+  // 產生 SVG 折線圖（主管評分 vs 員工自評分對比）
   function makeSVGChart() {
-    const W = 560, H = 200, padL = 50, padR = 20, padT = 20, padB = 50;
+    const W = 560, H = 220, padL = 50, padR = 20, padT = 30, padB = 50;
     const gW = W - padL - padR, gH = H - padT - padB;
-    const rounds = [1, 2, 3];
     const labels = ['第一次 (30天)', '第二次 (60天)', '試用期 (90天)'];
     const r1mgr = (interviews.round1 || {}).manager || {};
     const r2mgr = (interviews.round2 || {}).manager || {};
     const r3mgr = (interviews.round3 || {}).manager || {};
-    const softPts = [
-      r1mgr.submitted ? r1mgr.softAvg : null,
-      r2mgr.submitted ? r2mgr.softAvg : null,
-      null
+    const r1self = (interviews.round1 || {}).selfEval || {};
+    const r2self = (interviews.round2 || {}).selfEval || {};
+    // 主管評分：第一次軟性、第二次職能、第三次整體
+    const mgrPts = [
+      r1mgr.submitted ? (r1mgr.softAvg || null) : null,
+      r2mgr.submitted ? (r2mgr.hardAvg || null) : null,
+      r3mgr.submitted ? (r3mgr.overallScore || null) : null
     ];
-    const hardPts = [
-      null,
-      r2mgr.submitted ? r2mgr.hardAvg : null,
+    // 員工自評：第一次軟性自評、第二次職能自評
+    const selfPts = [
+      r1self.submitted ? (r1self.selfAvg || null) : null,
+      r2self.submitted ? (r2self.selfAvg || null) : null,
       null
-    ];
-    const overallPts = [
-      r1mgr.submitted ? r1mgr.totalAvg : null,
-      r2mgr.submitted ? r2mgr.totalAvg : null,
-      r3mgr.submitted ? r3mgr.overallScore : null
     ];
     function xPos(i) { return padL + (i / 2) * gW; }
     function yPos(v) { return padT + gH - ((v - 1) / 4) * gH; }
-    function makeLine(pts, color) {
-      const validPts = pts.map((v, i) => v !== null ? [xPos(i), yPos(v)] : null).filter(Boolean);
-      if (validPts.length < 1) return '';
-      let d = validPts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-      let dots = validPts.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2"/>`).join('');
-      let lbls = validPts.map((p, i) => {
-        const origIdx = pts.findIndex((v, j) => v !== null && validPts.slice(0, i+1).filter(Boolean).length === j+1 - (pts.slice(0,j).filter(v2 => v2 === null).length));
-        const val = pts[pts.map((v,j) => v !== null ? j : -1).filter(j => j >= 0)[i]];
-        return `<text x="${p[0].toFixed(1)}" y="${(p[1]-10).toFixed(1)}" text-anchor="middle" font-size="11" fill="${color}" font-weight="700">${val !== null ? val.toFixed(1) : ''}</text>`;
-      }).join('');
-      return `<path d="${d}" stroke="${color}" stroke-width="2.5" fill="none" stroke-dasharray="${color === '#c8a96e' ? '6,3' : 'none'}"/>${dots}${lbls}`;
-    }
-    // 簡化標籤計算
     function makeSimpleLine(pts, color, dash) {
       let svgParts = '';
       let prevP = null;
       pts.forEach((v, i) => {
         if (v === null) { prevP = null; return; }
         const cx = xPos(i), cy = yPos(v);
-        if (prevP) svgParts += `<line x1="${prevP[0].toFixed(1)}" y1="${prevP[1].toFixed(1)}" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}" stroke="${color}" stroke-width="2.5" ${dash ? 'stroke-dasharray="6,3"' : ''}/>` ;
-        svgParts += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2"/>`;
-        svgParts += `<text x="${cx.toFixed(1)}" y="${(cy - 10).toFixed(1)}" text-anchor="middle" font-size="11" fill="${color}" font-weight="700">${parseFloat(v).toFixed(1)}</text>`;
+        if (prevP) svgParts += '<line x1="' + prevP[0].toFixed(1) + '" y1="' + prevP[1].toFixed(1) + '" x2="' + cx.toFixed(1) + '" y2="' + cy.toFixed(1) + '" stroke="' + color + '" stroke-width="2.5" ' + (dash ? 'stroke-dasharray="6,3"' : '') + '/>';
+        svgParts += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="5" fill="' + color + '" stroke="#fff" stroke-width="2"/>';
+        svgParts += '<text x="' + cx.toFixed(1) + '" y="' + (cy - 10).toFixed(1) + '" text-anchor="middle" font-size="11" fill="' + color + '" font-weight="700">' + parseFloat(v).toFixed(1) + '</text>';
         prevP = [cx, cy];
       });
       return svgParts;
@@ -3152,27 +3137,25 @@ async function exportInterviewPDF() {
     let yAxis = '';
     for (let v = 1; v <= 5; v++) {
       const y = yPos(v);
-      yAxis += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${(W-padR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="#ebe9e3" stroke-width="1"/>`;
-      yAxis += `<text x="${(padL-6).toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#9a9894">${v}</text>`;
+      yAxis += '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W-padR).toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="#ebe9e3" stroke-width="1"/>';
+      yAxis += '<text x="' + (padL-6).toFixed(1) + '" y="' + (y+4).toFixed(1) + '" text-anchor="end" font-size="11" fill="#9a9894">' + v + '</text>';
     }
     // X軸標籤
     let xAxis = '';
     labels.forEach((lb, i) => {
-      const x = xPos(i);
-      xAxis += `<text x="${x.toFixed(1)}" y="${(H - padB + 18).toFixed(1)}" text-anchor="middle" font-size="11" fill="#5a5754">${lb}</text>`;
+      xAxis += '<text x="' + xPos(i).toFixed(1) + '" y="' + (H - padB + 18).toFixed(1) + '" text-anchor="middle" font-size="11" fill="#5a5754">' + lb + '</text>';
     });
-    const svgContent = `
-      <rect width="${W}" height="${H}" fill="#fff"/>
-      ${yAxis}
-      ${makeSimpleLine(softPts, '#1a7a55', false)}
-      ${makeSimpleLine(hardPts, '#1a4f8a', false)}
-      ${makeSimpleLine(overallPts, '#c8a96e', true)}
-      ${xAxis}
-      <text x="${padL}" y="${(padT-5).toFixed(1)}" font-size="11" fill="#1a7a55">&#9632; 軟性技能平均</text>
-      <text x="${(padL+120).toFixed(1)}" y="${(padT-5).toFixed(1)}" font-size="11" fill="#1a4f8a">&#9632; 職能平均</text>
-      <text x="${(padL+220).toFixed(1)}" y="${(padT-5).toFixed(1)}" font-size="11" fill="#c8a96e">&#9632; 綜合平均</text>
-    `;
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${svgContent}</svg>`;
+    const legendY = padT - 12;
+    const svgContent =
+      '<rect width="' + W + '" height="' + H + '" fill="#fff"/>' +
+      yAxis +
+      makeSimpleLine(mgrPts, '#1a7a55', false) +
+      makeSimpleLine(selfPts, '#c8a96e', true) +
+      xAxis +
+      '<circle cx="' + padL + '" cy="' + legendY + '" r="5" fill="#1a7a55"/><text x="' + (padL+8) + '" y="' + (legendY+4) + '" font-size="11" fill="#1a7a55">主管評分</text>' +
+      '<circle cx="' + (padL+80) + '" cy="' + legendY + '" r="5" fill="#c8a96e"/><text x="' + (padL+88) + '" y="' + (legendY+4) + '" font-size="11" fill="#c8a96e">員工自評</text>' +
+      '<text x="' + (padL+160) + '" y="' + (legendY+4) + '" font-size="10" fill="#9a9894">（第一次=軟性技能平均，第二次=職能平均，第三次=整體評分）</text>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + svgContent + '</svg>';
   }
 
   html += `<h2>📈 三次面談分數趨勢圖</h2><div style="margin:12px 0">${makeSVGChart()}</div>`;
@@ -3205,42 +3188,46 @@ async function exportInterviewPDF() {
       if (mgr.conclusion) html += `<div class="conclusion-box">試用期結論：${conclusionMap[mgr.conclusion] || mgr.conclusion}</div>`;
     } else {
       // 第一、二次：評分結構
-      if (Object.keys(mgr.softScores || {}).length > 0) {
-        html += `<h3>📋 軟性職場技能評核</h3>`;
-        html += `<table><tr><th>評估項目</th><th>主管評分</th>`;
-        if (r === 1 && self.type === 'soft') html += `<th>員工自評</th>`;
-        html += `</tr>`;
+      // 第一次：軟性技能評核
+      if (r === 1 && Object.keys(mgr.softScores || {}).length > 0) {
+        const selfAvgDisp = self.submitted && self.selfAvg ? (' / 員工自評平均：' + self.selfAvg + ' / 5') : '';
+        html += '<h3>📋 軟性職場技能評核</h3>';
+        const showSelf = self.submitted && self.type === 'soft';
+        html += '<table><tr><th>評估項目</th><th>主管評分</th>' + (showSelf ? '<th>員工自評</th>' : '') + '</tr>';
         FORM_SOFT_SKILLS.forEach(s => {
-          const ms = (mgr.softScores || {})[s.id] || '—';
-          html += `<tr><td>${s.title}</td><td><span class="score-badge">${ms}</span> / 5</td>`;
-          if (r === 1 && self.type === 'soft') {
+          const ms = (mgr.softScores || {})[s.id];
+          if (!ms) return; // 只顯示有評分的項目
+          html += '<tr><td>' + s.title + '</td><td><span class="score-badge">' + ms + '</span> / 5</td>';
+          if (showSelf) {
             const ss = (self.scores || {})[s.id] || '—';
-            html += `<td>${ss} / 5</td>`;
+            html += '<td>' + ss + ' / 5</td>';
           }
-          html += `</tr>`;
+          html += '</tr>';
         });
-        html += `</table>`;
-        if (mgr.softAvg) html += `<p><strong>軟性技能平均分：${mgr.softAvg} / 5</strong></p>`;
+        html += '</table>';
+        if (mgr.softAvg) html += '<p><strong>主管評分平均：' + mgr.softAvg + ' / 5' + selfAvgDisp + '</strong></p>';
       }
+      // 第二次：硬性職能評核
       if (r === 2 && Object.keys(mgr.hardScores || {}).length > 0) {
         const jobKey = formMatchJobTitle(emp.title);
         const hardSkills = (jobKey && FORM_HARD_SKILLS[jobKey]) ? FORM_HARD_SKILLS[jobKey] : [];
+        const selfAvgDisp = self.submitted && self.selfAvg ? (' / 員工自評平均：' + self.selfAvg + ' / 5') : '';
         if (hardSkills.length > 0) {
-          html += `<h3>💼 職位硬性職能評核</h3>`;
-          html += `<table><tr><th>評估項目</th><th>主管評分</th>`;
-          if (self.type === 'hard') html += `<th>員工自評</th>`;
-          html += `</tr>`;
+          const showSelf = self.submitted && self.type === 'hard';
+          html += '<h3>💼 職位硬性職能評核</h3>';
+          html += '<table><tr><th>評估項目</th><th>主管評分</th>' + (showSelf ? '<th>員工自評</th>' : '') + '</tr>';
           hardSkills.forEach(s => {
-            const ms = (mgr.hardScores || {})[s.id] || '—';
-            html += `<tr><td>${s.title}</td><td><span class="score-badge">${ms}</span> / 5</td>`;
-            if (self.type === 'hard') {
+            const ms = (mgr.hardScores || {})[s.id];
+            if (!ms) return; // 只顯示有評分的項目
+            html += '<tr><td>' + s.title + '</td><td><span class="score-badge">' + ms + '</span> / 5</td>';
+            if (showSelf) {
               const ss = (self.scores || {})[s.id] || '—';
-              html += `<td>${ss} / 5</td>`;
+              html += '<td>' + ss + ' / 5</td>';
             }
-            html += `</tr>`;
+            html += '</tr>';
           });
-          html += `</table>`;
-          if (mgr.hardAvg) html += `<p><strong>職能平均分：${mgr.hardAvg} / 5</strong></p>`;
+          html += '</table>';
+          if (mgr.hardAvg) html += '<p><strong>主管評分平均：' + mgr.hardAvg + ' / 5' + selfAvgDisp + '</strong></p>';
         }
       }
       if (mgr.interviewSummary) html += `<h3>📝 面談摘要</h3><div class="note-box">${mgr.interviewSummary}</div>`;
