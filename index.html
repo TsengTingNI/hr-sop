@@ -3709,39 +3709,62 @@ function meRenderHistory() {
     }
     const mgr = rData.manager;
     const selfSc = (rData.selfEval && rData.selfEval.scores) || {};
+    const selfType0 = (rData.selfEval && rData.selfEval.type) || 'soft';
     const softVals = Object.values(mgr.softScores || {}).filter(v => v > 0);
     const hardVals = Object.values(mgr.hardScores || {}).filter(v => v > 0);
     const softAvg = softVals.length ? (softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(1) : '—';
     const hardAvg = hardVals.length ? (hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(1) : '—';
-    html += `<div class="fhistory-card">
-      <div class="fhistory-round">📅 ${rName}</div>
-      <table class="fhistory-table">
-        <tr><td>軟性技能平均分</td><td><div class="fscore-bar-wrap"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:${softAvg!=='—'?softAvg/5*100:0}%"></div></div><strong>${softAvg} / 5</strong></div></td></tr>
-        <tr><td>職位職能平均分</td><td><div class="fscore-bar-wrap"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:${hardAvg!=='—'?hardAvg/5*100:0}%"></div></div><strong>${hardAvg} / 5</strong></div></td></tr>
-      </table>`;
-    if (Object.keys(mgr.softScores || {}).length > 0) {
-      html += `<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">軟性技能明細</div><table class="fhistory-table">`;
-      FORM_SOFT_SKILLS.forEach(s => {
-        const mgScore = (mgr.softScores || {})[s.id] || '—';
-        // 第一次自評是軟性技能，第二次自評是硬性職能
-        const selfType = (rData.selfEval && rData.selfEval.type) || 'soft';
-        const selfScore = (selfType === 'soft' && selfSc[s.id]) ? `（自評：${selfSc[s.id]}）` : '';
-        html += `<tr><td>${s.title}</td><td><strong>${mgScore}</strong> <span style="color:#9a9894;font-size:11px">${selfScore}</span></td></tr>`;
+    // 員工自評平均（軟性）
+    const selfSoftVals = (selfType0 === 'soft') ? Object.values(selfSc).filter(v => v > 0) : [];
+    const selfSoftAvg = selfSoftVals.length ? (selfSoftVals.reduce((a,b) => a+b, 0)/selfSoftVals.length).toFixed(1) : null;
+    // 員工自評平均（硬性）
+    const hardSelfSc0 = (selfType0 === 'hard' && rData.selfEval && rData.selfEval.scores) ? rData.selfEval.scores : {};
+    const selfHardVals = Object.values(hardSelfSc0).filter(v => v > 0);
+    const selfHardAvg = selfHardVals.length ? (selfHardVals.reduce((a,b) => a+b, 0)/selfHardVals.length).toFixed(1) : null;
+    // 決定該次實際評了哪些項目
+    const hasSoft = Object.keys(mgr.softScores || {}).some(k => mgr.softScores[k] > 0);
+    const hasHard = Object.keys(mgr.hardScores || {}).some(k => mgr.hardScores[k] > 0);
+    html += '<div class="fhistory-card">';
+    html += '<div class="fhistory-round">📅 ' + rName + '</div>';
+    // 摘要分數列表：清楚標示主管評分 vs 員工自評
+    html += '<table class="fhistory-table">';
+    if (hasSoft) {
+      html += '<tr><td style="vertical-align:top">軟性技能平均</td><td>';
+      html += '<div style="margin-bottom:4px"><span style="font-size:11px;color:#6b6966;font-weight:400">主管評分：</span><div class="fscore-bar-wrap" style="display:inline-flex;vertical-align:middle"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:' + (softAvg!=='—'?softAvg/5*100:0) + '%"></div></div><strong>' + softAvg + ' / 5</strong></div></div>';
+      if (selfSoftAvg) html += '<div><span style="font-size:11px;color:#9a7c2e;font-weight:400">員工自評：</span><div class="fscore-bar-wrap" style="display:inline-flex;vertical-align:middle"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:' + (selfSoftAvg/5*100) + '%;background:#d4a017"></div></div><strong style="color:#9a7c2e">' + selfSoftAvg + ' / 5</strong></div></div>';
+      html += '</td></tr>';
+    }
+    if (hasHard) {
+      html += '<tr><td style="vertical-align:top">職位職能平均</td><td>';
+      html += '<div style="margin-bottom:4px"><span style="font-size:11px;color:#6b6966;font-weight:400">主管評分：</span><div class="fscore-bar-wrap" style="display:inline-flex;vertical-align:middle"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:' + (hardAvg!=='—'?hardAvg/5*100:0) + '%"></div></div><strong>' + hardAvg + ' / 5</strong></div></div>';
+      if (selfHardAvg) html += '<div><span style="font-size:11px;color:#9a7c2e;font-weight:400">員工自評：</span><div class="fscore-bar-wrap" style="display:inline-flex;vertical-align:middle"><div class="fscore-bar"><div class="fscore-bar-fill" style="width:' + (selfHardAvg/5*100) + '%;background:#d4a017"></div></div><strong style="color:#9a7c2e">' + selfHardAvg + ' / 5</strong></div></div>';
+      html += '</td></tr>';
+    }
+    html += '</table>';
+    // 軟性技能明細（只有第一次才顯示）
+    if (hasSoft) {
+      const selfType = (rData.selfEval && rData.selfEval.type) || 'soft';
+      html += '<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">軟性技能明細</div><table class="fhistory-table">';
+      FORM_SOFT_SKILLS.forEach(function(s) {
+        const mgScore = (mgr.softScores || {})[s.id];
+        if (!mgScore) return; // 只顯示有評分的項目
+        const selfScore = (selfType === 'soft' && selfSc[s.id]) ? '（自評：' + selfSc[s.id] + '）' : '';
+        html += '<tr><td>' + s.title + '</td><td><strong>' + mgScore + '</strong> <span style="color:#9a9894;font-size:11px">' + selfScore + '</span></td></tr>';
       });
       html += '</table>';
     }
-    // 顯示硬性職能明細（第二次起才有）
-    if (Object.keys(mgr.hardScores || {}).length > 0) {
+    // 硬性職能明細（只有第二次才顯示）
+    if (hasHard) {
       const jobKey2 = formMatchJobTitle(meEmpData.title);
       const hardSkills2 = (jobKey2 && FORM_HARD_SKILLS[jobKey2]) ? FORM_HARD_SKILLS[jobKey2] : [];
-      // 第二次的自評是硬性職能
       const selfType2 = (rData.selfEval && rData.selfEval.type) || 'soft';
       const hardSelfSc = (selfType2 === 'hard' && rData.selfEval && rData.selfEval.scores) ? rData.selfEval.scores : {};
-      html += `<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">職位職能明細</div><table class="fhistory-table">`;
-      hardSkills2.forEach(s => {
-        const mgScore = (mgr.hardScores || {})[s.id] || '—';
-        const selfScore = hardSelfSc[s.id] ? `（自評：${hardSelfSc[s.id]}）` : '';
-        html += `<tr><td>${s.title}</td><td><strong>${mgScore}</strong> <span style="color:#9a9894;font-size:11px">${selfScore}</span></td></tr>`;
+      html += '<div style="margin-top:10px;font-size:12px;font-weight:700;color:#6b6966;margin-bottom:4px">職位職能明細</div><table class="fhistory-table">';
+      hardSkills2.forEach(function(s) {
+        const mgScore = (mgr.hardScores || {})[s.id];
+        if (!mgScore) return; // 只顯示有評分的項目
+        const selfScore = hardSelfSc[s.id] ? '（自評：' + hardSelfSc[s.id] + '）' : '';
+        html += '<tr><td>' + s.title + '</td><td><strong>' + mgScore + '</strong> <span style="color:#9a9894;font-size:11px">' + selfScore + '</span></td></tr>';
       });
       html += '</table>';
     }
