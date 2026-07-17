@@ -3278,8 +3278,8 @@ async function refreshInterviewStatus() {
       const statusEl = document.getElementById('interview-status-' + r);
       if (statusEl) {
         let statusHtml = '';
-        if (selfDone) statusHtml += '<span class="ilink-status-ok">✅ 員工自評已提交</span>&nbsp;&nbsp;';
-        if (mgrDone)  statusHtml += '<span class="ilink-status-ok">✅ 主管評核已提交</span>';
+        if (selfDone) statusHtml += '<span class="ilink-status-ok">✅ 員工自評已提交</span> <button class="btn-sm" style="font-size:10px;padding:1px 7px;background:#fff3f3;color:#c0392b;border:1px solid #e8b4b4" onclick="clearInterviewRecord(\'' + currentKey + '\','+r+',\'self\')">&#128465; 清除自評</button>&nbsp;&nbsp;';
+        if (mgrDone)  statusHtml += '<span class="ilink-status-ok">✅ 主管評核已提交</span> <button class="btn-sm" style="font-size:10px;padding:1px 7px;background:#fff3f3;color:#c0392b;border:1px solid #e8b4b4" onclick="clearInterviewRecord(\'' + currentKey + '\','+r+',\'mgr\')">&#128465; 清除評核</button>';
         if (!selfDone && !mgrDone) statusHtml = '<span class="ilink-status-pending">⏳ 尚未提交</span>';
         statusEl.innerHTML = statusHtml;
       }
@@ -3298,6 +3298,21 @@ async function refreshInterviewStatus() {
     if (overviewEl) overviewEl.innerHTML = overviewHtml || '尚無面談紀錄。';
   } catch(e) {
     console.warn('refreshInterviewStatus error:', e);
+  }
+}
+
+// 清除面談紀錄（HR 操作）
+async function clearInterviewRecord(empKey, round, type) {
+  const typeLabel = type === 'self' ? '員工自評' : '主管評核';
+  const roundLabel = { 1: '第一次', 2: '第二次', 3: '第三次' }[round] || ('第' + round + '次');
+  if (!confirm('確定要清除「' + roundLabel + '面談—' + typeLabel + '」的紀錄？\n清除後可重新發送連結讓對方重新填寫。')) return;
+  try {
+    const path = 'hr_ob/' + empKey + '/interviews/round' + round + '/' + (type === 'self' ? 'selfEval' : 'manager');
+    await db.ref(path).remove();
+    alert('「' + roundLabel + '面談—' + typeLabel + '」紀錄已清除，請重新發送連結。');
+    refreshInterviewStatus();
+  } catch(e) {
+    alert('清除失敗：' + e.message);
   }
 }
 
@@ -3477,26 +3492,13 @@ function initSelfEvalForm(params) {
     seEmpData = val.emp;
     const interviews = val.interviews || {};
     const roundKey = 'round' + seRound;
-    const roundData = interviews[roundKey] || {};
-    const existingSelf = roundData.selfEval;
-    // 比對 Firebase 中儲存的「最新連結 ts」
-    const latestTs = String(roundData.selfLinkTs || '0');
-    const currentTs = String(seLinkTs || '0');
-    if (currentTs !== latestTs && latestTs !== '0') {
-      // 連結已過期（HR 已產生更新的連結）
-      document.getElementById('se-loading').style.display = 'none';
-      document.getElementById('se-success').style.display = 'block';
-      document.getElementById('se-success-desc').innerHTML = '此連結已過期。<br>請聯絡 HR 產生新連結。';
-      return;
-    }
+    const existingSelf = (interviews[roundKey] || {}).selfEval;
     if (existingSelf && existingSelf.submitted) {
-      // 連結為最新且已提交
       document.getElementById('se-loading').style.display = 'none';
       document.getElementById('se-success').style.display = 'block';
-      document.getElementById('se-success-desc').innerHTML = '您已完成本次自評，感謝您的配合！<br>如需重新填寫，請聯絡 HR 產生新連結。';
+      document.getElementById('se-success-desc').innerHTML = '您已完成本次自評，感謝您的配合！<br>如需重新填寫，請聯絡 HR 清除本次紀錄後重新發送連結。';
       return;
     }
-    // 連結為最新且尚未提交，顯示空白表單
     seRenderForm();
   }).catch(function(e) { seShowError('讀取資料失敗：' + e.message); });
 }
@@ -3621,26 +3623,13 @@ function initManagerEvalForm(params) {
     meEmpData = val.emp;
     meAllInterviews = val.interviews || {};
     const roundKey = 'round' + meRound;
-    const roundData = meAllInterviews[roundKey] || {};
-    const existingMgr = roundData.manager;
-    // 比對 Firebase 中儲存的「最新連結 ts」
-    const latestTs = String(roundData.mgrLinkTs || '0');
-    const currentTs = String(meLinkTs || '0');
-    if (currentTs !== latestTs && latestTs !== '0') {
-      // 連結已過期（HR 已產生更新的連結）
-      document.getElementById('me-loading').style.display = 'none';
-      document.getElementById('me-success').style.display = 'block';
-      document.getElementById('me-success-desc').innerHTML = '此連結已過期。<br>請聯絡 HR 產生新連結。';
-      return;
-    }
+    const existingMgr = (meAllInterviews[roundKey] || {}).manager;
     if (existingMgr && existingMgr.submitted) {
-      // 連結為最新且已提交
       document.getElementById('me-loading').style.display = 'none';
       document.getElementById('me-success').style.display = 'block';
-      document.getElementById('me-success-desc').innerHTML = '此次面談評核已提交完畢，感謝您的配合！<br>如需重新填寫，請聯絡 HR 產生新連結。';
+      document.getElementById('me-success-desc').innerHTML = '此次面談評核已提交完畢，感謝您的配合！<br>如需重新填寫，請聯絡 HR 清除本次紀錄後重新發送連結。';
       return;
     }
-    // 連結為最新且尚未提交，顯示空白表單
     meRenderForm();
   }).catch(function(e) { meShowError('讀取資料失敗：' + e.message); });
 }
