@@ -1169,18 +1169,28 @@ Sharon Tseng</div>
     const d30=nextWorkdayFrom(addDays(start,30));
     const d60=nextWorkdayFrom(addDays(start,60));
     const d90=nextWorkdayFrom(addDays(start,90));
+    // 讀取自訂日期（若 HR 有手動修改過）
+    const cd = emp._interviewDates || {};
+    const id30 = cd.r1 ? new Date(cd.r1) : d30;
+    const id60 = cd.r2 ? new Date(cd.r2) : d60;
+    const id90 = cd.r3 ? new Date(cd.r3) : d90;
     function calUrl(title,d){
       const dt=d.toISOString().replace(/-/g,'').slice(0,8);
       return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dt}/${dt}&details=${encodeURIComponent('試用期面談：'+emp.nameZh)}`;
     }
+    function fmtDateDisp(d){ return isNaN(d.getTime()) ? '日期無效' : fmtDate(d) + '（' + ['日','一','二','三','四','五','六'][d.getDay()] + '）'; }
     return `<div class="section-card">
     <div class="section-title">📅 試用期三次面談</div>
-    <div class="section-desc">面談日期已自動避開假日，順延至最近工作日。</div>
-    <a href="${calUrl('【第一次試用期面談】'+emp.nameZh,d30)}" target="_blank" class="cal-link">
+    <div class="section-desc">面談日期已自動避開假日，順延至最近工作日。如需調整，可直接修改下方日期。</div>
+    <a href="${calUrl('【第一次試用期面談】'+emp.nameZh,id30)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
-      <div class="cal-info"><div class="cal-title">第一次面談（30 天）</div><div class="cal-date">${fmtDate(d30)}（${['日','一','二','三','四','五','六'][d30.getDay()]}）</div></div>
+      <div class="cal-info"><div class="cal-title">第一次面談（30 天）</div><div class="cal-date" id="idate-disp-1">${fmtDateDisp(id30)}</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
+    <div style="display:flex;align-items:center;gap:8px;margin:-6px 0 10px;padding:0 4px">
+      <span style="font-size:12px;color:#6b6966">📝 調整日期：</span>
+      <input type="date" id="idate-input-1" value="${fmtDate(id30)}" style="padding:5px 8px;border:0.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit" onchange="saveInterviewDate(1,this.value)">
+    </div>
     <div class="interview-link-box">
       <div class="ilink-row">
         <span class="ilink-label">🔗 第一次面談連結</span>
@@ -1201,11 +1211,15 @@ Sharon Tseng</div>
       </div>
       <div id="interview-status-1" style="font-size:12px;margin-top:6px"></div>
     </div>
-    <a href="${calUrl('【第二次試用期面談】'+emp.nameZh,d60)}" target="_blank" class="cal-link">
+    <a href="${calUrl('【第二次試用期面談】'+emp.nameZh,id60)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
-      <div class="cal-info"><div class="cal-title">第二次面談（60 天）</div><div class="cal-date">${fmtDate(d60)}（${['日','一','二','三','四','五','六'][d60.getDay()]}）</div></div>
+      <div class="cal-info"><div class="cal-title">第二次面談（60 天）</div><div class="cal-date" id="idate-disp-2">${fmtDateDisp(id60)}</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
+    <div style="display:flex;align-items:center;gap:8px;margin:-6px 0 10px;padding:0 4px">
+      <span style="font-size:12px;color:#6b6966">📝 調整日期：</span>
+      <input type="date" id="idate-input-2" value="${fmtDate(id60)}" style="padding:5px 8px;border:0.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit" onchange="saveInterviewDate(2,this.value)">
+    </div>
     <div class="interview-link-box">
       <div class="ilink-row">
         <span class="ilink-label">🔗 第二次面談連結</span>
@@ -1226,11 +1240,15 @@ Sharon Tseng</div>
       </div>
       <div id="interview-status-2" style="font-size:12px;margin-top:6px"></div>
     </div>
-    <a href="${calUrl('【第三次試用期面談／評核】'+emp.nameZh,d90)}" target="_blank" class="cal-link">
+    <a href="${calUrl('【第三次試用期面談／評核】'+emp.nameZh,id90)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
-      <div class="cal-info"><div class="cal-title">第三次面談＋評核（90 天）</div><div class="cal-date">${fmtDate(d90)}（${['日','一','二','三','四','五','六'][d90.getDay()]}）</div></div>
+      <div class="cal-info"><div class="cal-title">第三次面談＋評核（90 天）</div><div class="cal-date" id="idate-disp-3">${fmtDateDisp(id90)}</div></div>
       <span class="btn">加入日曆 ↗</span>
     </a>
+    <div style="display:flex;align-items:center;gap:8px;margin:-6px 0 10px;padding:0 4px">
+      <span style="font-size:12px;color:#6b6966">📝 調整日期：</span>
+      <input type="date" id="idate-input-3" value="${fmtDate(id90)}" style="padding:5px 8px;border:0.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit" onchange="saveInterviewDate(3,this.value)">
+    </div>
     <div class="interview-link-box">
       <div class="ilink-row">
         <span class="ilink-label">🔗 第三次面談連結（試用期評核）</span>
@@ -3047,6 +3065,25 @@ function copyLinkById(inputId) {
   });
 }
 
+function saveInterviewDate(round, dateStr) {
+  if (!emp._interviewDates) emp._interviewDates = {};
+  const key = 'r' + round;
+  emp._interviewDates[key] = dateStr;
+  saveFirebase();
+  // 更新顯示文字
+  const d = new Date(dateStr);
+  const dispEl = document.getElementById('idate-disp-' + round);
+  if (dispEl && !isNaN(d.getTime())) {
+    dispEl.textContent = fmtDate(d) + '（' + ['日','一','二','三','四','五','六'][d.getDay()] + '）';
+  }
+  // 更新日曆連結
+  const calLink = dispEl && dispEl.closest('a.cal-link');
+  if (calLink) {
+    const rNames = { 1: '【第一次試用期面談】', 2: '【第二次試用期面談】', 3: '【第三次試用期面談／評核】' };
+    const dt = dateStr.replace(/-/g,'');
+    calLink.href = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent((rNames[round]||'') + (emp.nameZh||'')) + '&dates=' + dt + '/' + dt + '&details=' + encodeURIComponent('試用期面談：' + (emp.nameZh||''));
+  }
+}
 
 async function exportInterviewPDF() {
   if (!currentKey || !db) { alert('⚠️ 請先開啟員工資料。'); return; }
