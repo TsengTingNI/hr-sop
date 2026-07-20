@@ -3083,83 +3083,81 @@ async function exportInterviewPDF() {
     <div class="info-item"><div class="info-label">所屬公司</div><div class="info-val">${emp.companyName || '—'}</div></div>
   </div>`;
 
-  // 先收集三次分數供折線圖使用
-  const chartData = { soft: [], hard: [], overall: [], labels: [] };
-  for (let r = 1; r <= 3; r++) {
-    const rKey = 'round' + r;
-    const mgr = (interviews[rKey] || {}).manager || {};
-    if (mgr.submitted) {
-      chartData.labels.push(r === 1 ? '第一次\n(30天)' : r === 2 ? '第二次\n(60天)' : '試用期\n(90天)');
-      chartData.soft.push(r <= 2 ? (mgr.softAvg || null) : null);
-      chartData.hard.push(r >= 2 && r <= 2 ? (mgr.hardAvg || null) : null);
-      chartData.overall.push(r === 3 ? (mgr.overallScore || null) : (mgr.totalAvg || null));
-    }
-  }
-
-  // 產生 SVG 折線圖（主管評分 vs 員工自評分對比）
-  function makeSVGChart() {
-    const W = 560, H = 220, padL = 50, padR = 20, padT = 30, padB = 50;
+  // ── SVG 折線圖工具函式 ──
+  function makeItemChart(title, skillList, mgrScores, selfScores, showSelf) {
+    const items = skillList.filter(s => mgrScores[s.id] > 0);
+    if (items.length === 0) return '';
+    const n = items.length;
+    const W = 560, H = 200, padL = 44, padR = 16, padT = 36, padB = 52;
     const gW = W - padL - padR, gH = H - padT - padB;
-    const labels = ['第一次 (30天)', '第二次 (60天)', '試用期 (90天)'];
-    const r1mgr = (interviews.round1 || {}).manager || {};
-    const r2mgr = (interviews.round2 || {}).manager || {};
-    const r3mgr = (interviews.round3 || {}).manager || {};
-    const r1self = (interviews.round1 || {}).selfEval || {};
-    const r2self = (interviews.round2 || {}).selfEval || {};
-    // 主管評分：第一次軟性、第二次職能、第三次整體
-    const mgrPts = [
-      r1mgr.submitted ? (r1mgr.softAvg || null) : null,
-      r2mgr.submitted ? (r2mgr.hardAvg || null) : null,
-      r3mgr.submitted ? (r3mgr.overallScore || null) : null
-    ];
-    // 員工自評：第一次軟性自評、第二次職能自評
-    const selfPts = [
-      r1self.submitted ? (r1self.selfAvg || null) : null,
-      r2self.submitted ? (r2self.selfAvg || null) : null,
-      null
-    ];
-    function xPos(i) { return padL + (i / 2) * gW; }
+    function xPos(i) { return padL + (n === 1 ? gW/2 : (i / (n-1)) * gW); }
     function yPos(v) { return padT + gH - ((v - 1) / 4) * gH; }
-    function makeSimpleLine(pts, color, dash) {
-      let svgParts = '';
-      let prevP = null;
-      pts.forEach((v, i) => {
-        if (v === null) { prevP = null; return; }
-        const cx = xPos(i), cy = yPos(v);
-        if (prevP) svgParts += '<line x1="' + prevP[0].toFixed(1) + '" y1="' + prevP[1].toFixed(1) + '" x2="' + cx.toFixed(1) + '" y2="' + cy.toFixed(1) + '" stroke="' + color + '" stroke-width="2.5" ' + (dash ? 'stroke-dasharray="6,3"' : '') + '/>';
-        svgParts += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="5" fill="' + color + '" stroke="#fff" stroke-width="2"/>';
-        svgParts += '<text x="' + cx.toFixed(1) + '" y="' + (cy - 10).toFixed(1) + '" text-anchor="middle" font-size="11" fill="' + color + '" font-weight="700">' + parseFloat(v).toFixed(1) + '</text>';
-        prevP = [cx, cy];
-      });
-      return svgParts;
-    }
-    // Y軸刻度
+    // Y軸
     let yAxis = '';
     for (let v = 1; v <= 5; v++) {
       const y = yPos(v);
-      yAxis += '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W-padR).toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="#ebe9e3" stroke-width="1"/>';
-      yAxis += '<text x="' + (padL-6).toFixed(1) + '" y="' + (y+4).toFixed(1) + '" text-anchor="end" font-size="11" fill="#9a9894">' + v + '</text>';
+      yAxis += '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W-padR) + '" y2="' + y.toFixed(1) + '" stroke="#ebe9e3" stroke-width="1"/>';
+      yAxis += '<text x="' + (padL-5) + '" y="' + (y+4).toFixed(1) + '" text-anchor="end" font-size="10" fill="#9a9894">' + v + '</text>';
     }
-    // X軸標籤
+    // X軸標籤（截短）
     let xAxis = '';
-    labels.forEach((lb, i) => {
-      xAxis += '<text x="' + xPos(i).toFixed(1) + '" y="' + (H - padB + 18).toFixed(1) + '" text-anchor="middle" font-size="11" fill="#5a5754">' + lb + '</text>';
+    items.forEach((s, i) => {
+      const lb = s.title.length > 6 ? s.title.substring(0,6)+'…' : s.title;
+      xAxis += '<text x="' + xPos(i).toFixed(1) + '" y="' + (H - padB + 16).toFixed(1) + '" text-anchor="middle" font-size="10" fill="#5a5754">' + lb + '</text>';
     });
-    const legendY = padT - 12;
+    // 畫線函式
+    function drawLine(pts, color, dash) {
+      let out = ''; let prev = null;
+      pts.forEach((v, i) => {
+        if (v === null || v === undefined) { prev = null; return; }
+        const cx = xPos(i), cy = yPos(v);
+        if (prev) out += '<line x1="' + prev[0].toFixed(1) + '" y1="' + prev[1].toFixed(1) + '" x2="' + cx.toFixed(1) + '" y2="' + cy.toFixed(1) + '" stroke="' + color + '" stroke-width="2.2" ' + (dash ? 'stroke-dasharray="5,3"' : '') + '/>';
+        out += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4.5" fill="' + color + '" stroke="#fff" stroke-width="1.5"/>';
+        out += '<text x="' + cx.toFixed(1) + '" y="' + (cy - 8).toFixed(1) + '" text-anchor="middle" font-size="10" fill="' + color + '" font-weight="700">' + parseFloat(v).toFixed(1) + '</text>';
+        prev = [cx, cy];
+      });
+      return out;
+    }
+    const mgrPts = items.map(s => mgrScores[s.id] || null);
+    const selfPts = showSelf ? items.map(s => (selfScores && selfScores[s.id]) ? selfScores[s.id] : null) : [];
+    const legendY = padT - 14;
+    let legend = '<circle cx="' + padL + '" cy="' + legendY + '" r="4" fill="#1a7a55"/><text x="' + (padL+7) + '" y="' + (legendY+4) + '" font-size="10" fill="#1a7a55">主管評分</text>';
+    if (showSelf) legend += '<circle cx="' + (padL+68) + '" cy="' + legendY + '" r="4" fill="#c8a96e"/><text x="' + (padL+75) + '" y="' + (legendY+4) + '" font-size="10" fill="#c8a96e">員工自評</text>';
     const svgContent =
       '<rect width="' + W + '" height="' + H + '" fill="#fff"/>' +
       yAxis +
-      makeSimpleLine(mgrPts, '#1a7a55', false) +
-      makeSimpleLine(selfPts, '#c8a96e', true) +
-      xAxis +
-      '<circle cx="' + padL + '" cy="' + legendY + '" r="5" fill="#1a7a55"/><text x="' + (padL+8) + '" y="' + (legendY+4) + '" font-size="11" fill="#1a7a55">主管評分</text>' +
-      '<circle cx="' + (padL+80) + '" cy="' + legendY + '" r="5" fill="#c8a96e"/><text x="' + (padL+88) + '" y="' + (legendY+4) + '" font-size="11" fill="#c8a96e">員工自評</text>' +
-      '<text x="' + (padL+160) + '" y="' + (legendY+4) + '" font-size="10" fill="#9a9894">（第一次=軟性技能平均，第二次=職能平均，第三次=整體評分）</text>';
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + svgContent + '</svg>';
+      drawLine(mgrPts, '#1a7a55', false) +
+      (showSelf ? drawLine(selfPts, '#c8a96e', true) : '') +
+      xAxis + legend;
+    return '<div style="margin:8px 0 4px;font-size:12px;font-weight:700;color:#3a3937">' + title + '</div>' +
+      '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + svgContent + '</svg>';
   }
 
-  html += `<h2>📈 三次面談分數趨勢圖</h2><div style="margin:12px 0">${makeSVGChart()}</div>`;
+  // ── 第一次：軟性技能折線圖 ──
+  const r1mgr = (interviews.round1 || {}).manager || {};
+  const r1self = (interviews.round1 || {}).selfEval || {};
+  const r1HasSelf = r1self.submitted && r1self.type === 'soft';
+  const r1Chart = r1mgr.submitted
+    ? makeItemChart('🌱 第一次面談（30天）— 軟性技能評核', FORM_SOFT_SKILLS, r1mgr.softScores || {}, r1HasSelf ? (r1self.scores || {}) : {}, r1HasSelf)
+    : '';
 
+  // ── 第二次：職位職能折線圖 ──
+  const r2mgr = (interviews.round2 || {}).manager || {};
+  const r2self = (interviews.round2 || {}).selfEval || {};
+  const r2HasSelf = r2self.submitted && r2self.type === 'hard';
+  const jobKeyPdf = formMatchJobTitle(emp.title);
+  const hardSkillsPdf = (jobKeyPdf && FORM_HARD_SKILLS[jobKeyPdf]) ? FORM_HARD_SKILLS[jobKeyPdf] : [];
+  const r2Chart = r2mgr.submitted && hardSkillsPdf.length > 0
+    ? makeItemChart('💼 第二次面談（60天）— 職位職能評核', hardSkillsPdf, r2mgr.hardScores || {}, r2HasSelf ? (r2self.scores || {}) : {}, r2HasSelf)
+    : '';
+
+  if (r1Chart || r2Chart) {
+    html += '<h2>📈 面談評分圖表</h2>';
+    if (r1Chart) html += '<div style="margin:12px 0 20px">' + r1Chart + '</div>';
+    if (r2Chart) html += '<div style="margin:12px 0 20px">' + r2Chart + '</div>';
+  }
+
+  // ── 各次面談文字紀錄（備註、摘要、結論）──
   for (let r = 1; r <= 3; r++) {
     const rKey = 'round' + r;
     const rData = interviews[rKey] || {};
@@ -3187,52 +3185,14 @@ async function exportInterviewPDF() {
       if (mgr.conclusionNote) html += `<h3>評核結論說明</h3><div class="note-box">${mgr.conclusionNote}</div>`;
       if (mgr.conclusion) html += `<div class="conclusion-box">試用期結論：${conclusionMap[mgr.conclusion] || mgr.conclusion}</div>`;
     } else {
-      // 第一、二次：評分結構
-      // 第一次：軟性技能評核
-      if (r === 1 && Object.keys(mgr.softScores || {}).length > 0) {
-        const selfAvgDisp = self.submitted && self.selfAvg ? (' / 員工自評平均：' + self.selfAvg + ' / 5') : '';
-        html += '<h3>📋 軟性職場技能評核</h3>';
-        const showSelf = self.submitted && self.type === 'soft';
-        html += '<table><tr><th>評估項目</th><th>主管評分</th>' + (showSelf ? '<th>員工自評</th>' : '') + '</tr>';
-        FORM_SOFT_SKILLS.forEach(s => {
-          const ms = (mgr.softScores || {})[s.id];
-          if (!ms) return; // 只顯示有評分的項目
-          html += '<tr><td>' + s.title + '</td><td><span class="score-badge">' + ms + '</span> / 5</td>';
-          if (showSelf) {
-            const ss = (self.scores || {})[s.id] || '—';
-            html += '<td>' + ss + ' / 5</td>';
-          }
-          html += '</tr>';
-        });
-        html += '</table>';
-        if (mgr.softAvg) html += '<p><strong>主管評分平均：' + mgr.softAvg + ' / 5' + selfAvgDisp + '</strong></p>';
+      // 第一、二次：只顯示備註與摘要（評分已在圖表中呈現）
+      if (r === 1) {
+        if (mgr.softOverallNote) html += `<h3>軟性技能整體備註</h3><div class="note-box">${mgr.softOverallNote}</div>`;
       }
-      // 第二次：硬性職能評核
-      if (r === 2 && Object.keys(mgr.hardScores || {}).length > 0) {
-        const jobKey = formMatchJobTitle(emp.title);
-        const hardSkills = (jobKey && FORM_HARD_SKILLS[jobKey]) ? FORM_HARD_SKILLS[jobKey] : [];
-        const selfAvgDisp = self.submitted && self.selfAvg ? (' / 員工自評平均：' + self.selfAvg + ' / 5') : '';
-        if (hardSkills.length > 0) {
-          const showSelf = self.submitted && self.type === 'hard';
-          html += '<h3>💼 職位硬性職能評核</h3>';
-          html += '<table><tr><th>評估項目</th><th>主管評分</th>' + (showSelf ? '<th>員工自評</th>' : '') + '</tr>';
-          hardSkills.forEach(s => {
-            const ms = (mgr.hardScores || {})[s.id];
-            if (!ms) return; // 只顯示有評分的項目
-            html += '<tr><td>' + s.title + '</td><td><span class="score-badge">' + ms + '</span> / 5</td>';
-            if (showSelf) {
-              const ss = (self.scores || {})[s.id] || '—';
-              html += '<td>' + ss + ' / 5</td>';
-            }
-            html += '</tr>';
-          });
-          html += '</table>';
-          if (mgr.hardAvg) html += '<p><strong>主管評分平均：' + mgr.hardAvg + ' / 5' + selfAvgDisp + '</strong></p>';
-        }
+      if (r === 2) {
+        if (mgr.hardOverallNote) html += `<h3>職能整體備註</h3><div class="note-box">${mgr.hardOverallNote}</div>`;
       }
       if (mgr.interviewSummary) html += `<h3>📝 面談摘要</h3><div class="note-box">${mgr.interviewSummary}</div>`;
-      if (mgr.softOverallNote) html += `<h3>軟性技能備註</h3><div class="note-box">${mgr.softOverallNote}</div>`;
-      if (mgr.hardOverallNote) html += `<h3>職能備註</h3><div class="note-box">${mgr.hardOverallNote}</div>`;
       if (mgr.improvementTarget) html += `<h3>🎯 改善目標</h3><div class="note-box">${mgr.improvementTarget}</div>`;
     }
   }
@@ -3864,36 +3824,40 @@ function mgrSelectConclusion(val) {
 }
 
 function meUpdateScoreSummary() {
-  // 第一次：從當次 meScores.soft 計算；第二次：從當次 meScores.hard 計算
-  // 第三次：無評分，改從歷史資料（round1 軟性、round2 硬性）帶入
-  let softAvg, hardAvg, totalAvg;
-  if (meRound === 3) {
-    const r1mgr = (meAllInterviews.round1 || {}).manager || {};
-    const r2mgr = (meAllInterviews.round2 || {}).manager || {};
-    const r1SoftVals = Object.values(r1mgr.softScores || {}).filter(v => v > 0);
-    const r2HardVals = Object.values(r2mgr.hardScores || {}).filter(v => v > 0);
-    softAvg = r1SoftVals.length ? (r1SoftVals.reduce((a,b) => a+b, 0)/r1SoftVals.length).toFixed(1) : '—';
-    hardAvg = r2HardVals.length ? (r2HardVals.reduce((a,b) => a+b, 0)/r2HardVals.length).toFixed(1) : '—';
-    const allVals3 = [...r1SoftVals, ...r2HardVals];
-    totalAvg = allVals3.length ? (allVals3.reduce((a,b) => a+b, 0)/allVals3.length).toFixed(1) : '—';
-  } else {
-    const softVals = Object.values(meScores.soft).filter(v => v > 0);
-    const hardVals = Object.values(meScores.hard).filter(v => v > 0);
-    softAvg = softVals.length ? (softVals.reduce((a,b) => a+b, 0)/softVals.length).toFixed(1) : '—';
-    hardAvg = hardVals.length ? (hardVals.reduce((a,b) => a+b, 0)/hardVals.length).toFixed(1) : '—';
-    const allVals = [...softVals, ...hardVals];
-    totalAvg = allVals.length ? (allVals.reduce((a,b) => a+b, 0)/allVals.length).toFixed(1) : '—';
-  }
-  // 第一次只顯示軟性技能平均；第二次只顯示職能平均；第三次顯示兩者 + 綜合
+  // 各次面談分數來源：
+  // 第一次：當次 meScores.soft
+  // 第二次：當次 meScores.hard + 從 round1 歷史帶入軟性技能平均
+  // 第三次：從 round1 軟性、round2 硬性歷史帶入
+  const r1mgr = (meAllInterviews.round1 || {}).manager || {};
+  const r2mgr = (meAllInterviews.round2 || {}).manager || {};
+  const r1SoftVals = Object.values(r1mgr.softScores || {}).filter(v => v > 0);
+  const r2HardVals = Object.values(r2mgr.hardScores || {}).filter(v => v > 0);
+  const r1SoftAvg = r1SoftVals.length ? (r1SoftVals.reduce((a,b) => a+b, 0)/r1SoftVals.length).toFixed(1) : '—';
+  const r2HardAvg = r2HardVals.length ? (r2HardVals.reduce((a,b) => a+b, 0)/r2HardVals.length).toFixed(1) : '—';
+
+  const curSoftVals = Object.values(meScores.soft).filter(v => v > 0);
+  const curHardVals = Object.values(meScores.hard).filter(v => v > 0);
+  const curSoftAvg = curSoftVals.length ? (curSoftVals.reduce((a,b) => a+b, 0)/curSoftVals.length).toFixed(1) : '—';
+  const curHardAvg = curHardVals.length ? (curHardVals.reduce((a,b) => a+b, 0)/curHardVals.length).toFixed(1) : '—';
+
   let summaryHtml = '<div class="ftotal-box">';
   if (meRound === 1) {
-    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label">軟性技能平均</span><span class="ftotal-score">${softAvg} / 5</span></div>`;
+    // 第一次：只顯示本次軟性技能主管評分平均
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label" style="font-size:12px">軟性技能平均<br><span style="font-size:11px;color:#9a9894;font-weight:400">主管評分（本次）</span></span><span class="ftotal-score">${curSoftAvg} / 5</span></div>`;
   } else if (meRound === 2) {
-    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label">職位職能平均</span><span class="ftotal-score">${hardAvg} / 5</span></div>`;
+    // 第二次：顯示第一次軟性（歷史）+ 本次職能（主管評分）
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label" style="font-size:12px">軟性技能平均<br><span style="font-size:11px;color:#9a9894;font-weight:400">主管評分（第一次）</span></span><span class="ftotal-score">${r1SoftAvg} / 5</span></div>`;
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label" style="font-size:12px">職位職能平均<br><span style="font-size:11px;color:#9a9894;font-weight:400">主管評分（本次）</span></span><span class="ftotal-score">${curHardAvg} / 5</span></div>`;
+    const allVals2 = [...r1SoftVals, ...curHardVals];
+    const totalAvg2 = allVals2.length ? (allVals2.reduce((a,b) => a+b, 0)/allVals2.length).toFixed(1) : '—';
+    summaryHtml += `<div class="ftotal-row" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px"><span class="ftotal-label" style="font-weight:700">綜合平均分</span><span class="ftotal-score" style="font-size:26px">${totalAvg2} / 5</span></div>`;
   } else {
-    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label">軟性技能平均（第一次）</span><span class="ftotal-score">${softAvg} / 5</span></div>`;
-    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label">職位職能平均（第二次）</span><span class="ftotal-score">${hardAvg} / 5</span></div>`;
-    summaryHtml += `<div class="ftotal-row" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px"><span class="ftotal-label" style="font-weight:700">綜合平均分</span><span class="ftotal-score" style="font-size:26px">${totalAvg} / 5</span></div>`;
+    // 第三次：從歷史帶入兩次分數
+    const allVals3 = [...r1SoftVals, ...r2HardVals];
+    const totalAvg3 = allVals3.length ? (allVals3.reduce((a,b) => a+b, 0)/allVals3.length).toFixed(1) : '—';
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label" style="font-size:12px">軟性技能平均<br><span style="font-size:11px;color:#9a9894;font-weight:400">主管評分（第一次）</span></span><span class="ftotal-score">${r1SoftAvg} / 5</span></div>`;
+    summaryHtml += `<div class="ftotal-row"><span class="ftotal-label" style="font-size:12px">職位職能平均<br><span style="font-size:11px;color:#9a9894;font-weight:400">主管評分（第二次）</span></span><span class="ftotal-score">${r2HardAvg} / 5</span></div>`;
+    summaryHtml += `<div class="ftotal-row" style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px"><span class="ftotal-label" style="font-weight:700">綜合平均分</span><span class="ftotal-score" style="font-size:26px">${totalAvg3} / 5</span></div>`;
   }
   summaryHtml += '</div>';
   document.getElementById('me-score-summary').innerHTML = summaryHtml;
