@@ -1210,17 +1210,6 @@ Sharon Tseng</div>
         <button class="btn-sm" onclick="copyLinkById('mgr-url-input-1')">📋 複製</button>
       </div>
       <div id="interview-status-1" style="font-size:12px;margin-top:6px"></div>
-      <div style="margin-top:10px;border-top:0.5px solid #e0ded8;padding-top:10px">
-        <div style="font-size:12px;color:#6b6966;margin-bottom:6px">📋 日曆邀請說明文字</div>
-        <div id="cal-desc-1" style="font-size:11.5px;color:#3a3937;background:#f8f7f3;border:0.5px solid #ddd;border-radius:7px;padding:10px 12px;white-space:pre-line;line-height:1.7">主旨：【第一次試用期面談】${emp.nameZh}
-
-【員工請於面談前 1 天完成】
-請透過 HR 提供的連結完成「軟性職場技能自評」表單，評估自己在工作態度、溝通協作、時間管理等 7 項通用能力上的表現。
-
-【主管請於面談時完成】
-請透過 HR 提供的主管評核連結，針對員工的軟性職場技能進行評分，並填寫整體備註與本次面談重點摘要。</div>
-        <button class="btn-sm" style="margin-top:6px" onclick="copyCalDesc(1)">📋 複製說明文字</button>
-      </div>
     </div>
     <a href="${calUrl('【第二次試用期面談】'+emp.nameZh,id60)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
@@ -1250,17 +1239,6 @@ Sharon Tseng</div>
         <button class="btn-sm" onclick="copyLinkById('mgr-url-input-2')">📋 複製</button>
       </div>
       <div id="interview-status-2" style="font-size:12px;margin-top:6px"></div>
-      <div style="margin-top:10px;border-top:0.5px solid #e0ded8;padding-top:10px">
-        <div style="font-size:12px;color:#6b6966;margin-bottom:6px">📋 日曆邀請說明文字</div>
-        <div id="cal-desc-2" style="font-size:11.5px;color:#3a3937;background:#f8f7f3;border:0.5px solid #ddd;border-radius:7px;padding:10px 12px;white-space:pre-line;line-height:1.7">主旨：【第二次試用期面談】${emp.nameZh}
-
-【員工請於面談前 1 天完成】
-請透過 HR 提供的連結完成「職位職能自評」表單，依據自身職位評估專業能力的實際表現。
-
-【主管請於面談時完成】
-請透過 HR 提供的主管評核連結，針對員工的職位職能進行評分，並填寫整體備註與本次面談重點摘要。系統會自動帶入第一次面談的評核結果供參考。</div>
-        <button class="btn-sm" style="margin-top:6px" onclick="copyCalDesc(2)">📋 複製說明文字</button>
-      </div>
     </div>
     <a href="${calUrl('【第三次試用期面談／評核】'+emp.nameZh,id90)}" target="_blank" class="cal-link">
       <div class="cal-icon">📅</div>
@@ -1289,17 +1267,6 @@ Sharon Tseng</div>
         <button class="btn-sm" onclick="copyLinkById('mgr-url-input-3')">📋 複製</button>
       </div>
       <div id="interview-status-3" style="font-size:12px;margin-top:6px"></div>
-      <div style="margin-top:10px;border-top:0.5px solid #e0ded8;padding-top:10px">
-        <div style="font-size:12px;color:#6b6966;margin-bottom:6px">📋 日曆邀請說明文字</div>
-        <div id="cal-desc-3" style="font-size:11.5px;color:#3a3937;background:#f8f7f3;border:0.5px solid #ddd;border-radius:7px;padding:10px 12px;white-space:pre-line;line-height:1.7">主旨：【第三次試用期面談／評核】${emp.nameZh}
-
-【員工無需事前填寫表單】
-請準備好與主管討論試用期三個月的整體表現、學習成長與未來目標。
-
-【主管請於面談時完成】
-請透過 HR 提供的主管評核連結，綜合三個月表現給予整體評分，填寫軟性技能與職能總評，並選擇試用期評核結論（通過／延長／終止）。系統會自動帶入前兩次面談的評核結果供參考。</div>
-        <button class="btn-sm" style="margin-top:6px" onclick="copyCalDesc(3)">📋 複製說明文字</button>
-      </div>
     </div>
     <div class="interview-link-box" style="background:#e3f5ed;border-color:#1a7a55">
       <div class="ilink-row">
@@ -3083,20 +3050,6 @@ function restoreInterviewLinks() {
   });
 }
 
-function copyCalDesc(round) {
-  const el = document.getElementById('cal-desc-' + round);
-  if (!el) return;
-  const text = el.innerText || el.textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = el.nextElementSibling;
-    if (btn) { const orig = btn.textContent; btn.textContent = '✅ 已複製！'; setTimeout(() => { btn.textContent = orig; }, 1800); }
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-    const btn = el.nextElementSibling;
-    if (btn) { const orig = btn.textContent; btn.textContent = '✅ 已複製！'; setTimeout(() => { btn.textContent = orig; }, 1800); }
-  });
-}
 function copyLinkById(inputId) {
   const el = document.getElementById(inputId);
   if (!el) return;
