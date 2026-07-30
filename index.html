@@ -410,6 +410,11 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
       <div class="flow-card-title">資遣</div>
       <div class="flow-card-desc">資遣費試算 → 通報政府 → 資遣證明</div>
     </div>
+    <div class="flow-card" onclick="startForeign()" style="background:#eef4ff">
+      <div class="flow-card-icon">🌏</div>
+      <div class="flow-card-title">外師聘僱</div>
+      <div class="flow-card-desc">身分判定 → 加保清單 → 申報作業</div>
+    </div>
     <div class="flow-card" onclick="openDashboard()" style="grid-column:1/-1;background:#f0efe9">
       <div class="flow-card-icon">📋</div>
       <div class="flow-card-title">員工資料總覽</div>
@@ -418,6 +423,16 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
   </div>
 </div>
 
+<!-- Foreign Teacher -->
+<div class="app" id="app-foreign">
+  <div class="header">
+    <button class="header-back" onclick="goHome()">← 返回</button>
+    <div class="header-title">🌏 外師聘僱流程</div>
+  </div>
+  <div style="padding:24px 32px;max-width:700px;margin:0 auto">
+    <div id="ft-content"></div>
+  </div>
+</div>
 <!-- Dashboard -->
 <div class="app" id="app-dashboard">
   <div class="header">
@@ -706,12 +721,296 @@ const LAY_STEPS = ['填寫員工資料','資遣費試算','資遣通知書','退
 // ============================================================
 function goHome() {
   document.getElementById('welcome').style.display='flex';
-  ['onboard','offboard','layoff','dashboard'].forEach(f=>{
+  ['onboard','offboard','layoff','dashboard','foreign'].forEach(f=>{
     const el=document.getElementById('app-'+f);
     if(el) el.classList.remove('active');
   });
   currentFlow=null;
 }
+
+// ─── 外師聘僱流程 ─────────────────────────────────────────────────────────
+var ftData = {};
+var ftStep = 0;
+
+function startForeign() {
+  ftData = {}; ftStep = 0;
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('app-foreign').classList.add('active');
+  renderForeign();
+}
+
+function renderForeign() {
+  if (ftStep === 0) renderFtStep0();
+  else renderFtStep1();
+}
+
+function renderFtStep0() {
+  var el = document.getElementById('ft-content');
+  el.innerHTML = `
+  <div class="section-card">
+    <div class="section-title">📋 外師基本資料</div>
+    <div class="form-group">
+      <label class="form-label">所屬品牌</label>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="ftBrand" value="stanley"> 史丹利英語</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="ftBrand" value="joyce"> 喬伊斯英語</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">外師英文姓名</label>
+      <input class="form-input" id="ft-name" placeholder="e.g. John Smith">
+    </div>
+    <div class="form-group">
+      <label class="form-label">國籍</label>
+      <input class="form-input" id="ft-nation" placeholder="e.g. American">
+    </div>
+    <div class="form-group">
+      <label class="form-label">聯絡電話</label>
+      <input class="form-input" id="ft-phone" placeholder="09xx-xxx-xxx">
+    </div>
+    <div class="form-group">
+      <label class="form-label">護照號碼</label>
+      <input class="form-input" id="ft-passport" placeholder="護照號碼">
+    </div>
+    <div class="form-group">
+      <label class="form-label">居留證號碼（ARC / APRC）</label>
+      <input class="form-input" id="ft-arc" placeholder="居留證號碼">
+    </div>
+    <div class="form-group">
+      <label class="form-label">居留證類型</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+        <div id="ft-card-aprc" class="ft-arc-card" onclick="ftSelectArc(this,'aprc')" style="border:1.5px solid #d0cec8;border-radius:10px;padding:12px 14px;cursor:pointer">
+          <div style="font-weight:700;font-size:14px">🟢 APRC</div>
+          <div style="font-size:12px;color:#6b6966;margin-top:4px">永久居留證</div>
+        </div>
+        <div id="ft-card-arc_tw" class="ft-arc-card" onclick="ftSelectArc(this,'arc_tw')" style="border:1.5px solid #d0cec8;border-radius:10px;padding:12px 14px;cursor:pointer">
+          <div style="font-weight:700;font-size:14px">🔵 ARC 依親台灣人</div>
+          <div style="font-size:12px;color:#6b6966;margin-top:4px">配偶為台灣人</div>
+        </div>
+        <div id="ft-card-arc_fo" class="ft-arc-card" onclick="ftSelectArc(this,'arc_fo')" style="border:1.5px solid #d0cec8;border-radius:10px;padding:12px 14px;cursor:pointer">
+          <div style="font-weight:700;font-size:14px">🟡 ARC 依親外國人</div>
+          <div style="font-size:12px;color:#6b6966;margin-top:4px">配偶為外國人</div>
+        </div>
+        <div id="ft-card-arc_gen" class="ft-arc-card" onclick="ftSelectArc(this,'arc_gen')" style="border:1.5px solid #d0cec8;border-radius:10px;padding:12px 14px;cursor:pointer">
+          <div style="font-weight:700;font-size:14px">🔴 一般 ARC</div>
+          <div style="font-size:12px;color:#6b6966;margin-top:4px">一般工作居留</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">職務型態</label>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="ftJob" value="full" onchange="ftData.job=this.value;renderFtExtra()"> 正職（Full-time）</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="ftJob" value="part" onchange="ftData.job=this.value;renderFtExtra()"> 兼職（Part-time）</label>
+      </div>
+    </div>
+    <div id="ft-extra"></div>
+    <div class="btn-row" style="margin-top:20px">
+      <button class="btn btn-primary" onclick="ftGoStep1()">下一步：查看加保清單 →</button>
+    </div>
+  </div>`;
+  // 還原已填入的值
+  if (ftData.name) document.getElementById('ft-name').value = ftData.name;
+  if (ftData.nation) document.getElementById('ft-nation').value = ftData.nation;
+  if (ftData.phone) document.getElementById('ft-phone').value = ftData.phone;
+  if (ftData.passport) document.getElementById('ft-passport').value = ftData.passport;
+  if (ftData.arcNo) document.getElementById('ft-arc').value = ftData.arcNo;
+  if (ftData.brand) {
+    document.querySelectorAll('input[name="ftBrand"]').forEach(function(r){ if(r.value===ftData.brand) r.checked=true; });
+  }
+  if (ftData.job) {
+    document.querySelectorAll('input[name="ftJob"]').forEach(function(r){ if(r.value===ftData.job) r.checked=true; });
+    renderFtExtra();
+  }
+  if (ftData.arcType) {
+    var card = document.getElementById('ft-card-'+ftData.arcType);
+    if (card) ftSelectArc(card, ftData.arcType);
+  }
+  // 綁定輸入事件
+  ['ft-name','ft-nation','ft-phone','ft-passport','ft-arc'].forEach(function(id) {
+    var el2 = document.getElementById(id);
+    if (el2) el2.addEventListener('input', function() {
+      var map = {'ft-name':'name','ft-nation':'nation','ft-phone':'phone','ft-passport':'passport','ft-arc':'arcNo'};
+      ftData[map[id]] = this.value;
+    });
+  });
+}
+
+function ftSelectArc(el, type) {
+  ftData.arcType = type;
+  document.querySelectorAll('.ft-arc-card').forEach(function(c) {
+    c.style.border = '1.5px solid #d0cec8';
+    c.style.background = '';
+  });
+  el.style.border = '2px solid #1a4f8a';
+  el.style.background = '#eef4ff';
+  renderFtExtra();
+}
+
+function renderFtExtra() {
+  var el = document.getElementById('ft-extra');
+  if (!el) return;
+  var arc = ftData.arcType;
+  var job = ftData.job;
+  var needAskMain = job === 'part' && (arc === 'aprc' || arc === 'arc_fo' || arc === 'arc_gen');
+  var needAskHrs = job === 'part';
+  if (!needAskHrs) { el.innerHTML = ''; return; }
+  var html = '';
+  if (needAskMain) {
+    html += `<div class="form-group" style="background:#fffbeb;border:1px solid #f0c040;border-radius:10px;padding:14px 16px">
+      <label class="form-label" style="color:#7a5c00">⚠️ 兼職外師：是否在其他地方有主職？</label>
+      <div style="font-size:12px;color:#7a5c00;margin-bottom:10px">若有主職，健保可能免在本公司投保</div>
+      <div style="display:flex;gap:16px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="ftMain" value="yes" onchange="ftData.hasMain=this.value"> 是，有主職</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="ftMain" value="no" onchange="ftData.hasMain=this.value"> 否，無主職</label>
+      </div>
+    </div>`;
+  }
+  html += `<div class="form-group">
+    <label class="form-label">每週授課時數（小時）</label>
+    <input class="form-input" id="ft-hrs" type="number" min="0" max="60" placeholder="例：8">
+  </div>`;
+  el.innerHTML = html;
+  if (ftData.hasMain) {
+    document.querySelectorAll('input[name="ftMain"]').forEach(function(r){ if(r.value===ftData.hasMain) r.checked=true; });
+  }
+  if (ftData.hrs) document.getElementById('ft-hrs').value = ftData.hrs;
+  var hrsEl = document.getElementById('ft-hrs');
+  if (hrsEl) hrsEl.addEventListener('input', function(){ ftData.hrs = parseFloat(this.value)||0; });
+}
+
+function ftGoStep1() {
+  if (!ftData.name || !ftData.name.trim()) { alert('請填寫外師英文姓名'); return; }
+  if (!ftData.arcType) { alert('請選擇居留證類型'); return; }
+  if (!ftData.job) { alert('請選擇職務型態'); return; }
+  ftStep = 1;
+  renderFtStep1();
+  window.scrollTo(0, 0);
+}
+
+function ftCalcInsurance() {
+  var arc = ftData.arcType;
+  var job = ftData.job;
+  var hrs = ftData.hrs || 0;
+  var hasMain = ftData.hasMain;
+  var needPermit = (arc === 'arc_fo' || arc === 'arc_gen');
+  var needLabor = true;
+  var needRetire = (arc === 'aprc' || arc === 'arc_tw');
+  var needHealth = true;
+  var healthStatus = '';
+  if (arc === 'aprc') {
+    if (job === 'part' && hrs < 12 && hasMain === 'yes') {
+      needHealth = false; healthStatus = '兼職且週時數 < 12hrs 且有主職 → 免投保';
+    } else { healthStatus = '必須加保'; }
+  } else if (arc === 'arc_tw') {
+    if (job === 'part' && hrs < 12) {
+      needHealth = false; healthStatus = '兼職且週時數 < 12hrs → 可維持隨配偶投「眷屬健保」';
+    } else { healthStatus = '必須加保'; }
+  } else if (arc === 'arc_fo') {
+    if (job === 'part' && hrs < 12 && hasMain === 'yes') {
+      needHealth = false; healthStatus = '兼職且週時數 < 12hrs 且有主職 → 免投保';
+    } else if (job === 'part' && hrs < 12 && hasMain === 'no') {
+      healthStatus = '兼職且週時數 < 12hrs 但無主職 → 須投保最低級距';
+    } else { healthStatus = '必須加保'; }
+  } else if (arc === 'arc_gen') {
+    if (job === 'part' && hrs < 12 && hasMain === 'yes') {
+      needHealth = false; healthStatus = '兼職且週時數 < 12hrs 且有主職 → 免投保';
+    } else if (job === 'part' && hrs < 12 && hasMain === 'no') {
+      healthStatus = '兼職且週時數 < 12hrs 但無主職 → 須投保最低級距';
+    } else { healthStatus = '必須加保'; }
+  }
+  return { needPermit:needPermit, needLabor:needLabor, needRetire:needRetire, needHealth:needHealth, healthStatus:healthStatus };
+}
+
+function ftCheck(id, val) {
+  if (!ftData.checks) ftData.checks = {};
+  ftData.checks[id] = val;
+  var row = document.getElementById('ft-row-'+id);
+  if (row) {
+    row.style.opacity = val ? '0.5' : '1';
+    row.style.textDecoration = val ? 'line-through' : '';
+  }
+}
+
+function renderFtStep1() {
+  var ins = ftCalcInsurance();
+  var arc = ftData.arcType;
+  var arcLabels = {aprc:'APRC（永久居留）',arc_tw:'ARC 依親台灣人',arc_fo:'ARC 依親外國人',arc_gen:'一般 ARC'};
+  var arcLabel = arcLabels[arc] || arc;
+  var permitNote = ins.needPermit
+    ? '須向勞動部「外國人申請工作許可系統」提出申請。<br>所需文件：學歷證明（學士以上，經駐外館處驗證）、護照、良民證、良醫體檢表。<br><strong style="color:#c0392b">⚠️ 取得「聘僱許可函」後，外師才能正式授課！</strong>'
+    : (arc === 'aprc' ? '持 APRC 免申請工作許可，請核對外師的「永久居留證」與勞動部頒發的「個人工作許可函」，公司留存影本備查。' : '持 ARC 依親台灣人免申請工作許可，請核對居留證。');
+  var retireNote = ins.needRetire
+    ? '公司須自付提繳至少 6% 到外師勞退專戶（不可從外師薪資扣除）。'
+    : (arc === 'arc_fo' ? '持 ARC 依親外國人免提繳（若為國人配偶則須提繳）。' : '持一般 ARC 免提繳（若為國人配偶則須提繳）。');
+
+  function chk(id) { return (ftData.checks && ftData.checks[id]) ? 'checked' : ''; }
+  function row(id, label, need, desc, note) {
+    var statusHtml = need
+      ? '<span style="color:#1a7a3c;font-weight:700;font-size:13px">✅ 需辦理</span>'
+      : '<span style="color:#888;font-weight:700;font-size:13px">⬜ 免辦</span>';
+    var doneStyle = (ftData.checks && ftData.checks[id]) ? 'opacity:0.5;text-decoration:line-through' : '';
+    return `<div id="ft-row-${id}" style="border:1px solid #e0deda;border-radius:10px;padding:14px 16px;margin-bottom:12px;${doneStyle}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-weight:700;font-size:15px">${label}</div>${statusHtml}
+      </div>
+      <div style="font-size:13px;color:#6b6966;margin-bottom:8px">${desc}</div>
+      ${note ? '<div style="font-size:12px;background:#f8f7f3;border-radius:6px;padding:8px 10px;margin-bottom:8px">'+note+'</div>' : ''}
+      ${need ? '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="ftchk-'+id+'" '+chk(id)+' onchange="ftCheck(\''+id+'\',this.checked)"> 已完成辦理</label>' : ''}
+    </div>`;
+  }
+
+  var html = `<div class="section-card">
+    <div class="section-title">📋 加保判定結果</div>
+    <div style="background:#f0efe9;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px">
+      <strong>外師：</strong>${escapeHtml(ftData.name || '')}
+      　<strong>身分：</strong>${arcLabel}
+      　<strong>職務：</strong>${ftData.job==='full'?'正職':'兼職'}
+      ${ftData.hrs ? '　<strong>週時數：</strong>'+ftData.hrs+'hr' : ''}
+    </div>
+    ${row('permit','🔑 工作許可',ins.needPermit,ins.needPermit?'須由公司申請工作許可，取得許可函前禁止排課。':'免申請工作許可。',permitNote)}
+    ${row('labor','🛡️ 勞保 ＋ 職業災害保險',ins.needLabor,'所有外師強制加保，到職當天辦理。','至勞保局 eDesk 系統申報加保，投保金額依固定薪資級距。')}
+    ${row('health','🏥 健保',ins.needHealth,ins.healthStatus,ins.needHealth?'一般健保依薪資級距申報；若有非固定薪資或獎金超過門檻，須扣繳 2.11% 二代健保補充保費。':(arc==='arc_tw'?'可維持隨配偶投眷屬健保，本公司無需另行投保。':''))}
+    ${row('retire','💰 勞工退休金（6%）',ins.needRetire,ins.needRetire?'強制提繳，公司全額負擔。':'免提繳。',retireNote)}
+    <div style="border:1px solid #e0deda;border-radius:10px;padding:14px 16px;margin-bottom:12px">
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px">📝 勞動契約</div>
+      <div style="font-size:13px;color:#6b6966;margin-bottom:8px">必須簽訂，載明工作內容、薪資、授課時數、請假規則及試用期。</div>
+      <div style="font-size:12px;background:#f8f7f3;border-radius:6px;padding:8px 10px;margin-bottom:8px">
+        ${arc!=='aprc'?'⚠️ ARC 外師合約期限不得超過工作許可有效期限（最長 3 年，可展延）。':'APRC 外師合約無期限限制。'}
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+        <input type="checkbox" id="ftchk-contract" ${chk('contract')} onchange="ftCheck('contract',this.checked)"> 已簽訂勞動契約</label>
+    </div>
+    <div style="border:1px solid #e0deda;border-radius:10px;padding:14px 16px;margin-bottom:12px">
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px">💴 所得稅扣繳</div>
+      <div style="font-size:13px;color:#6b6966;margin-bottom:8px">依在台居住天數判定稅率。</div>
+      <div style="font-size:12px;background:#f8f7f3;border-radius:6px;padding:8px 10px;margin-bottom:8px">
+        • 同年度在台 <strong>未滿 183 天</strong>：薪資 ≤ 基本工資 1.5 倍扣 6%；超過一律扣 18%。<br>
+        • 同年度在台 <strong>滿 183 天</strong>：比照國人按薪資所得扣繳稅表（通常 5%）。
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+        <input type="checkbox" id="ftchk-tax" ${chk('tax')} onchange="ftCheck('tax',this.checked)"> 已確認稅率並設定扣繳</label>
+    </div>
+    <div style="border:1px solid #ffe0e0;border-radius:10px;padding:14px 16px;margin-bottom:12px;background:#fff8f8">
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px">🚪 離職報備（備查）</div>
+      <div style="font-size:12px;background:#f8f7f3;border-radius:6px;padding:8px 10px">
+        ${arc==='aprc'?'APRC 外師離職：僅需辦理勞健保退保，無需向勞動部報備廢止。':'ARC 外師離職：須於離職後 <strong>3 日內</strong>向勞動部、當地勞動局及移民署辦理「離職報備（廢止聘僱）」。'}
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:20px">
+      <button class="btn" onclick="ftStep=0;renderForeign()">← 返回修改</button>
+      <button class="btn btn-primary" onclick="goHome()">✅ 完成，返回首頁</button>
+    </div>
+  </div>`;
+  document.getElementById('ft-content').innerHTML = html;
+}
+// ─── 外師聘僱流程結束 ──────────────────────────────────────────────────────
 
 function startFlow(flow) {
   currentFlow=flow; emp={};
