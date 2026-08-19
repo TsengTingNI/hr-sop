@@ -595,9 +595,69 @@ function setSyncDot(ok, txt) {
   if(label) label.textContent = txt;
 }
 
+// ── 面談資料保護與備份 ─────────────────────────────────────
+// 面談資料與一般員工資料分開保存；任何一般資料更新只能 update 指定欄位，
+// 絕不以 set() 覆寫案件根節點，避免刪除 interviews。
+const INTERVIEW_BACKUP_MIN_INTERVAL_MS = 30000;
+const interviewBackupLastAt = {};
+const interviewBackupInFlight = {};
+
+function hasInterviewData(interviews) {
+  return !!(interviews && typeof interviews === 'object' && Object.keys(interviews).length > 0);
+}
+
+function backupInterviewSnapshot(dbConn, key, interviews, reason) {
+  if(!dbConn || !key || !hasInterviewData(interviews)) return Promise.resolve(false);
+  // 備份放在同一案件節點內的獨立子節點，沿用既有 hr_ob 權限，且不會被一般欄位 update 觸碰。
+  const backupRef = dbConn.ref('hr_ob/' + key + '/interviewBackups').push();
+  const backupPayload = {
+    backedUpAt: new Date().toISOString(),
+    reason: reason || 'automatic',
+    sourcePath: 'hr_ob/' + key + '/interviews',
+    backupPath: 'hr_ob/' + key + '/interviewBackups',
+    data: interviews
+  };
+  return backupRef.set(backupPayload).then(() => {
+    interviewBackupLastAt[key] = Date.now();
+    return true;
+  });
+}
+
+function backupInterviewsForKey(key, reason, force, dbConn) {
+  const conn = dbConn || db;
+  if(!conn || !key) return Promise.resolve(false);
+  const now = Date.now();
+  if(!force && interviewBackupLastAt[key] && now - interviewBackupLastAt[key] < INTERVIEW_BACKUP_MIN_INTERVAL_MS) {
+    return Promise.resolve(false);
+  }
+  if(interviewBackupInFlight[key]) return interviewBackupInFlight[key];
+  const p = conn.ref('hr_ob/' + key + '/interviews').once('value')
+    .then(snap => backupInterviewSnapshot(conn, key, snap.val(), reason))
+    .catch(err => {
+      console.warn('面談資料備份失敗：', err);
+      return false;
+    })
+    .finally(() => { delete interviewBackupInFlight[key]; });
+  interviewBackupInFlight[key] = p;
+  return p;
+}
+
+function ensureInterviewBackups(records, reason) {
+  if(!records || !db) return Promise.resolve([]);
+  const tasks = Object.keys(records)
+    .filter(key => records[key] && hasInterviewData(records[key].interviews))
+    .map(key => backupInterviewsForKey(key, reason || 'dashboard-load', false, db));
+  return Promise.all(tasks);
+}
+
 function saveFirebase() {
-  if(!fbReady || !db || !currentKey) return;
-  db.ref('hr_ob/' + currentKey).set({emp, obDone, offDone, layDone, flowType: currentFlow||'onboard'}).catch(()=>setSyncDot(false,'同步失敗'));
+  if(!fbReady || !db || !currentKey) return Promise.resolve(false);
+  const payload = { emp, obDone, offDone, layDone, flowType: currentFlow||'onboard' };
+  // 先嘗試保存目前面談快照，再以 update() 局部更新一般欄位；interviews 永不被覆寫。
+  return backupInterviewsForKey(currentKey, 'before-employee-data-update', false, db)
+    .then(() => db.ref('hr_ob/' + currentKey).update(payload))
+    .then(() => { setSyncDot(true, '已同步'); return true; })
+    .catch(() => { setSyncDot(false, '同步失敗'); return false; });
 }
 
 function loadFirebase(key) {
@@ -616,6 +676,8 @@ function loadFirebase(key) {
     else if(currentFlow==='offboard') renderOff();
     else if(currentFlow==='layoff') renderLay();
     setSyncDot(true, val ? '已同步' : '新案件');
+    // 開啟案件時也建立一次現存面談資料快照。
+    backupInterviewsForKey(key, 'record-opened', false, db);
   });
 }
 // ─────────────────────────────────────────────────────────────
@@ -1865,6 +1927,8 @@ function loadAllEmployees(){
     db.ref('hr_ob').once('value')
       .then(function(snap){
         allEmpRecords = snap.val() || {};
+        // 後台載入時為所有既有面談節點建立備份，並不改動主資料。
+        ensureInterviewBackups(allEmpRecords, 'dashboard-load');
         const count = Object.keys(allEmpRecords).length;
         document.getElementById('dash-sync-dot').style.background = '#1a7a55';
         document.getElementById('dash-sync-label').textContent = '已載入 ' + count + ' 筆';
@@ -3272,12 +3336,12 @@ const INTERVIEW_BASE_URL = (function(){
   return dir;
 })();
 
-function buildInterviewUrl(formFile, round) {
+function buildInterviewUrl(formFile, round, fixedTs) {
   if (!currentKey) return null;
   const modeMap = { 'self-eval.html': 'self-eval', 'manager-eval.html': 'manager-eval' };
   const mode = modeMap[formFile] || formFile;
-  // ts = 時間戳記，確保每次產生的連結都不同，舊連結自動失效
-  const ts = Date.now();
+  // 第二、三次使用 Firebase 中已保存的固定時間戳，重新產生連結時網址不變。
+  const ts = fixedTs || String(Date.now());
   const params = new URLSearchParams({
     mode:  mode,
     key:   currentKey,
@@ -3290,33 +3354,74 @@ function buildInterviewUrl(formFile, round) {
   return baseUrl + '?' + params.toString();
 }
 
-function genInterviewLink(round, type) {
+async function genInterviewLink(round, type) {
   if (!currentKey || !emp.nameZh) {
     alert('⚠️ 請先填寫員工資料（步驟 1）並同步完成。');
     return;
   }
   const formFile = type === 'self' ? 'self-eval.html' : 'manager-eval.html';
-  const url = buildInterviewUrl(formFile, round);
-  if (!url) return;
+  const urlBoxId = (type === 'self' ? 'self-url-' : 'mgr-url-') + round;
+  const tsPath = 'hr_ob/' + currentKey + '/interviews/round' + round + '/' + (type === 'self' ? 'selfLinkTs' : 'mgrLinkTs');
+  const fixedRound = round === 2 || round === 3;
+  let fixedTs = null;
+  let existingRoundData = {};
 
-  // 將此次的 ts 儲存到 Firebase，作為「最新連結時間戳」
-  const tsMatch = url.match(/[?&]ts=([^&]+)/);
-  if (tsMatch && db) {
-    const tsVal = tsMatch[1];
-    const tsPath = 'hr_ob/' + currentKey + '/interviews/round' + round + '/' + (type === 'self' ? 'selfLinkTs' : 'mgrLinkTs');
-    db.ref(tsPath).set(tsVal);
-  }
+  try {
+    if (db && fixedRound) {
+      const roundSnap = await db.ref('hr_ob/' + currentKey + '/interviews/round' + round).once('value');
+      existingRoundData = roundSnap.val() || {};
+      const snap = await db.ref(tsPath).once('value');
+      fixedTs = snap.val() ? String(snap.val()) : null;
+      // 若舊版只把網址留在本機工作階段，先沿用其中的 ts，避免改變已發出的網址。
+      if (!fixedTs) {
+        const cachedUrl = sessionStorage.getItem(linkStorageKey(urlBoxId)) || sessionStorage.getItem('ilink_' + urlBoxId);
+        if (cachedUrl) {
+          try { fixedTs = new URL(cachedUrl).searchParams.get('ts'); } catch(e) {}
+        }
+      }
+      if (!fixedTs) {
+        const hasSubmittedData = !!((existingRoundData.selfEval && existingRoundData.selfEval.submitted) || (existingRoundData.manager && existingRoundData.manager.submitted));
+        if (hasSubmittedData) {
+          alert('⚠️ 此輪已有員工或主管提交資料，但系統找不到原固定連結識別碼。為避免改變已發送網址，系統不會自動產生新連結；請貼上原連結或聯絡系統管理者處理。');
+          return;
+        }
+        fixedTs = String(Date.now());
+        await db.ref(tsPath).set(fixedTs);
+      }
+    }
+    if (fixedRound && !fixedTs && !db) {
+      const cachedUrl = sessionStorage.getItem(linkStorageKey(urlBoxId)) || sessionStorage.getItem('ilink_' + urlBoxId);
+      if (cachedUrl) {
+        showLinkBox(round, type, cachedUrl);
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cachedUrl).catch(() => {});
+        refreshInterviewStatus();
+        return;
+      }
+      alert('⚠️ 無法確認第二次／第三次固定連結，為避免改變已發送網址，請先恢復 Firebase 連線。');
+      return;
+    }
+    const url = buildInterviewUrl(formFile, round, fixedRound ? fixedTs : null);
+    if (!url) return;
 
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(() => {
+    // 第一次可重新產生；第二、三次只沿用第一次建立的固定 ts。
+    if (db && !fixedRound) {
+      const tsMatch = url.match(/[?&]ts=([^&]+)/);
+      if (tsMatch) await db.ref(tsPath).set(tsMatch[1]);
+    }
+    if (db) await backupInterviewsForKey(currentKey, 'interview-link-issued', true, db);
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => showLinkBox(round, type, url)).catch(() => showLinkBox(round, type, url));
+    } else {
       showLinkBox(round, type, url);
-    }).catch(() => {
-      showLinkBox(round, type, url);
-    });
-  } else {
-    showLinkBox(round, type, url);
+    }
+    refreshInterviewStatus();
+  } catch(e) {
+    alert('❌ 面談連結儲存失敗：' + e.message + '\n請勿重複產生，先重新整理後再試。');
   }
-  refreshInterviewStatus();
+}
+function linkStorageKey(id) {
+  return 'ilink_' + (currentKey || 'unknown') + '_' + id;
 }
 
 function showLinkBox(round, type, url) {
@@ -3329,14 +3434,14 @@ function showLinkBox(round, type, url) {
     inputEl.value = url;
     urlBox.style.display = 'flex';
     // 儲存到 sessionStorage，防止步驟重渲染後消失
-    sessionStorage.setItem('ilink_' + urlBoxId, url);
+    sessionStorage.setItem(linkStorageKey(urlBoxId), url);
   }
 }
 
 function restoreInterviewLinks() {
   // 步驟渲染後，從 sessionStorage 還原已產生的連結
   ['self-url-1','mgr-url-1','self-url-2','mgr-url-2','mgr-url-3'].forEach(id => {
-    const saved = sessionStorage.getItem('ilink_' + id);
+    const saved = sessionStorage.getItem(linkStorageKey(id));
     if (saved) {
       const inputId = id.replace('url-', 'url-input-');
       const urlBox  = document.getElementById(id);
@@ -3561,8 +3666,8 @@ async function refreshInterviewStatus() {
       const statusEl = document.getElementById('interview-status-' + r);
       if (statusEl) {
         let statusHtml = '';
-        if (selfDone) statusHtml += '<span class="ilink-status-ok">✅ 員工自評已提交</span> <button class="btn-sm" style="font-size:10px;padding:1px 7px;background:#fff3f3;color:#c0392b;border:1px solid #e8b4b4" onclick="clearInterviewRecord(\'' + currentKey + '\','+r+',\'self\')">&#128465; 清除自評</button>&nbsp;&nbsp;';
-        if (mgrDone)  statusHtml += '<span class="ilink-status-ok">✅ 主管評核已提交</span> <button class="btn-sm" style="font-size:10px;padding:1px 7px;background:#fff3f3;color:#c0392b;border:1px solid #e8b4b4" onclick="clearInterviewRecord(\'' + currentKey + '\','+r+',\'mgr\')">&#128465; 清除評核</button>';
+        if (selfDone) statusHtml += '<span class="ilink-status-ok">✅ 員工自評已提交（資料已保留）</span>&nbsp;&nbsp;';
+        if (mgrDone)  statusHtml += '<span class="ilink-status-ok">✅ 主管評核已提交（資料已保留）</span>';
         if (!selfDone && !mgrDone) statusHtml = '<span class="ilink-status-pending">⏳ 尚未提交</span>';
         statusEl.innerHTML = statusHtml;
       }
@@ -3588,17 +3693,27 @@ async function refreshInterviewStatus() {
 async function clearInterviewRecord(empKey, round, type) {
   const typeLabel = type === 'self' ? '員工自評' : '主管評核';
   const roundLabel = { 1: '第一次', 2: '第二次', 3: '第三次' }[round] || ('第' + round + '次');
-  if (!confirm('確定要清除「' + roundLabel + '面談—' + typeLabel + '」的紀錄？\n清除後可重新發送連結讓對方重新填寫。')) return;
+  // 已發送的第二、三次連結與已提交資料均不可清除，避免破壞歷史紀錄。
+  if (round === 2 || round === 3) {
+    await backupInterviewsForKey(empKey, 'fixed-round-clear-blocked', true, db);
+    alert('第二次與第三次面談連結及已提交資料皆為固定留存，不能清除或重新產生。');
+    return;
+  }
   try {
     const path = 'hr_ob/' + empKey + '/interviews/round' + round + '/' + (type === 'self' ? 'selfEval' : 'manager');
+    const snap = await db.ref(path).once('value');
+    if (snap.val() && snap.val().submitted) {
+      await backupInterviewsForKey(empKey, 'submitted-record-clear-blocked', true, db);
+      alert('「' + roundLabel + '面談—' + typeLabel + '」已提交，資料已保留且不可清除。');
+      return;
+    }
     await db.ref(path).remove();
-    alert('「' + roundLabel + '面談—' + typeLabel + '」紀錄已清除，請重新發送連結。');
+    alert('未提交的「' + roundLabel + '面談—' + typeLabel + '」暫存資料已清除。');
     refreshInterviewStatus();
   } catch(e) {
     alert('清除失敗：' + e.message);
   }
 }
-
 // ============================================================
 // 面談表單模組（員工自評 & 主管評核）— 合併版
 // ============================================================
@@ -3880,6 +3995,8 @@ function submitSelfEval() {
   btn.disabled = true; btn.textContent = '提交中...';
   const roundKey = 'round' + seRound;
   seDb.ref(`hr_ob/${seEmpKey}/interviews/${roundKey}/selfEval`).set(payload).then(() => {
+    return backupInterviewsForKey(seEmpKey, 'self-eval-submitted', true, seDb);
+  }).then(() => {
     document.getElementById('se-form').style.display = 'none';
     document.getElementById('se-success').style.display = 'block';
   }).catch(e => {
@@ -4282,6 +4399,8 @@ function submitManagerEval() {
   }
   const roundKey = 'round' + meRound;
   meDb.ref(`hr_ob/${meEmpKey}/interviews/${roundKey}/manager`).set(payload).then(() => {
+    return backupInterviewsForKey(meEmpKey, 'manager-eval-submitted', true, meDb);
+  }).then(() => {
     document.getElementById('me-form').style.display = 'none';
     document.getElementById('me-success').style.display = 'block';
   }).catch(e => {
