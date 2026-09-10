@@ -3881,7 +3881,11 @@ const FORM_HARD_SKILLS = {
 function formMatchJobTitle(title) {
   if (!title) return null;
   const t = title.trim();
-  for (const key of Object.keys(FORM_HARD_SKILLS)) {
+  const roleKeys = Object.keys(FORM_HARD_SKILLS);
+  // 完全相同優先，避免「行政顧問」先被較短的「顧問」包含匹配攔截。
+  const exact = roleKeys.find(key => key === t);
+  if (exact) return exact;
+  for (const key of roleKeys) {
     if (t.includes(key) || key.includes(t)) return key;
   }
   if (t.includes('顧問') && !t.includes('行政')) return '顧問';
