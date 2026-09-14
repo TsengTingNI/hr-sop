@@ -2659,12 +2659,50 @@ function layNav(){
     +'</div>';
 }
 
+const LAYOFF_REASON_OPTIONS = [
+  {id:'art11_1', label:'第 1 款｜歇業或轉讓時。'},
+  {id:'art11_2', label:'第 2 款｜虧損或業務緊縮時。'},
+  {id:'art11_3', label:'第 3 款｜不可抗力暫停工作在一個月以上時。'},
+  {id:'art11_4', label:'第 4 款｜業務性質變更，有減少勞工之必要，又無適當工作可供安置時。'},
+  {id:'art11_5', label:'第 5 款｜勞工對於所擔任之工作確不能勝任時。'}
+];
+function layoffReasonLabel(reasonId){
+  const item=LAYOFF_REASON_OPTIONS.find(x=>x.id===reasonId);
+  return item ? item.label : '（尚未選擇）';
+}
+function calculateNewSeverance(startDateValue,endDateValue,averageWage){
+  const start=new Date(startDateValue+'T00:00:00');
+  const end=new Date(endDateValue+'T00:00:00');
+  if(isNaN(start.getTime())||isNaN(end.getTime())||end<start||!isFinite(averageWage)) return null;
+
+  // 勞動契約終止日屬服務期間最後一日，因此先將終止日加一天，再以曆法拆成年、月、日。
+  const endInclusive=new Date(end.getFullYear(),end.getMonth(),end.getDate()+1);
+  let years=endInclusive.getFullYear()-start.getFullYear();
+  let months=endInclusive.getMonth()-start.getMonth();
+  let days=endInclusive.getDate()-start.getDate();
+  if(days<0){
+    months--;
+    // 借用終止日（已加一天）前一個月的實際日數；公式中的日數最終以30日換算。
+    days+=new Date(endInclusive.getFullYear(),endInclusive.getMonth(),0).getDate();
+  }
+  if(months<0){years--;months+=12;}
+
+  // 勞動部公開範例：年 +〔（月 + 日/30）÷12〕；每滿一年給付 1/2 個月平均工資，最高6個月。
+  const serviceYears=years+((months+(days/30))/12);
+  const wageMonths=Math.min(serviceYears*0.5,6);
+  const exactAmount=Number(averageWage)*wageMonths;
+  return {years,months,days,serviceYears,wageMonths,exactAmount,amount:Math.round(exactAmount)};
+}
+
 function saveLayEmp(){
   const v=id=>document.getElementById(id)?document.getElementById(id).value.trim():'';
-  const nameZh=v('l0'),title=v('l1'),cid=v('l2'),startDate=v('l3'),endDate=v('l4'),salary=parseFloat(document.getElementById('l5').value);
-  if(!nameZh||!title||!cid||!startDate||!endDate||!salary){alert('請填寫所有必填欄位！');return;}
+  const nameZh=v('l0'),title=v('l1'),cid=v('l2'),startDate=v('l3'),layoffNoticeDate=v('l4'),lastWorkDate=v('l5'),salary=parseFloat(document.getElementById('l6').value);
+  const reasonEl=document.querySelector('input[name="layoffReason"]:checked');
+  const layoffReason=reasonEl?reasonEl.value:'';
+  if(!nameZh||!title||!cid||!startDate||!layoffNoticeDate||!lastWorkDate||!layoffReason||!salary){alert('請填寫所有必填欄位，並勾選一項資遣事由！');return;}
   const co=COMPANIES.find(c=>c.id===cid);
-  emp=Object.assign(emp,{nameZh,title,cid,companyName:co.name,companyTax:co.tax,startDate,endDate,salary});
+  // endDate 持續保留作為既有資遣費試算、退保與證明書的相容欄位，值等同最後工作日。
+  emp=Object.assign(emp,{nameZh,title,cid,companyName:co.name,companyTax:co.tax,startDate,layoffNoticeDate,lastWorkDate,endDate:lastWorkDate,layoffReason,salary});
   if(!currentKey) currentKey=nameZh.replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
   saveFirebase();
   layNext();
@@ -2675,6 +2713,13 @@ const LAY_RENDER = [
   function(){
     const cos=COMPANIES.map(c=>'<option value="'+c.id+'" '+(emp.cid===c.id?'selected':'')+'>'+c.name+'</option>').join('');
     const today=new Date().toISOString().split('T')[0];
+    const selectedReason=emp.layoffReason||'';
+    const reasonChoices=LAYOFF_REASON_OPTIONS.map(function(item){
+      const isChecked=selectedReason===item.id?' checked':'';
+      return '<label style="display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border:1px solid #e6b8b8;border-radius:8px;background:#fff;margin-bottom:7px;cursor:pointer;line-height:1.45">'
+        +'<input type="radio" name="layoffReason" value="'+item.id+'"'+isChecked+' style="margin-top:3px;accent-color:#a32a2a">'
+        +'<span style="font-size:13px;color:#3d2424">'+item.label+'</span></label>';
+    }).join('');
     return '<div class="section-card">'
       +'<div class="section-title">👤 填寫員工資料</div>'
       +'<div class="alert alert-danger"><strong>資遣屬法律程序，請全程保留書面紀錄。</strong></div>'
@@ -2683,8 +2728,23 @@ const LAY_RENDER = [
         +'<div class="form-group"><label class="form-label">職稱<span class="form-required">*</span></label><input class="form-input" id="l1" value="'+(emp.title||'')+'"></div>'
         +'<div class="form-group"><label class="form-label">所屬公司<span class="form-required">*</span></label><select class="form-select" id="l2"><option value="">— 請選擇 —</option>'+cos+'</select></div>'
         +'<div class="form-group"><label class="form-label">到職日<span class="form-required">*</span></label><input class="form-input" type="date" id="l3" value="'+(emp.startDate||'')+'"></div>'
-        +'<div class="form-group"><label class="form-label">資遣日<span class="form-required">*</span></label><input class="form-input" type="date" id="l4" value="'+(emp.endDate||today)+'"></div>'
-        +'<div class="form-group"><label class="form-label">平均月薪（元）<span class="form-required">*</span></label><input class="form-input" type="number" id="l5" placeholder="例：45000" value="'+(emp.salary||'')+'"></div>'
+        +'<div class="form-group"><label class="form-label">資遣通知日<span class="form-required">*</span></label><input class="form-input" type="date" id="l4" value="'+(emp.layoffNoticeDate||today)+'"></div>'
+        +'<div class="form-group"><label class="form-label">最後工作日<span class="form-required">*</span></label><input class="form-input" type="date" id="l5" value="'+(emp.lastWorkDate||emp.endDate||today)+'"></div>'
+        +'<div class="form-group"><label class="form-label">平均月薪（元）<span class="form-required">*</span></label><input class="form-input" type="number" id="l6" placeholder="例：45000" value="'+(emp.salary||'')+'"></div>'
+      +'</div>'
+      +'<div style="margin-top:18px;padding:15px;border:1px solid #e6b8b8;border-radius:10px;background:#fff7f7">'
+        +'<div style="font-size:14px;font-weight:700;color:#8a1a1a;margin-bottom:5px">依《勞動基準法》第 11 條第幾款資遣<span class="form-required">*</span></div>'
+        +'<div style="font-size:12px;color:#6b4545;margin-bottom:11px">請就本案選擇一項適用事由；如對個案適用性有疑義，請先確認法律意見。</div>'
+        +reasonChoices
+      +'</div>'
+      +'<div style="margin-top:18px;padding:15px 16px;border-left:4px solid #8a1a1a;background:#fff8f8;border-radius:0 9px 9px 0">'
+        +'<div style="font-size:14px;font-weight:700;color:#8a1a1a;margin-bottom:9px">資遣預告法條｜《勞動基準法》第 16 條</div>'
+        +'<div style="font-size:12.5px;line-height:1.7;color:#443535">雇主依第 11 條或第 13 條但書終止勞動契約時，繼續工作 <strong>3 個月以上未滿 1 年</strong>者，應於 <strong>10 日前</strong>預告；<strong>1 年以上未滿 3 年</strong>者，應於 <strong>20 日前</strong>預告；<strong>3 年以上</strong>者，應於 <strong>30 日前</strong>預告。勞工接獲預告後，為另謀工作得於工作時間請假外出，每星期不得超過 2 日工作時間，請假期間工資照給；雇主未依規定期間預告者，應給付預告期間工資。</div>'
+      +'</div>'
+      +'<div style="margin-top:13px;padding:15px 16px;border-left:4px solid #585858;background:#f7f7f7;border-radius:0 9px 9px 0">'
+        +'<div style="font-size:14px;font-weight:700;color:#333;margin-bottom:9px">《勞動基準法》第 11 條｜得預告終止勞動契約之事由</div>'
+        +'<div style="font-size:12.5px;line-height:1.75;color:#444">非有下列情事之一者，雇主不得預告勞工終止勞動契約：<br>一、歇業或轉讓時。<br>二、虧損或業務緊縮時。<br>三、不可抗力暫停工作在一個月以上時。<br>四、業務性質變更，有減少勞工之必要，又無適當工作可供安置時。<br>五、勞工對於所擔任之工作確不能勝任時。</div>'
+        +'<div style="font-size:11px;color:#777;margin-top:8px">法條資料來源：勞動部勞動法令查詢系統（《勞動基準法》第 11 條、第 16 條）。</div>'
       +'</div>'
       +'<div class="btn-row"><button class="btn btn-primary" onclick="saveLayEmp()">儲存並繼續 →</button></div>'
       +'</div>';
@@ -2692,26 +2752,29 @@ const LAY_RENDER = [
   // 1: calc
   function(){
     if(!emp.nameZh) return needData('goLay(0)');
-    const s=new Date(emp.startDate),e=new Date(emp.endDate);
-    const years=(e-s)/(1000*60*60*24*365.25);
-    const wy=Math.floor(years),fm=Math.round((years-wy)*12);
-    let months=Math.min(wy*0.5+(years-wy)*0.5,6);months=Math.round(months*100)/100;
-    const total=Math.round(emp.salary*months);
-    let nd=0;if(years>=3)nd=30;else if(years>=1)nd=20;else if(years>=0.25)nd=10;
+    const calc=calculateNewSeverance(emp.startDate,emp.lastWorkDate||emp.endDate,Number(emp.salary));
+    if(!calc) return '<div class="section-card"><div class="alert alert-danger">無法計算資遣費，請回第一關確認到職日、最後工作日與平均月薪。</div>'+layNav()+'</div>';
+    const wy=calc.years,fm=calc.months,fd=calc.days,months=calc.wageMonths,total=calc.amount;
+    let nd=0;if(calc.serviceYears>=3)nd=30;else if(calc.serviceYears>=1)nd=20;else if(calc.serviceYears>=0.25)nd=10;
     return '<div class="section-card">'
       +'<div class="section-title">💰 資遣費試算</div>'
       +'<div class="calc-result">'
         +'<table class="info-table">'
           +'<tr><td>員工姓名</td><td>'+emp.nameZh+'</td></tr>'
-          +'<tr><td>服務年資</td><td>'+wy+' 年 '+fm+' 個月</td></tr>'
+          +'<tr><td>資遣通知日</td><td>'+(emp.layoffNoticeDate||'—')+'</td></tr>'
+          +'<tr><td>最後工作日</td><td>'+(emp.lastWorkDate||emp.endDate||'—')+'</td></tr>'
+          +'<tr><td>資遣事由</td><td>'+layoffReasonLabel(emp.layoffReason)+'</td></tr>'
+          +'<tr><td>服務年資</td><td>'+wy+' 年 '+fm+' 個月 '+fd+' 天</td></tr>'
           +'<tr><td>平均月薪</td><td>NT$ '+Number(emp.salary).toLocaleString()+'</td></tr>'
-          +'<tr><td>應給付月數</td><td>'+months+' 個月（上限 6 個月）</td></tr>'
+          +'<tr><td>新制計算基數</td><td>'+months.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')+' 個月平均工資（上限 6 個月）</td></tr>'
           +'<tr><td>法定預告天數</td><td>'+nd+' 天</td></tr>'
         +'</table>'
-        +'<div style="font-size:13px;color:#6b6966;margin-top:8px">資遣費合計</div>'
+        +'<div style="font-size:13px;color:#6b6966;margin-top:8px">新制資遣費合計</div>'
         +'<div class="calc-total">NT$ '+total.toLocaleString()+'</div>'
       +'</div>'
-      +'<div class="alert alert-warn" style="margin-top:12px">⚠️ 此為估算，如有 2012/2/3 前年資需另計舊制，建議諮詢法律顧問。</div>'
+      +'<div class="alert alert-info" style="margin-top:12px;font-size:12.5px;line-height:1.65"><strong>計算方式：</strong>依勞動部新制資遣費說明，以曆法年、月、日換算年資：年 ＋〔（月 ＋ 日 ÷ 30）÷ 12〕，再乘以 1/2 個月平均工資。終止日納入年資計算。</div>'
+      +'<div class="alert alert-warn" style="margin-top:12px">⚠️ 此為新制資遣費試算；如有 2012/2/3 前年資或其他特殊情形，需另依個案確認。</div>'
+      +'<div class="btn-row" style="margin-top:12px"><a href="https://calcr2.mol.gov.tw/SeverancePay" target="_blank" rel="noopener noreferrer" class="btn btn-amber">🔗 前往勞動部資遣費試算表核對</a></div>'
       +layNav()+'</div>';
   },
   // 2: Layoff notice (no print button per request)
@@ -2882,8 +2945,9 @@ function printLaySummary(){
         +'<div style="font-size:18px;font-weight:700;margin-top:2px">資遣流程追蹤表</div>'
       +'</div><div style="width:44px"></div></div>'
     +'<table class="pdf-table" style="margin-bottom:14px">'
-      +'<tr><td style="width:25%">員工姓名</td><td><strong>'+(emp.nameZh||'')+'</strong></td><td style="width:25%">資遣日</td><td>'+(emp.endDate||'')+'</td></tr>'
-      +'<tr><td>職稱</td><td>'+(emp.title||'')+'</td><td>所屬公司</td><td>'+(emp.companyName||'')+'</td></tr>'
+      +'<tr><td style="width:25%">員工姓名</td><td><strong>'+(emp.nameZh||'')+'</strong></td><td style="width:25%">資遣通知日</td><td>'+(emp.layoffNoticeDate||'—')+'</td></tr>'
+      +'<tr><td>職稱</td><td>'+(emp.title||'')+'</td><td>最後工作日</td><td>'+(emp.lastWorkDate||emp.endDate||'—')+'</td></tr>'
+      +'<tr><td>所屬公司</td><td>'+(emp.companyName||'')+'</td><td>資遣事由</td><td>'+layoffReasonLabel(emp.layoffReason)+'</td></tr>'
       +'<tr><td>月薪</td><td>NT$ '+(emp.salary?Number(emp.salary).toLocaleString():'—')+'</td><td>完成進度</td><td><strong>'+doneCnt+' / '+totalCnt+' 項</strong></td></tr>'
     +'</table>'
     +'<table class="pdf-table">'
