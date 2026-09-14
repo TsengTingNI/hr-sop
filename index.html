@@ -6,6 +6,7 @@
 <title>艾爾斯 HR 自動化系統</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous"></script>
 <script>
 // Fallback: if firebase not loaded, try unpkg
 window.addEventListener('load', function(){
@@ -465,7 +466,7 @@ body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:#f4f3
   <div class="header">
     <button class="header-back" onclick="goHome()">← 返回</button>
     <div class="header-title">員工入職流程</div>
-    <span class="header-badge badge-green" id="ob-badge">0 / 11</span>
+    <span class="header-badge badge-green" id="ob-badge">0 / 12</span>
     <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6966;margin-left:auto"><div id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#c97a0a;flex-shrink:0"></div><span id="sync-label">連線中...</span></div>
   </div>
   <div class="progress-wrap">
@@ -784,7 +785,7 @@ let emp = {};
 let obStep=0, offStep=0, layStep=0;
 let obDone=[], offDone=[], layDone=[];
 
-const OB_STEPS = ['填寫員工基本資料','發出錄取通知 Email','IT 設定（Stanley）','僱用合約','NUEIP 帳號設定','發報到須知 + 詢問團險','加保（勞健退）','人臉辨識、指紋、EVOX 分機（Estelle 設定）','到職當天：就職訓練','HR 更新項目','試用期三次面談'];
+const OB_STEPS = ['填寫員工基本資料','發出錄取通知 Email','IT 設定（Stanley）','僱用合約','NUEIP 帳號設定','發報到須知 + 詢問團險','加保（勞健退）','人臉辨識、指紋、EVOX 分機（Estelle 設定）','到職當天：就職訓練','HR 更新項目','試用期三次面談','在職證明'];
 const OFF_STEPS = ['填寫員工資料','離職申請書 ＆ 移交會辦單','退保作業（勞健退＋團險）','離職證明書','完成離職'];
 const LAY_STEPS = ['填寫員工資料','資遣費試算','資遣通知書','退保作業（勞健退＋團險）','非自願離職證明書'];
 
@@ -1089,7 +1090,7 @@ function startFlow(flow) {
   document.getElementById('welcome').style.display='none';
   document.getElementById('app-'+flow).classList.add('active');
   if(flow==='onboard'){
-    obStep=0;obDone=new Array(11).fill(false);
+    obStep=0;obDone=new Array(OB_STEPS.length).fill(false);
     if(!fbReady) initFirebase();
     // Ask for sync key (employee name or ID to share across devices)
     const key = prompt('請輸入員工姓名作為同步識別碼（例：童雲晞），相同識別碼的裝置會自動同步：');
@@ -1158,9 +1159,9 @@ function updateProgress(prefix, done, total) {
 // ONBOARD
 // ============================================================
 
-function renderOb(){renderSidebar('ob',OB_STEPS,obStep,obDone);document.getElementById('ob-content').innerHTML=OB_RENDER[obStep]();updateProgress('ob',obDone,11);window.scrollTo(0,0);setTimeout(restoreChecks,0);setTimeout(restoreInterviewLinks,80);}
+function renderOb(){renderSidebar('ob',OB_STEPS,obStep,obDone);document.getElementById('ob-content').innerHTML=OB_RENDER[obStep]();updateProgress('ob',obDone,OB_STEPS.length);window.scrollTo(0,0);setTimeout(restoreChecks,0);setTimeout(restoreInterviewLinks,80);}
 function goOb(s){obStep=s;renderOb();}
-function obNext(){obDone[obStep]=true;if(obStep<10)obStep++;saveFirebase();renderOb();}
+function obNext(){obDone[obStep]=true;if(obStep<OB_STEPS.length-1)obStep++;saveFirebase();renderOb();}
 function obPrev(){if(obStep>0){obStep--;renderOb();}}
 
 const OB_RENDER = [    // 0: Employee data (no empId, add personalEmail)
@@ -1179,6 +1180,8 @@ const OB_RENDER = [    // 0: Employee data (no empId, add personalEmail)
       <div class="form-group"><label class="form-label">職稱<span class="form-required">*</span></label><input class="form-input" id="f6" placeholder="例：留學顧問" value="${emp.title||''}"></div>
       <div class="form-group"><label class="form-label">公司 Email<span class="form-required">*</span></label><input class="form-input" id="f7" placeholder="例：bessy.tung@isec.com.tw" value="${emp.email||''}"></div>
       <div class="form-group"><label class="form-label">員工個人 Email<span class="form-required">*</span></label><input class="form-input" id="f8" placeholder="例：bessy@gmail.com（寄錄取通知用）" value="${emp.personalEmail||''}"></div>
+      <div class="form-group"><label class="form-label">身分證字號／護照號碼</label><input class="form-input" id="f9" placeholder="例：A123456789" value="${emp.idNo||''}"></div>
+      <div class="form-group"><label class="form-label">出生年月日</label><input class="form-input" type="date" id="f10" value="${emp.birthday||''}"></div>
     </div>
     <div class="btn-row"><button class="btn btn-primary" onclick="saveObEmp()">儲存並繼續 →</button>
       <button class="btn btn-amber" onclick="saveAsNewEmployee()" title="另存為新員工，舊資料保留">📋 另存為新員工</button></div>
@@ -1659,11 +1662,199 @@ Sharon Tseng</div>
     <div style="margin-top:16px">${ci('bday','✅ 試用期通過後：至 NUEIP 為 <strong>'+emp.nameZh+'</strong> 匯入生日假','試用期評核通過後執行，未勾選將出現在待辦 PDF 中')}</div>
     <div class="btn-row">
       <button class="btn btn-green" onclick="printObSummary()">📄 匯出入職追蹤 PDF</button>
-      <button class="btn btn-primary" onclick="obDone[10]=true;updateProgress('ob',obDone,11);saveFirebase();renderOb();alert('🎉 入職流程全部完成！')">✅ 完成入職流程</button>
+      <button class="btn btn-primary" onclick="obNext()">下一步：在職證明 →</button>
     </div>
   </div>`;
   },
+  // 11：在職證明
+  function(){
+    const coName = emp.companyName || '（請先於基本資料選擇所屬公司）';
+    const empName = emp.nameZh || '（請先填寫員工姓名）';
+    return `<div class="section-card">
+      <div class="section-title">📄 在職證明</div>
+      <div class="section-desc">系統會直接使用第一步已儲存的員工基本資料，產出正式的在職證明 PDF。</div>
+      <div class="alert alert-info">
+        <strong>將帶入的資料：</strong>${escapeHtml(coName)}　｜　${escapeHtml(empName)}<br>
+        員工姓名、身分證字號／護照號碼、出生年月日、職稱與正式到職日，均直接採用第一步的儲存資料。
+      </div>
+      <div class="alert alert-warn" style="margin-top:6px">
+        <strong>用印提醒：</strong>PDF 會保留「公司大印」及「負責人／法定代理人簽章」欄位，請依公司正式用印流程辦理。
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="downloadEmploymentCertificatePDF()">⬇️ 下載在職證明 PDF</button>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn" onclick="obPrev()">← 上一步</button>
+        <button class="btn btn-primary" onclick="obDone[11]=true;saveFirebase();renderOb();alert('🎉 入職流程全部完成！')">✅ 完成入職流程</button>
+      </div>
+    </div>`;
+  },
 ];
+
+function getEmploymentCertificateIssueDate(dateObj){
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth()+1).padStart(2,'0');
+  const d = String(dateObj.getDate()).padStart(2,'0');
+  return { compact: y + m + d, display: y + ' 年 ' + m + ' 月 ' + d + ' 日' };
+}
+
+function safeCertificateFilenamePart(value){
+  return String(value || '').replace(/[\\/:*?"<>|]/g,'').trim() || '未命名';
+}
+
+function downloadEmploymentCertificatePDF(){
+  if(!emp.companyName || !emp.nameZh || !emp.title || !emp.startDate){
+    alert('⚠️ 請先完成基本資料中的所屬公司、中文姓名、職稱與到職日，再下載在職證明。');
+    return;
+  }
+
+  if(!emp._checks) emp._checks = {};
+  emp._checks.employment_certificate = true;
+  saveFirebase();
+
+  const today = new Date();
+  const issueDate = getEmploymentCertificateIssueDate(today);
+  const co = COMPANIES.find(c => c.id === emp.cid) || {};
+  const coName = emp.companyName || co.name || '';
+  const coTax = emp.companyTax || co.tax || '';
+  const logoSrc = getLogo(emp.cid);
+  const startDate = emp.startDate ? new Date(emp.startDate + 'T00:00:00') : null;
+  const birthday = emp.birthday ? new Date(emp.birthday + 'T00:00:00') : null;
+  const fmtYMD = function(d){
+    if(!d || isNaN(d.getTime())) return '（未填寫）';
+    return d.getFullYear() + ' 年 ' + String(d.getMonth()+1).padStart(2,'0') + ' 月 ' + String(d.getDate()).padStart(2,'0') + ' 日';
+  };
+  const idNo = emp.idNo ? escapeHtml(emp.idNo) : '（未填寫）';
+  const fullName = escapeHtml(emp.nameZh || '') + (emp.nameEn ? '　' + escapeHtml(emp.nameEn) : '');
+  const employingBranch = emp.employingBranch || (emp.cid === 'stanley' ? '史丹利英語教育有限公司附設臺北市私立史丹利英語文理短期補習班' : coName);
+  const filename = safeCertificateFilenamePart(coName) + '＿在職證明_' + safeCertificateFilenamePart(emp.nameZh) + '＿' + issueDate.compact + '.pdf';
+
+  // 完全依「在職證明書_公司名稱_員工姓名」Word 範本：頁首、單欄資料表、聲明及用印區。
+  const displayIdNo = emp.idNo ? escapeHtml(emp.idNo) : '（請填寫 / Please fill in）';
+  const displayBirthday = (birthday && !isNaN(birthday.getTime())) ? fmtYMD(birthday) : '（請填寫 / Please fill in）';
+  const displayFullName = fullName || '（請填寫 / Please fill in）';
+  const displayTitle = emp.title ? escapeHtml(emp.title) : '（請填寫 / Please fill in）';
+  const certHtml = `<div style="font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;width:794px;background:#fff;color:#222;padding:68px 66px 78px;line-height:1.4;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:11px">
+      <img src="${logoSrc}" alt="公司標誌" style="height:45px;max-width:100px;object-fit:contain">
+      <div style="line-height:1.34">
+        <div style="font-size:16px;font-weight:600;letter-spacing:.01em">${escapeHtml(coName)}</div>
+        <div style="font-size:10.5px;color:#666;margin-top:2px">統一編號：${escapeHtml(coTax)}</div>
+      </div>
+    </div>
+    <div style="height:1px;background:#a7a7a7;margin-bottom:27px"></div>
+
+    <div style="text-align:center;margin:0 0 20px">
+      <div style="font-size:24px;font-weight:700;letter-spacing:.34em;margin-left:.34em">在　職　證　明　書</div>
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:12px;color:#555;margin-top:3px">Certificate of Employment</div>
+    </div>
+
+    <div style="font-size:12.5px;line-height:1.65;margin-bottom:17px">
+      茲證明下列員工現任職於本公司，迄今仍在職中，特此證明。<br>
+      <span style="font-family:Georgia,'Times New Roman',serif;font-size:10px;color:#777">This is to certify that the employee listed below is currently employed by this company.</span>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;margin:0 0 16px">
+      <tr>
+        <td style="width:33%;height:54px;border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;background:#fbfbfb">
+          <div style="font-size:11px;font-weight:600;color:#555">員工姓名</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:9px;color:#999;font-style:italic;margin-top:1px">Employee Name</div>
+        </td>
+        <td style="width:67%;border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;font-size:13px">${displayFullName}</td>
+      </tr>
+      <tr>
+        <td style="height:54px;border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;background:#fbfbfb">
+          <div style="font-size:11px;font-weight:600;color:#555">身分證字號 / 護照號碼</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:9px;color:#999;font-style:italic;margin-top:1px">National ID No. / Passport No.</div>
+        </td>
+        <td style="border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;font-size:13px">${displayIdNo}</td>
+      </tr>
+      <tr>
+        <td style="height:54px;border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;background:#fbfbfb">
+          <div style="font-size:11px;font-weight:600;color:#555">出生年月日</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:9px;color:#999;font-style:italic;margin-top:1px">Date of Birth</div>
+        </td>
+        <td style="border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;font-size:13px">${displayBirthday}</td>
+      </tr>
+      <tr>
+        <td style="height:54px;border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;background:#fbfbfb">
+          <div style="font-size:11px;font-weight:600;color:#555">任職公司</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:9px;color:#999;font-style:italic;margin-top:1px">Employer</div>
+        </td>
+        <td style="border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;font-size:13px">${escapeHtml(coName)}</td>
+      </tr>
+      <tr>
+        <td style="height:54px;border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;background:#fbfbfb">
+          <div style="font-size:11px;font-weight:600;color:#555">擔任職稱</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:9px;color:#999;font-style:italic;margin-top:1px">Job Title</div>
+        </td>
+        <td style="border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;font-size:13px">${displayTitle}</td>
+      </tr>
+      <tr>
+        <td style="height:54px;border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;background:#fbfbfb">
+          <div style="font-size:11px;font-weight:600;color:#555">正式到職日期</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:9px;color:#999;font-style:italic;margin-top:1px">Official Start Date</div>
+        </td>
+        <td style="border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;font-size:13px">${fmtYMD(startDate)}</td>
+      </tr>
+      <tr>
+        <td style="height:54px;border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;background:#fbfbfb">
+          <div style="font-size:11px;font-weight:600;color:#555">在職狀態</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:9px;color:#999;font-style:italic;margin-top:1px">Employment Status</div>
+        </td>
+        <td style="border:1px solid #b9b9b9;padding:8px 13px;vertical-align:middle;font-size:13px;font-weight:600">在職中　Currently Employed</td>
+      </tr>
+    </table>
+
+    <div style="font-size:10px;color:#666;line-height:1.5;margin:0 0 33px">
+      本證明書僅供該員工證明在職期間與職務之用，不作其他任何擔保、徵信或特定用途。<br>
+      <span style="font-family:Georgia,'Times New Roman',serif;font-size:8.5px;color:#999;font-style:italic">This certificate is issued solely for the purpose of verifying the employee's period of employment and job title, and shall not be construed as any form of guarantee, credit reference, or endorsement for any other specific purpose.</span>
+    </div>
+
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+      <div style="width:330px;font-size:11px;line-height:1.65">
+        <div>${escapeHtml(coName)}</div>
+        <div>統編：${escapeHtml(coTax)}</div>
+        <div>開立日期：${issueDate.display}</div>
+      </div>
+      <div style="display:flex;gap:0">
+        <div style="width:88px;height:92px;border:1px dashed #b6b6b6;display:flex;align-items:center;justify-content:center;text-align:center;color:#b2b2b2;font-size:10px;line-height:1.4">
+          公司<br>大印
+        </div>
+        <div style="width:88px;height:92px;border:1px dashed #b6b6b6;border-left:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#b2b2b2;font-size:10px;line-height:1.4">
+          負責人<br>簽章
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const stage = document.createElement('div');
+  stage.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;background:#fff;z-index:-1;';
+  stage.innerHTML = certHtml;
+  document.body.appendChild(stage);
+  const certElement = stage.firstElementChild;
+  const removeStage = function(){ if(stage && stage.parentNode) stage.parentNode.removeChild(stage); };
+
+  if(window.html2pdf){
+    html2pdf().set({
+      margin: [0, 0, 0, 0],
+      filename: filename,
+      image: {type:'jpeg', quality:0.98},
+      html2canvas: {scale:2, useCORS:true, backgroundColor:'#ffffff'},
+      jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
+      pagebreak: {mode:['css','legacy']}
+    }).from(certElement).save().then(removeStage).catch(function(err){
+      console.error('PDF 下載失敗：', err);
+      removeStage();
+      alert('PDF 下載失敗，將改以列印視窗開啟，請選擇「另存為 PDF」。');
+      printDoc(certHtml, filename.replace(/\.pdf$/i,''));
+    });
+  } else {
+    removeStage();
+    alert('PDF 元件尚未載入，將改以列印視窗開啟，請選擇「另存為 PDF」。');
+    printDoc(certHtml, filename.replace(/\.pdf$/i,''));
+  }
+}
 
 function saveAsNewEmployee(){
   const newName = prompt('請輸入新員工姓名（將以此名稱另存一份新資料）：');
@@ -1675,7 +1866,7 @@ function saveAsNewEmployee(){
   }
   // Copy current emp data with new name
   const newEmp = Object.assign({}, emp, {nameZh: newName.trim()});
-  const newRecord = {emp: newEmp, obDone: new Array(11).fill(false), flowType: 'onboard'};
+  const newRecord = {emp: newEmp, obDone: new Array(OB_STEPS.length).fill(false), flowType: 'onboard'};
   if(!fbReady || !db){
     alert('Firebase 未連線，無法另存。');
     return;
@@ -1684,7 +1875,7 @@ function saveAsNewEmployee(){
     if(confirm('已另存為「' + newName.trim() + '」！\n是否切換到新員工繼續操作？')){
       currentKey = newKey;
       emp = newEmp;
-      obDone = new Array(11).fill(false);
+      obDone = new Array(OB_STEPS.length).fill(false);
       obStep = 0;
       setSyncDot(true, '已切換至 ' + newName.trim());
       renderOb();
@@ -1694,11 +1885,11 @@ function saveAsNewEmployee(){
 
 function saveObEmp(){
   const v=id=>document.getElementById(id).value.trim();
-  const nameZh=v('f0'),nameEn=v('f1'),startDate=v('f3'),cid=v('f4'),dept=v('f5'),title=v('f6'),email=v('f7'),personalEmail=v('f8');
+  const nameZh=v('f0'),nameEn=v('f1'),startDate=v('f3'),cid=v('f4'),dept=v('f5'),title=v('f6'),email=v('f7'),personalEmail=v('f8'),idNo=v('f9'),birthday=v('f10');
   if(!nameZh||!nameEn||!startDate||!cid||!dept||!title||!email||!personalEmail){alert('請填寫所有必填欄位！');return;}
   const co=COMPANIES.find(c=>c.id===cid);
   // Preserve all existing emp fields, just update the form fields
-  emp=Object.assign(emp,{nameZh,nameEn,startDate,cid,companyName:co.name,companyTax:co.tax,dept,title,email,personalEmail});
+  emp=Object.assign(emp,{nameZh,nameEn,startDate,cid,companyName:co.name,companyTax:co.tax,dept,title,email,personalEmail,idNo,birthday});
   // Set currentKey from the prompt key (already set) or from nameZh
   if(!currentKey) currentKey=nameZh.replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
   saveFirebase();
@@ -1817,6 +2008,7 @@ function printObSummary(){
       
     ],
     10: [{id:'bday', label:'試用期通過後：NUEIP 匯入生日假'}],
+    11: [{id:'employment_certificate', label:'已下載在職證明 PDF'}],
   };
 
   // Build rows: each step + its child checkboxes indented below
