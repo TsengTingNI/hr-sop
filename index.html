@@ -787,7 +787,7 @@ let obDone=[], offDone=[], layDone=[];
 
 const OB_STEPS = ['填寫員工基本資料','發出錄取通知 Email','IT 設定（Stanley）','僱用合約','NUEIP 帳號設定','發報到須知 + 詢問團險','加保（勞健退）','人臉辨識、指紋、EVOX 分機（Estelle 設定）','到職當天：就職訓練','HR 更新項目','試用期三次面談','在職證明'];
 const OFF_STEPS = ['填寫員工資料','離職申請書 ＆ 移交會辦單','退保作業（勞健退＋團險）','離職證明書','完成離職'];
-const LAY_STEPS = ['填寫員工資料','資遣費試算','資遣通知書','退保作業（勞健退＋團險）','非自願離職證明書'];
+const LAY_STEPS = ['填寫員工資料','資遣費試算','資遣通知書','資遣面談紀錄','退保作業（勞健退＋團險）','非自願離職證明書'];
 
 // ============================================================
 // NAVIGATION
@@ -1119,7 +1119,7 @@ function startFlow(flow) {
     } else { currentKey=null; renderOff(); }
   }
   if(flow==='layoff'){
-    layStep=0; layDone=new Array(5).fill(false); emp={};
+    layStep=0; layDone=new Array(6).fill(false); emp={};
     const layKey=prompt('請輸入員工姓名作為同步識別碼（新案件請填員工姓名）：');
     if(layKey&&layKey.trim()){
       currentKey=layKey.trim().replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
@@ -1946,7 +1946,8 @@ const STEP_CHECK_MAP = {
   },
   layoff: {
     2: ['ly0','ly1'],
-    3: ['lr0','lr1','lr2'],
+    3: ['lay_interview_completed'],
+    4: ['lr2','lay_handover_recv'],
   },
 };
 
@@ -2270,9 +2271,9 @@ const PENDING_CHECKS = {
   layoff: {
     'ly0':{step:'資遣通知書', label:'向勞動局申報資遣通報（10天內）'},
     'ly1':{step:'資遣通知書', label:'確認是否涉及大量解僱'},
-    'lr0':{step:'退保作業', label:'勞保退保'},
-    'lr1':{step:'退保作業', label:'健保退保'},
+    'lay_interview_completed':{step:'資遣面談紀錄', label:'已完成資遣面談紀錄並歸檔'},
     'lr2':{step:'退保作業', label:'已填寫南山加退保異動單（退保）並寄出'},
+    'lay_handover_recv':{step:'退保作業', label:'已完成移交會辦單（各單位主管確認完成）'},
   },
 };
 
@@ -2282,7 +2283,7 @@ const STEP_LISTS = {
   layoff: LAY_STEPS,
 };
 const DONE_KEYS = {onboard:'obDone', offboard:'offDone', layoff:'layDone'};
-const TOTALS = {onboard:11, offboard:6, layoff:5};
+const TOTALS = {onboard:11, offboard:6, layoff:6};
 const TYPE_COLORS = {onboard:'#0f6e56', offboard:'#7a4f0a', layoff:'#8a1a1a'};
 const TYPE_BG = {onboard:'#e3f5ed', offboard:'#fdf0d9', layoff:'#fde8e8'};
 
@@ -2640,7 +2641,7 @@ function renderLay(){
     renderSidebar('lay',LAY_STEPS,layStep,layDone);
     const content = LAY_RENDER[layStep]();
     document.getElementById('lay-content').innerHTML = content;
-    updateProgress('lay',layDone,5);
+    updateProgress('lay',layDone,6);
     window.scrollTo(0,0);
     setTimeout(restoreChecks,0);
   } catch(e) {
@@ -2649,13 +2650,13 @@ function renderLay(){
   }
 }
 function goLay(s){layStep=s;renderLay();}
-function layNext(){layDone[layStep]=true;if(layStep<4)layStep++;saveFirebase();renderLay();}
+function layNext(){layDone[layStep]=true;if(layStep<5)layStep++;saveFirebase();renderLay();}
 function layPrev(){if(layStep>0){layStep--;renderLay();}}
 
 function layNav(){
   return '<div class="nav-buttons">'
     +'<button class="btn" onclick="layPrev()" '+(layStep===0?'disabled style="opacity:0.4"':'')+'">← 上一步</button>'
-    +'<button class="btn btn-primary" onclick="layNext()">'+(layStep===4?'✅ 完成':'下一步 →')+'</button>'
+    +'<button class="btn btn-primary" onclick="layNext()">'+(layStep===5?'✅ 完成':'下一步 →')+'</button>'
     +'</div>';
 }
 
@@ -2669,6 +2670,26 @@ const LAYOFF_REASON_OPTIONS = [
 function layoffReasonLabel(reasonId){
   const item=LAYOFF_REASON_OPTIONS.find(x=>x.id===reasonId);
   return item ? item.label : '（尚未選擇）';
+}
+function getLayoffReasonInfo(reasonId){
+  const item=LAYOFF_REASON_OPTIONS.find(x=>x.id===reasonId);
+  if(!item) return {clauseNo:'',reason:'（請回第一關選擇資遣事由）',full:'（尚未選擇）'};
+  const matched=item.label.match(/^第\s*(\d+)\s*款｜(.+)$/);
+  return matched ? {clauseNo:matched[1],reason:matched[2],full:item.label} : {clauseNo:'',reason:item.label,full:item.label};
+}
+// 資料來源：使用者提供「公司統編勞健保證號.xlsx」附件；史丹利、喬伊斯英語依附件列示公司證號。
+const LABOR_INSURANCE_NO_BY_CID = {
+  isec:'05996547Y',
+  isec2:'05772673B',
+  joyce:'05899248X',
+  jsi:'05994163T',
+  isec_ks:'15011608X',
+  stanley:'公司：15017100A',
+  joyce_e:'公司：15068622G',
+  travel:'01516576B'
+};
+function laborInsuranceNoForCompany(cid){
+  return LABOR_INSURANCE_NO_BY_CID[cid] || '（附件未列示，請確認）';
 }
 function calculateNewSeverance(startDateValue,endDateValue,averageWage){
   const start=new Date(startDateValue+'T00:00:00');
@@ -2697,12 +2718,13 @@ function calculateNewSeverance(startDateValue,endDateValue,averageWage){
 function saveLayEmp(){
   const v=id=>document.getElementById(id)?document.getElementById(id).value.trim():'';
   const nameZh=v('l0'),title=v('l1'),cid=v('l2'),startDate=v('l3'),layoffNoticeDate=v('l4'),lastWorkDate=v('l5'),salary=parseFloat(document.getElementById('l6').value);
+  const idNo=v('l7'),birthday=v('l8'),gender=v('l9'),address=v('l10'),phone=v('l11'),lastMonthWage=v('l12'),jobNature=v('l13'),nameEn=v('l14'),severancePayDate=v('l15');
   const reasonEl=document.querySelector('input[name="layoffReason"]:checked');
   const layoffReason=reasonEl?reasonEl.value:'';
   if(!nameZh||!title||!cid||!startDate||!layoffNoticeDate||!lastWorkDate||!layoffReason||!salary){alert('請填寫所有必填欄位，並勾選一項資遣事由！');return;}
   const co=COMPANIES.find(c=>c.id===cid);
   // endDate 持續保留作為既有資遣費試算、退保與證明書的相容欄位，值等同最後工作日。
-  emp=Object.assign(emp,{nameZh,title,cid,companyName:co.name,companyTax:co.tax,startDate,layoffNoticeDate,lastWorkDate,endDate:lastWorkDate,layoffReason,salary});
+  emp=Object.assign(emp,{nameZh,title,cid,companyName:co.name,companyTax:co.tax,startDate,layoffNoticeDate,lastWorkDate,endDate:lastWorkDate,layoffReason,salary,idNo,birthday,gender,address,phone,lastMonthWage:lastMonthWage||String(salary),jobNature:jobNature||title,nameEn,severancePayDate});
   if(!currentKey) currentKey=nameZh.replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fff_]/g,'');
   saveFirebase();
   layNext();
@@ -2725,12 +2747,21 @@ const LAY_RENDER = [
       +'<div class="alert alert-danger"><strong>資遣屬法律程序，請全程保留書面紀錄。</strong></div>'
       +'<div class="form-grid">'
         +'<div class="form-group"><label class="form-label">中文姓名<span class="form-required">*</span></label><input class="form-input" id="l0" value="'+(emp.nameZh||'')+'"></div>'
+        +'<div class="form-group"><label class="form-label">英文姓名／稱呼（Email 選填）</label><input class="form-input" id="l14" placeholder="例：Ally" value="'+(emp.nameEn||'')+'"></div>'
         +'<div class="form-group"><label class="form-label">職稱<span class="form-required">*</span></label><input class="form-input" id="l1" value="'+(emp.title||'')+'"></div>'
         +'<div class="form-group"><label class="form-label">所屬公司<span class="form-required">*</span></label><select class="form-select" id="l2"><option value="">— 請選擇 —</option>'+cos+'</select></div>'
         +'<div class="form-group"><label class="form-label">到職日<span class="form-required">*</span></label><input class="form-input" type="date" id="l3" value="'+(emp.startDate||'')+'"></div>'
         +'<div class="form-group"><label class="form-label">資遣通知日<span class="form-required">*</span></label><input class="form-input" type="date" id="l4" value="'+(emp.layoffNoticeDate||today)+'"></div>'
         +'<div class="form-group"><label class="form-label">最後工作日<span class="form-required">*</span></label><input class="form-input" type="date" id="l5" value="'+(emp.lastWorkDate||emp.endDate||today)+'"></div>'
         +'<div class="form-group"><label class="form-label">平均月薪（元）<span class="form-required">*</span></label><input class="form-input" type="number" id="l6" placeholder="例：45000" value="'+(emp.salary||'')+'"></div>'
+        +'<div class="form-group"><label class="form-label">資遣費預計發放日（選填）</label><input class="form-input" type="date" id="l15" value="'+(emp.severancePayDate||'')+'"></div>'
+        +'<div class="form-group"><label class="form-label">身分證字號／護照號碼</label><input class="form-input" id="l7" placeholder="例：A123456789" value="'+(emp.idNo||'')+'"></div>'
+        +'<div class="form-group"><label class="form-label">出生年月日</label><input class="form-input" type="date" id="l8" value="'+(emp.birthday||'')+'"></div>'
+        +'<div class="form-group"><label class="form-label">性別</label><select class="form-select" id="l9"><option value="">— 請選擇 —</option><option value="男" '+(emp.gender==='男'?'selected':'')+'>男</option><option value="女" '+(emp.gender==='女'?'selected':'')+'>女</option></select></div>'
+        +'<div class="form-group"><label class="form-label">聯絡電話</label><input class="form-input" id="l11" placeholder="例：0912-345-678" value="'+(emp.phone||'')+'"></div>'
+        +'<div class="form-group" style="grid-column:span 2"><label class="form-label">地址</label><input class="form-input" id="l10" placeholder="例：台北市大安區……" value="'+(emp.address||'')+'"></div>'
+        +'<div class="form-group"><label class="form-label">工作性質</label><input class="form-input" id="l13" placeholder="未填時自動使用職稱" value="'+(emp.jobNature||emp.title||'')+'"></div>'
+        +'<div class="form-group"><label class="form-label">離職當月工資（元）</label><input class="form-input" type="number" id="l12" placeholder="未填時自動採用平均月薪" value="'+(emp.lastMonthWage||emp.salary||'')+'"></div>'
       +'</div>'
       +'<div style="margin-top:18px;padding:15px;border:1px solid #e6b8b8;border-radius:10px;background:#fff7f7">'
         +'<div style="font-size:14px;font-weight:700;color:#8a1a1a;margin-bottom:5px">依《勞動基準法》第 11 條第幾款資遣<span class="form-required">*</span></div>'
@@ -2780,6 +2811,18 @@ const LAY_RENDER = [
   // 2: Layoff notice (no print button per request)
   function(){
     if(!emp.nameZh) return needData('goLay(0)');
+    const reasonInfo=getLayoffReasonInfo(emp.layoffReason);
+    const lastWorkDate=emp.lastWorkDate||emp.endDate||'';
+    const calc=calculateNewSeverance(emp.startDate,lastWorkDate,Number(emp.salary));
+    const noticeDays=calc?(calc.serviceYears>=3?30:calc.serviceYears>=1?20:calc.serviceYears>=0.25?10:0):0;
+    const fmtSlash=function(v){return v?(v.slice(0,10).replace(/-/g,'/')):'＿＿／＿＿／＿＿';};
+    const fmtFormal=function(v){return v?fmtDateFormal(new Date(v+'T00:00:00')):'＿＿年＿＿月＿＿日';};
+    const noticeStart=nextDateYmd(emp.layoffNoticeDate);
+    const greeting=emp.nameEn?(emp.nameEn+'（'+(emp.nameZh||'')+'）'):(emp.nameZh||'員工');
+    const periodText=noticeDays?('預告期為 '+fmtSlash(noticeStart)+'～'+fmtSlash(lastWorkDate)):'預告期請依個案法定期間確認';
+    const payDateText=emp.severancePayDate?('（於 '+fmtSlash(emp.severancePayDate)+' 併同薪資）'):'（於離職後 30 天內併同薪資）';
+    const emailSubject='【重要通知】勞動契約終止與離職權益說明｜'+(emp.companyName||'公司名稱')+'｜'+(emp.nameZh||'員工姓名');
+    const employeeEmail='主旨：'+emailSubject+'\n\n'+greeting+'您好：\n\n很遺憾在溝通之後，公司經過整體評估，還是必須正式通知您辦理資遣。\n\n這段時間的面談與觀察下來，公司將依《勞動基準法》第十一條第 '+(reasonInfo.clauseNo||'＿')+' 款規定（'+reasonInfo.reason+'），於 '+fmtFormal(lastWorkDate)+' 正式與您終止勞動契約。\n\n儘管如此，我們依然非常感謝您這段時間對公司的付出與努力。為了保障您的權益，公司會完全依照《勞動基準法》提供四大核心權益：\n\n1. '+(noticeDays||'法定')+' 天法定預告期與有薪謀職假：資遣通知日為 '+fmtSlash(emp.layoffNoticeDate)+'，'+periodText+'；預告期間每週最多可請 2 天有薪謀職假。\n\n2. 法定資遣費：依勞退新制年資核算，將於離職後 30 天內'+payDateText+'匯入指定帳戶。\n\n3. 非自願離職證明：公司已開立並提供《非自願離職證明書》（詳如附件），供您後續向就業服務站申請失業給付。\n\n4. 未休特休結算：剩餘未休完之特休假將全數折算薪資給付。\n\n同時，也請您於最後工作日前，填寫附件《移交會辦單》並協助完成業務、公司資產與帳號等交接作業。交接手續處理完畢後，公司同意您彈性提早離開（免除後續出勤，預告期薪資與權益維持不變），以利您進行後續的謀職安排。\n\n我們今天會協助您把相關流程走完。若您對本通知、離職手續或個人權益有任何疑問，隨時都可以與人資部聯繫，我們將全力協助。\n\n誠摯祝福您未來職涯順利！\n\n'+(emp.companyName||'公司名稱')+' 人資部 敬上';
     return '<div class="section-card">'
       +'<div class="section-title">📋 資遣通知書</div>'
       +'<div class="alert alert-danger"><strong>法規：</strong>10 天內向勞動局通報資遣。10 人以上需 60 天前申報大量解僱。</div>'
@@ -2787,23 +2830,102 @@ const LAY_RENDER = [
         +ci('ly0','向勞動局申報資遣通報（10 天內）')
         +ci('ly1','確認是否涉及大量解僱（10人以上）')
       +'</div>'
-      +'<div class="btn-row"><a href="https://www.mol.gov.tw/" target="_blank" class="btn btn-amber">🔗 前往勞動部申報</a></div>'
+      +'<div class="btn-row"><a href="https://www.mol.gov.tw/" target="_blank" rel="noopener noreferrer" class="btn btn-amber">🔗 前往勞動部申報</a><button class="btn btn-primary" onclick="printLayoffNotice()">📄 產生資遣通知書 PDF</button></div>'
+      +'<div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.08)">'
+        +'<div style="font-size:13px;font-weight:700;margin-bottom:8px">📧 正式通知員工 Email 範本</div>'
+        +'<div style="font-size:12px;color:#6b6966;margin-bottom:8px">公司、員工姓名、資遣通知日、預告期間、最後工作日與《勞動基準法》第 11 條款次均依第一關資料自動帶入。</div>'
+        +'<div class="text-output" id="lay-notice-email">'+escapeHtml(employeeEmail)+'</div>'
+        +'<div class="btn-row"><button class="btn" onclick="copyEl(&quot;lay-notice-email&quot;)">📋 複製 Email 內文</button></div>'
+      +'</div>'
       +layNav()+'</div>';
   },
-  // 3: Insurance withdrawal
+  // 3: Severance interview record
+  function(){
+    if(!emp.nameZh) return needData('goLay(0)');
+    const li=emp.layInterview||{};
+    const calc=calculateNewSeverance(emp.startDate,emp.lastWorkDate||emp.endDate,Number(emp.salary));
+    const defaultPeriod=calc?(calc.serviceYears>=3?'30':calc.serviceYears>=1?'20':calc.serviceYears>=0.25?'10':'pending'):'pending';
+    const period=li.noticePeriod||defaultPeriod;
+    const noticeDate=li.noticeDate||emp.layoffNoticeDate||'';
+    const startDate=li.noticeStartDate||nextDateYmd(noticeDate);
+    const lastWorkDate=li.lastWorkDate||emp.lastWorkDate||emp.endDate||'';
+    const reasonInfo=getLayoffReasonInfo(emp.layoffReason);
+    const checked=function(key){return li[key]?' checked':'';};
+    return '<div class="section-card">'
+      +'<div class="section-title">🗣️ 資遣面談紀錄</div>'
+      +'<div class="section-desc">依範本提供 A／B／C 三區塊；各文字欄位可直接填寫，儲存後可匯出 PDF。</div>'
+      +'<div style="margin:16px 0 14px;background:#e7eef5;border-left:38px solid #174a7a;padding:8px 12px;font-weight:700;color:#1b3147">A　資遣決定與法定事由 <span style="font-weight:400;font-style:italic;font-size:12px">Decision &amp; Legal Basis</span></div>'
+      +'<div style="border:1px solid #cfd6dc;border-radius:8px;padding:14px;background:#fbfdff">'
+        +'<div style="font-size:13px;font-weight:700;margin-bottom:8px">終止原因</div>'
+        +'<div style="font-size:13px;line-height:1.7;background:#fff;padding:10px;border:1px solid #dde3e8">'
+          +'<strong>☑ 勞基法第 11 條第 '+(reasonInfo.clauseNo||'＿')+' 款</strong>　'+reasonInfo.reason
+        +'</div>'
+      +'</div>'
+      +'<div style="margin:20px 0 14px;background:#e7eef5;border-left:38px solid #174a7a;padding:8px 12px;font-weight:700;color:#1b3147">B　預告期確認 <span style="font-weight:400;font-style:italic;font-size:12px">Notice</span></div>'
+      +'<div style="border:1px solid #cfd6dc;border-radius:8px;padding:14px;background:#fbfdff">'
+        +'<div style="font-size:13px;font-weight:700;margin-bottom:8px">預告期間</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 16px;font-size:13px;margin-bottom:14px">'
+          +'<label><input type="radio" name="li-period" value="10"'+(period==='10'?' checked':'')+'> 10 日（年資 3 個月以上未滿 1 年）</label>'
+          +'<label><input type="radio" name="li-period" value="20"'+(period==='20'?' checked':'')+'> 20 日（年資 1 年以上未滿 3 年）</label>'
+          +'<label><input type="radio" name="li-period" value="30"'+(period==='30'?' checked':'')+'> 30 日（年資 3 年以上）</label>'
+          +'<label><input type="radio" name="li-period" value="pending"'+(period==='pending'?' checked':'')+'> 法令未明定／待核</label>'
+        +'</div>'
+        +'<div class="form-grid">'
+          +'<div class="form-group"><label class="form-label">預告通知日</label><input class="form-input" id="li-notice-date" type="date" value="'+noticeDate+'"></div>'
+          +'<div class="form-group"><label class="form-label">預告起算日（通知次日起算）</label><input class="form-input" id="li-start-date" type="date" value="'+startDate+'"></div>'
+          +'<div class="form-group"><label class="form-label">最後工作日</label><input class="form-input" id="li-last-date" type="date" value="'+lastWorkDate+'"></div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="margin:20px 0 14px;background:#e7eef5;border-left:38px solid #174a7a;padding:8px 12px;font-weight:700;color:#1b3147">C　面談紀錄 <span style="font-weight:400;font-style:italic;font-size:12px">Interview Record</span></div>'
+      +'<div style="font-size:12px;color:#5f6d78;margin:-4px 0 12px">建議面談順序：先說明決定與事實，再說明日期、給付與文件，最後確認問題、交接與後續聯絡方式。</div>'
+      +'<div style="border:1px solid #cfd6dc;border-radius:8px;overflow:hidden">'
+        +'<div style="display:grid;grid-template-columns:120px 1fr;border-bottom:1px solid #cfd6dc">'
+          +'<div style="background:#edf2f6;padding:14px 12px;font-weight:700">通知</div>'
+          +'<div style="padding:12px">'
+            +'<div style="display:flex;flex-wrap:wrap;gap:7px 14px;font-size:12.5px;margin-bottom:10px">'
+              +'<label><input type="checkbox" id="li-notify-1"'+checked('notifyDecision')+'> 公司決定終止勞動契約</label>'
+              +'<label><input type="checkbox" id="li-notify-2"'+checked('notifyBasis')+'> 說明法定／客觀事由</label>'
+              +'<label><input type="checkbox" id="li-notify-3"'+checked('notifyDate')+'> 說明生效日與最後工作日</label>'
+              +'<label><input type="checkbox" id="li-notify-4"'+checked('notifyWritten')+'> 提供書面通知</label>'
+            +'</div>'
+            +'<textarea class="form-input" id="li-notify-text" rows="8" placeholder="請填寫通知內容、給付及文件說明……">'+escapeHtml(li.notifyText||'')+'</textarea>'
+          +'</div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:120px 1fr;border-bottom:1px solid #cfd6dc">'
+          +'<div style="background:#edf2f6;padding:14px 12px;font-weight:700">面談紀錄</div>'
+          +'<div style="padding:12px"><textarea class="form-input" id="li-record" rows="11" placeholder="請記錄雙方溝通內容、交接事項、問題回覆及後續安排……">'+escapeHtml(li.record||'')+'</textarea></div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:120px 1fr">'
+          +'<div style="background:#edf2f6;padding:14px 12px;font-weight:700">支持與協助</div>'
+          +'<div style="padding:12px">'
+            +'<div style="display:flex;flex-wrap:wrap;gap:7px 14px;font-size:12.5px;margin-bottom:10px">'
+              +'<label><input type="checkbox" id="li-support-1"'+checked('supportCertificate')+'> 提供非自願離職證明</label>'
+              +'<label><input type="checkbox" id="li-support-2"'+checked('supportEmployment')+'> 說明公立就業服務機構／失業認定資訊</label>'
+              +'<label><input type="checkbox" id="li-support-3"'+checked('supportCareer')+'> 提供職涯轉銜／推薦信協助</label>'
+              +'<label><input type="checkbox" id="li-support-4"'+checked('supportEap')+'> 提供員工協助方案（EAP）或心理支持資訊</label>'
+            +'</div>'
+            +'<input class="form-input" id="li-support-other" placeholder="其他支持與協助（選填）" value="'+escapeHtml(li.supportOther||'')+'">'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="btn-row" style="margin-top:16px"><button class="btn" onclick="saveLayInterview(false)">💾 儲存面談紀錄</button><button class="btn btn-primary" onclick="printLayInterviewPDF()">📄 匯出資遣面談紀錄 PDF</button></div>'
+      +'<div class="checklist" style="margin-top:14px">'+ci('lay_interview_completed','已完成資遣面談紀錄並歸檔')+'</div>'
+      +layNav()+'</div>';
+  },
+  // 4: Insurance withdrawal
   function(){
     const empNameZh=emp.nameZh||'（員工姓名）';
     const coLabel=(['stanley','joyce_e'].includes(emp.cid)?'史丹利英語教育有限公司':'艾爾斯國際諮詢顧問有限公司');
     const endDateFmt=emp.endDate?(new Date(emp.endDate).getFullYear()+'年'+(new Date(emp.endDate).getMonth()+1)+'月'+new Date(emp.endDate).getDate()+'日'):'（資遣日）';
     const nanshanEmail='Dear Ella,\n\n您好，我是艾爾斯 HR Sharon。\n\n我們'+coLabel+'員工 '+empNameZh+' '+endDateFmt+'資遣，再麻煩協助退保，謝謝您。\n\n謝謝您的協助與時間閱讀此信。\n\n艾爾斯人資部\nSharon Tseng';
     const subject=coLabel+'_加退保通知_'+empNameZh;
+    const laborInsuranceNo=laborInsuranceNoForCompany(emp.cid);
     return '<div class="section-card">'
       +'<div class="section-title">🏥 退保作業（勞健退＋團險）</div>'
       +'<div class="alert alert-danger"><strong>法定期限：</strong>資遣日起 2 天內完成勞健保退保。</div>'
-      +'<div style="font-size:13px;font-weight:700;margin-bottom:8px">① 勞保、健保退保</div>'
-      +'<div class="checklist">'+ci('lr0','登入政府系統完成勞保退保')+ci('lr1','完成健保退保')+'</div>'
       +'<div class="cred-box" style="margin:10px 0"><table class="info-table">'
-        +'<tr><td>系統網址</td><td><a href="https://edesk.bli.gov.tw/me/#/cpa/login" target="_blank" style="color:#1a4f8a">edesk.bli.gov.tw</a></td></tr>'
+        +'<tr><td>系統網址</td><td><a href="https://edesk.bli.gov.tw/me/#/cpa/login" target="_blank" rel="noopener noreferrer" style="color:#1a4f8a">edesk.bli.gov.tw</a></td></tr>'
+        +'<tr><td>勞保證號</td><td><strong>'+laborInsuranceNo+'</strong></td></tr>'
         +'<tr><td>身分證號</td><td>A227056812</td></tr>'
         +'<tr><td>自然人憑證密碼</td><td>banian28</td></tr>'
       +'</table></div>'
@@ -2821,24 +2943,97 @@ const LAY_RENDER = [
         +'</div>'
       +'</div>'
       +'<div class="checklist">'+ci('lr2','已填寫南山加退保異動單（退保）並以附件寄出')+'</div>'
+      +'<div style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(0,0,0,0.12)">'
+        +'<div style="font-size:16px;font-weight:700;margin-bottom:6px">📋 移交會辦單</div>'
+        +'<div class="section-desc">與退保作業一起完成；格式與離職流程相同，以下資料會自動帶入移交會辦單 PDF。</div>'
+        +'<div style="margin:14px 0;padding:16px;background:#f8f7f3;border-radius:10px">'
+          +'<div style="font-size:13px;font-weight:700;margin-bottom:10px">請填入人資作業狀態</div>'
+          +'<div class="form-grid">'
+            +'<div class="form-group"><label class="form-label">勞健保退保</label><select class="form-select" onchange="emp.hoLabor=this.value;saveFirebase()"><option value="">— 請選擇 —</option><option value="完成" '+(emp.hoLabor==='完成'?'selected':'')+'>完成</option><option value="未完成" '+(emp.hoLabor==='未完成'?'selected':'')+'>未完成</option></select></div>'
+            +'<div class="form-group"><label class="form-label">團險退保</label><select class="form-select" onchange="emp.hoIns=this.value;saveFirebase()"><option value="">— 請選擇 —</option><option value="完成" '+(emp.hoIns==='完成'?'selected':'')+'>完成</option><option value="未完成" '+(emp.hoIns==='未完成'?'selected':'')+'>未完成</option><option value="無" '+(emp.hoIns==='無'?'selected':'')+'>無 N/A</option></select></div>'
+            +'<div class="form-group"><label class="form-label">NUEIP 掛離職日、轉出勞健保</label><select class="form-select" onchange="emp.hoNueip=this.value;saveFirebase()"><option value="">— 請選擇 —</option><option value="完成" '+(emp.hoNueip==='完成'?'selected':'')+'>完成</option><option value="未完成" '+(emp.hoNueip==='未完成'?'selected':'')+'>未完成</option></select></div>'
+            +'<div class="form-group"><label class="form-label">特休時數剩餘</label><select class="form-select" style="margin-bottom:6px" onchange="emp.hoAnnualNA=this.value;var input=document.getElementById(&quot;lay-ho-annual&quot;);if(input)input.style.display=this.value===&quot;無&quot;?&quot;none&quot;:&quot;&quot;;saveFirebase()"><option value="">— 請選擇 —</option><option value="有" '+(emp.hoAnnualNA==='有'?'selected':'')+'>有（填入時數）</option><option value="無" '+(emp.hoAnnualNA==='無'?'selected':'')+'>無 N/A</option></select><input class="form-input" id="lay-ho-annual" type="number" placeholder="例：8" value="'+(emp.hoAnnual||'')+'" style="'+(emp.hoAnnualNA==='無'?'display:none;':'')+'" oninput="emp.hoAnnual=this.value;saveFirebase()"></div>'
+            +'<div class="form-group"><label class="form-label">補休時數剩餘</label><select class="form-select" style="margin-bottom:6px" onchange="emp.hoCompNA=this.value;var input=document.getElementById(&quot;lay-ho-comp&quot;);if(input)input.style.display=this.value===&quot;無&quot;?&quot;none&quot;:&quot;&quot;;saveFirebase()"><option value="">— 請選擇 —</option><option value="有" '+(emp.hoCompNA==='有'?'selected':'')+'>有（填入時數）</option><option value="無" '+(emp.hoCompNA==='無'?'selected':'')+'>無 N/A</option></select><input class="form-input" id="lay-ho-comp" type="number" placeholder="例：4" value="'+(emp.hoComp||'')+'" style="'+(emp.hoCompNA==='無'?'display:none;':'')+'" oninput="emp.hoComp=this.value;saveFirebase()"></div>'
+          +'</div>'
+        +'</div>'
+        +'<div class="btn-row"><button class="btn btn-primary" onclick="printHandover()">📄 產生移交會辦單 PDF</button></div>'
+        +'<div class="checklist" style="margin-top:14px">'+ci('lay_handover_recv','已完成移交會辦單（各單位主管確認完成）')+'</div>'
+      +'</div>'
+      +'<div class="alert alert-success" style="margin-top:16px">✅ 請確認退保作業與移交會辦單均已辦理後，再進入非自願離職證明書。</div>'
       +layNav()+'</div>';
   },
   // 4: Layoff cert PDF
   function(){
     if(!emp.nameZh) return needData('goLay(0)');
+    const reasonInfo=getLayoffReasonInfo(emp.layoffReason);
     return '<div class="section-card">'
       +'<div class="section-title">📜 非自願離職證明書</div>'
-      +'<div class="section-desc">點擊下方按鈕產生 PDF，蓋章後發給員工供申請失業給付使用。</div>'
+      +'<div class="section-desc">證明書會依第一關選擇的《勞動基準法》第 11 條第 '+(reasonInfo.clauseNo||'＿')+' 款自動更新資遣事由。移交會辦單已整合至上一關「退保作業」。</div>'
       +'<div class="btn-row"><button class="btn btn-primary" onclick="printLayoffCert()">📄 產生非自願離職證明書 PDF</button></div>'
-      +'<div class="alert alert-success" style="margin-top:16px">✅ 完成後請確認退保作業已全部辦理。</div>'
+      +'<div class="alert alert-success" style="margin-top:16px">✅ 完成後請確認退保作業與移交會辦單均已辦理。</div>'
       +'<div class="btn-row">'
         +'<button class="btn btn-green" onclick="printLaySummary()">📄 匯出資遣追蹤 PDF</button>'
-        +'<button class="btn btn-primary" onclick="layDone[4]=true;updateProgress(&quot;lay&quot;,layDone,5);saveFirebase();renderLay();alert(&quot;✅ 資遣流程完成！&quot;)">✅ 確認全部完成</button>'
+        +'<button class="btn btn-primary" onclick="layDone[5]=true;updateProgress(&quot;lay&quot;,layDone,6);saveFirebase();renderLay();alert(&quot;✅ 資遣流程完成！&quot;)">✅ 確認全部完成</button>'
       +'</div>'
       +layNav()
       +'</div>';
   },
 ];
+
+
+function nextDateYmd(dateValue){
+  if(!dateValue) return '';
+  const d=new Date(dateValue+'T00:00:00');
+  if(isNaN(d.getTime())) return '';
+  d.setDate(d.getDate()+1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function getLayInterviewFormData(){
+  const value=function(id){const el=document.getElementById(id);return el?el.value.trim():'';};
+  const checked=function(id){const el=document.getElementById(id);return !!(el&&el.checked);};
+  const period=document.querySelector('input[name="li-period"]:checked');
+  return {
+    noticePeriod:period?period.value:'pending',
+    noticeDate:value('li-notice-date'),
+    noticeStartDate:value('li-start-date'),
+    lastWorkDate:value('li-last-date'),
+    notifyDecision:checked('li-notify-1'), notifyBasis:checked('li-notify-2'), notifyDate:checked('li-notify-3'), notifyWritten:checked('li-notify-4'),
+    notifyText:value('li-notify-text'), record:value('li-record'),
+    supportCertificate:checked('li-support-1'), supportEmployment:checked('li-support-2'), supportCareer:checked('li-support-3'), supportEap:checked('li-support-4'), supportOther:value('li-support-other')
+  };
+}
+function saveLayInterview(showAlert){
+  if(!document.getElementById('li-record')) return false;
+  emp.layInterview=getLayInterviewFormData();
+  saveFirebase();
+  if(showAlert) alert('✅ 資遣面談紀錄已儲存。');
+  return true;
+}
+function printLayInterviewPDF(){
+  saveLayInterview(false);
+  const li=emp.layInterview||{};
+  const reasonInfo=getLayoffReasonInfo(emp.layoffReason);
+  const logoSrc=getLogo(emp.cid);
+  const today=new Date();
+  const check=function(v,label){return (v?'☑':'□')+' '+label;};
+  const periodLabel={10:'10 日（年資 3 個月以上未滿 1 年）',20:'20 日（年資 1 年以上未滿 3 年）',30:'30 日（年資 3 年以上）',pending:'法令未明定／待核'};
+  const fmt=function(v){return v?fmtDateFormal(new Date(v+'T00:00:00')):'＿＿年＿＿月＿＿日';};
+  const reasonChoices=[1,2,3,4,5].map(function(n){return check(reasonInfo.clauseNo===String(n),'勞基法第 11 條第 '+n+' 款');}).join('　');
+  const support=[check(li.supportCertificate,'提供非自願離職證明'),check(li.supportEmployment,'說明公立就業服務機構／失業認定資訊'),check(li.supportCareer,'提供職涯轉銜／推薦信協助'),check(li.supportEap,'提供員工協助方案（EAP）或心理支持資訊')].join('　');
+  const pdfHtml=`<div style="font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;max-width:700px;margin:0 auto;padding:28px 34px;color:#17202a;font-size:12px;line-height:1.55">
+    <div style="display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:2px solid #234e70;margin-bottom:13px"><img src="${logoSrc}" style="max-width:54px;max-height:38px;object-fit:contain"><div><div style="font-weight:700;font-size:15px">${emp.companyName||''}</div><div style="font-size:11px;color:#667">資遣面談紀錄 Severance Interview Record</div></div><div style="margin-left:auto;font-size:11px">填表日期：${fmt(today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0'))}</div></div>
+    <div style="display:flex;align-items:center;background:#e7eef5;border-left:38px solid #174a7a;padding:7px 12px;font-size:14px;font-weight:700;margin-top:12px">A　資遣決定與法定事由 <span style="font-size:10.5px;font-style:italic;font-weight:400;margin-left:7px">Decision &amp; Legal Basis</span></div>
+    <table style="width:100%;border-collapse:collapse"><tr><td style="width:18%;border:1px solid #bbc8d2;padding:9px;background:#f1f5f8;font-weight:700">終止原因</td><td style="border:1px solid #bbc8d2;padding:9px"><div>${reasonChoices}</div><div style="margin-top:5px">${reasonInfo.reason}</div></td></tr></table>
+    <div style="display:flex;align-items:center;background:#e7eef5;border-left:38px solid #174a7a;padding:7px 12px;font-size:14px;font-weight:700;margin-top:14px">B　預告期確認 <span style="font-size:10.5px;font-style:italic;font-weight:400;margin-left:7px">Notice</span></div>
+    <table style="width:100%;border-collapse:collapse"><tr><td style="width:30%;border:1px solid #bbc8d2;padding:8px;background:#f1f5f8;font-weight:700">預告期間</td><td style="border:1px solid #bbc8d2;padding:8px">${check(li.noticePeriod==='10','10 日（年資3個月以上未滿1年）')}　${check(li.noticePeriod==='20','20 日（年資1年以上未滿3年）')}　${check(li.noticePeriod==='30','30 日（年資3年以上）')}　${check(li.noticePeriod==='pending','法令未明定／待核')}</td></tr><tr><td style="border:1px solid #bbc8d2;padding:8px;background:#f1f5f8">預告通知日</td><td style="border:1px solid #bbc8d2;padding:8px">${fmt(li.noticeDate)}</td></tr><tr><td style="border:1px solid #bbc8d2;padding:8px;background:#f1f5f8">預告起算日</td><td style="border:1px solid #bbc8d2;padding:8px">${fmt(li.noticeStartDate)}（通知次日起算）</td></tr><tr><td style="border:1px solid #bbc8d2;padding:8px;background:#f1f5f8">最後工作日</td><td style="border:1px solid #bbc8d2;padding:8px">${fmt(li.lastWorkDate)}</td></tr></table>
+    <div style="display:flex;align-items:center;background:#e7eef5;border-left:38px solid #174a7a;padding:7px 12px;font-size:14px;font-weight:700;margin-top:14px">C　面談紀錄 <span style="font-size:10.5px;font-style:italic;font-weight:400;margin-left:7px">Interview Record</span></div>
+    <div style="font-size:10.5px;color:#667;margin:7px 0">建議面談順序：先說明決定與事實，再說明日期、給付與文件，最後確認問題、交接與後續聯絡方式。</div>
+    <table style="width:100%;border-collapse:collapse"><tr><td style="width:18%;border:1px solid #bbc8d2;padding:10px;background:#f1f5f8;font-weight:700;vertical-align:top">通知</td><td style="border:1px solid #bbc8d2;padding:10px"><div style="font-size:11px">${check(li.notifyDecision,'公司決定終止勞動契約')}　${check(li.notifyBasis,'說明法定／客觀事由')}　${check(li.notifyDate,'說明生效日與最後工作日')}　${check(li.notifyWritten,'提供書面通知')}</div><div style="white-space:pre-wrap;margin-top:9px;min-height:72px">${escapeHtml(li.notifyText||'')}</div></td></tr><tr><td style="border:1px solid #bbc8d2;padding:10px;background:#f1f5f8;font-weight:700;vertical-align:top">面談紀錄</td><td style="border:1px solid #bbc8d2;padding:10px;white-space:pre-wrap;min-height:130px">${escapeHtml(li.record||'')}</td></tr><tr><td style="border:1px solid #bbc8d2;padding:10px;background:#f1f5f8;font-weight:700;vertical-align:top">支持與協助</td><td style="border:1px solid #bbc8d2;padding:10px"><div style="font-size:11px;line-height:1.8">${support}</div><div style="margin-top:7px">其他：${escapeHtml(li.supportOther||'')}</div></td></tr></table>
+    <div style="display:flex;justify-content:space-between;margin-top:24px;font-size:12px"><span>面談人：＿＿＿＿＿＿＿＿＿＿＿＿</span><span>員工簽收／確認：＿＿＿＿＿＿＿＿＿＿＿＿</span></div>
+  </div>`;
+  const filename=(emp.companyName||'公司名稱')+'＿資遣面談紀錄_'+(emp.nameZh||'員工姓名')+'＿'+today.getFullYear()+String(today.getMonth()+1).padStart(2,'0')+String(today.getDate()).padStart(2,'0');
+  printDoc(pdfHtml,filename);
+}
 
 function printOffSummary(){
   const logoSrc = emp.cid ? getLogo(emp.cid) : ISEC_LOGO;
@@ -2910,9 +3105,9 @@ function printLaySummary(){
   const LAY_CHECKS_DEF = {
     'ly0': {step:'資遣通知書', label:'向勞動局申報資遣通報（10天內）'},
     'ly1': {step:'資遣通知書', label:'確認是否涉及大量解僱'},
-    'lr0': {step:'退保作業', label:'勞保退保'},
-    'lr1': {step:'退保作業', label:'健保退保'},
+    'lay_interview_completed': {step:'資遣面談紀錄', label:'已完成資遣面談紀錄並歸檔'},
     'lr2': {step:'退保作業', label:'已填寫南山加退保異動單並寄出'},
+    'lay_handover_recv': {step:'退保作業', label:'已完成移交會辦單（各單位主管確認完成）'},
   };
 
   let rows = '';
@@ -3060,9 +3255,11 @@ function printLaySummary(){
   const LAY_CHECKS_DEF = [
     {step:'資遣通知書', id:'ly0', label:'向勞動局申報資遣通報（10天內）'},
     {step:'資遣通知書', id:'ly1', label:'確認是否涉及大量解僱'},
+    {step:'資遣面談紀錄', id:'lay_interview_completed', label:'已完成資遣面談紀錄並歸檔'},
     {step:'退保作業（勞健退＋團險）', id:'lr0', label:'勞保退保'},
     {step:'退保作業（勞健退＋團險）', id:'lr1', label:'健保退保'},
     {step:'退保作業（勞健退＋團險）', id:'lr2', label:'已填寫南山加退保異動單（退保）並寄出'},
+    {step:'退保作業（勞健退＋團險）', id:'lay_handover_recv', label:'已完成移交會辦單（各單位主管確認完成）'},
   ];
 
   let rows='';
@@ -3452,13 +3649,12 @@ function printOffCert(){
 }
 
 function printLayoffNotice(){
-  const s=new Date(emp.startDate),e=new Date(emp.endDate);
-  const years=(e-s)/(1000*60*60*24*365.25);
-  const wy=Math.floor(years),fm=Math.round((years-wy)*12);
-  let months=Math.min(wy*0.5+(years-wy)*0.5,6);months=Math.round(months*100)/100;
-  const total=Math.round(emp.salary*months);
-  let nd=0;if(years>=3)nd=30;else if(years>=1)nd=20;else if(years>=0.25)nd=10;
-  const noticeEnd=new Date(new Date().getTime()+nd*24*60*60*1000);
+  const lastWorkDate=emp.lastWorkDate||emp.endDate;
+  const calc=calculateNewSeverance(emp.startDate,lastWorkDate,Number(emp.salary)) || {years:0,months:0,days:0,wageMonths:0,amount:0,serviceYears:0};
+  const wy=calc.years,fm=calc.months,fd=calc.days,months=calc.wageMonths,total=calc.amount;
+  let nd=0;if(calc.serviceYears>=3)nd=30;else if(calc.serviceYears>=1)nd=20;else if(calc.serviceYears>=0.25)nd=10;
+  const reasonInfo=getLayoffReasonInfo(emp.layoffReason);
+  const noticeEnd=lastWorkDate?new Date(lastWorkDate+'T00:00:00'):new Date();
   const today=new Date();
   const logoSrc=getLogo(emp.cid);
   const pdfHtml=`<div class="pdf-doc">
@@ -3471,19 +3667,19 @@ function printLayoffNotice(){
       <div style="width:52px"></div>
     </div>
     <div class="pdf-body">受文者：<strong>${emp.nameZh}</strong> 先生／女士</div>
-    <div class="pdf-body">主旨：依勞動基準法第十一條規定，通知終止勞動契約。</div>
+    <div class="pdf-body">主旨：依勞動基準法第十一條第 ${reasonInfo.clauseNo||'＿'} 款規定，通知終止勞動契約。</div>
     <div class="pdf-section">說明：</div>
     <div class="pdf-body">
-一、本公司因業務緊縮，依勞動基準法第十一條規定，終止與貴方之勞動契約。
+一、本公司因 ${reasonInfo.reason}，依勞動基準法第十一條第 ${reasonInfo.clauseNo||'＿'} 款規定，終止與貴方之勞動契約。
 
-二、貴方任職期間：${emp.startDate} 至 ${emp.endDate}
-　　服務年資：${wy} 年 ${fm} 個月
+二、貴方任職期間：${emp.startDate} 至 ${lastWorkDate}
+　　服務年資：${wy} 年 ${fm} 個月 ${fd} 天
 
 三、預告期間：${nd} 日
-　　預告期屆滿日（最後上班日）：${fmtDateFormal(noticeEnd)}
+　　最後工作日：${fmtDateFormal(noticeEnd)}
 
 四、資遣費：新台幣 <strong>${total.toLocaleString()}</strong> 元整
-　　（計算基礎：平均工資 NT$${emp.salary.toLocaleString()} × ${months} 個月）
+　　（新制計算基礎：平均工資 NT$${Number(emp.salary).toLocaleString()} × ${months.toFixed(6).replace(/0+$/,'').replace(/\.$/,'')} 個月）
 　　發放日：最後上班日當日或次月薪資發放日
 
 五、本公司將提供非自願離職證明，供申請失業給付使用。</div>
@@ -3501,54 +3697,107 @@ function printLayoffNotice(){
 }
 
 function printLayoffCert(){
-  const s=new Date(emp.startDate),e=new Date(emp.endDate);
-  // 精確年資計算：年、月、天
-  (function(){
-    let yrs=e.getFullYear()-s.getFullYear();
-    let mos=e.getMonth()-s.getMonth();
-    let days=e.getDate()-s.getDate();
-    if(days<0){mos--;const prev=new Date(e.getFullYear(),e.getMonth(),0);days+=prev.getDate();}
-    if(mos<0){yrs--;mos+=12;}
-    const parts=[];
-    if(yrs>0)parts.push(yrs+' 年');
-    if(mos>0)parts.push(mos+' 個月');
-    if(days>0)parts.push(days+' 天');
-    window._tenure=parts.length?parts.join(' '):'1 天';
-  })();
-  const tenure=window._tenure;
+  const lastWorkDate=emp.lastWorkDate||emp.endDate;
+  const reasonInfo=getLayoffReasonInfo(emp.layoffReason);
+  const company=COMPANIES.find(c=>c.id===emp.cid)||{};
   const logoSrc=getLogo(emp.cid);
-  const pdfHtml=`<div class="pdf-doc">
-    <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a1917;padding-bottom:14px;margin-bottom:30px">
-      <img src="${logoSrc}" style="height:52px;width:auto;flex-shrink:0">
-      <div style="flex:1;text-align:center">
-        <div style="font-size:15px;font-weight:700;letter-spacing:0.05em">${emp.companyName}</div>
-        <div style="font-size:22px;font-weight:700;letter-spacing:0.15em;margin-top:4px">非　自　願　離　職　證　明　書</div>
-      </div>
-      <div style="width:52px"></div>
+  const today=new Date();
+  const laborNo=laborInsuranceNoForCompany(emp.cid);
+  const wage=Number(emp.lastMonthWage||emp.salary||0);
+
+  function fmtRoc(dateValue){
+    if(!dateValue) return '＿＿年＿＿月＿＿日';
+    const date=new Date(dateValue+'T00:00:00');
+    if(isNaN(date.getTime())) return '＿＿年＿＿月＿＿日';
+    return '民國 '+(date.getFullYear()-1911)+' 年 '+(date.getMonth()+1)+' 月 '+date.getDate()+' 日';
+  }
+  function check(on,label){return '<span style="display:inline-block;min-width:84px;white-space:nowrap">'+(on?'☑':'□')+' '+label+'</span>';}
+  const article11Choices=[1,2,3,4,5].map(function(n){return check(reasonInfo.clauseNo===String(n),'第 '+n+' 款');}).join('');
+  const applicantName=emp.nameZh||'＿＿＿＿＿＿＿＿';
+  const bday=emp.birthday?fmtRoc(emp.birthday):'民國＿＿年＿＿月＿＿日';
+  const issueDate='民國 '+(today.getFullYear()-1911)+' 年 '+(today.getMonth()+1)+' 月 '+today.getDate()+' 日';
+  const idNo=emp.idNo||'＿＿＿＿＿＿＿＿＿＿＿＿＿＿';
+  const gender=emp.gender||'';
+  const address=emp.address||'＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿';
+  const phone=emp.phone||'＿＿＿＿＿＿＿＿＿＿';
+  const jobNature=emp.jobNature||emp.title||'＿＿＿＿＿＿＿＿＿＿';
+  const wageText=wage?('NT$ '+wage.toLocaleString()+' 元'):'＿＿＿＿＿＿＿＿元';
+  const companyName=emp.companyName||company.name||'＿＿＿＿＿＿＿＿＿＿';
+  const companyAddress=company.addr||'＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿';
+
+  const pdfHtml=`<div style="font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;width:700px;margin:0 auto;padding:24px 28px 20px;color:#111;font-size:12px;line-height:1.4;box-sizing:border-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="width:72px">${logoSrc?'<img src="'+logoSrc+'" style="max-width:64px;max-height:40px;object-fit:contain">':''}</div>
+      <div style="flex:1;text-align:center;font-weight:700;font-size:20px;letter-spacing:0.34em">非 自 願 離 職 證 明 書</div>
+      <div style="width:132px;text-align:right;font-size:11px">填表日期：${issueDate}</div>
     </div>
-    <div style="height:20px"></div>
-    <div style="font-size:14px;line-height:3;margin-left:40px">
-      <div>茲　證　明：<strong style="font-size:15px">${emp.nameZh}</strong>　先生／女士</div>
-      <div>任 職 期 間：<strong>${emp.startDate}</strong>　至　<strong>${emp.endDate}</strong></div>
-      <div>擔　任　職：<strong>${emp.title}</strong></div>
-      <div>服 務 年 資：<strong>${tenure}</strong></div>
-    </div>
-    <div style="height:16px"></div>
-    <div style="font-size:14px;line-height:2;margin-left:40px;margin-right:40px;background:#f8f8f8;padding:16px;border-left:3px solid #1a1917;border-radius:4px">
-      上列員工因本公司業務緊縮，依勞動基準法第十一條第二款規定，屬<strong>非自願離職</strong>，<br>特此證明。本證明書供當事人申請失業給付使用。
-    </div>
-    <div style="height:80px"></div>
-    <div style="display:flex;justify-content:flex-end">
-      <div style="font-size:13px;line-height:2.8;border:1px solid #ccc;padding:20px 30px;border-radius:8px;min-width:280px">
-        <div>${emp.companyName}</div>
-        <div>統一編號：${emp.companyTax}</div>
-        <div>負 責 人：<span style="border-bottom:1px solid #333;display:inline-block;min-width:100px;margin-left:4px"></span>（簽章）</div>
-        <div>日　　期：${fmtDateFormal(e)}</div>
-        <div style="margin-top:16px;text-align:center;color:#888;font-size:12px">（公司大小章）</div>
-      </div>
+    <table style="width:100%;border-collapse:collapse;border:1.5px solid #111;font-size:12px">
+      <tr>
+        <td style="border:1px solid #111;padding:7px;width:18%">申請人姓名</td>
+        <td style="border:1px solid #111;padding:7px;width:30%;font-weight:700">${applicantName}</td>
+        <td style="border:1px solid #111;padding:7px;width:18%">出生日期</td>
+        <td style="border:1px solid #111;padding:7px;width:34%">${bday}</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #111;padding:7px">性別</td>
+        <td style="border:1px solid #111;padding:7px">${check(gender==='男','男')}${check(gender==='女','女')}</td>
+        <td style="border:1px solid #111;padding:7px">身分證統一編號</td>
+        <td style="border:1px solid #111;padding:7px">${idNo}</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #111;padding:7px">住　址</td>
+        <td colspan="3" style="border:1px solid #111;padding:7px">${address}</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #111;padding:7px">工作性質</td>
+        <td style="border:1px solid #111;padding:7px">${jobNature}</td>
+        <td style="border:1px solid #111;padding:7px">電　話</td>
+        <td style="border:1px solid #111;padding:7px">${phone}</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="border:1px solid #111;padding:7px">離職當月工資（新台幣）：${wageText}</td>
+        <td colspan="2" style="border:1px solid #111;padding:7px">離　職：${fmtRoc(lastWorkDate)}<br><span style="font-size:10px">（★離職日期為在職最後一日）</span></td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #111;padding:7px;vertical-align:top">離職原因</td>
+        <td colspan="3" style="border:1px solid #111;padding:7px;line-height:1.75">
+          <div>${check(false,'關廠')}${check(false,'遷廠')}${check(false,'休業')}${check(false,'解散')}${check(false,'破產')}</div>
+          <div>勞動基準法第 11 條　${article11Choices}</div>
+          <div>勞動基準法第 14 條第 1 項　${check(false,'第 1 款')}${check(false,'第 2 款')}${check(false,'第 3 款')}${check(false,'第 4 款')}${check(false,'第 5 款')}${check(false,'第 6 款')}</div>
+          <div>${check(false,'勞動基準法第 13 條但書')}${check(false,'勞動基準法第 20 條')}</div>
+          <div>${check(false,'定期契約工作期滿')}（契約期間自＿＿年＿＿月＿＿日至＿＿年＿＿月＿＿日）</div>
+          <div style="margin-top:3px;font-size:11px;color:#333">本案勾選事由：依《勞動基準法》第 11 條第 ${reasonInfo.clauseNo||'＿'} 款（${reasonInfo.reason}）。</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" style="border:1px solid #111;height:144px;text-align:center;vertical-align:middle;color:#555">身分證影印本黏貼欄（浮貼）</td>
+        <td colspan="2" style="border:1px solid #111;height:144px;text-align:center;vertical-align:middle;color:#555">身分證影印本黏貼欄（浮貼）</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #111;padding:7px;vertical-align:top;width:18%">投保單位證明欄<br><span style="font-size:10px">（★離職證明由投保單位出具者請填本欄）</span></td>
+        <td colspan="3" style="border:1px solid #111;padding:7px;line-height:1.75">
+          投保單位名稱：<strong>${companyName}</strong>（請蓋印信或章戳）<br>
+          保險證號：<strong>${laborNo}</strong><br>
+          投保單位地址：${companyAddress}<br>
+          投保單位電話：＿＿＿＿＿＿＿＿＿＿＿＿
+        </td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #111;padding:7px;vertical-align:top">主管機關證明欄<br><span style="font-size:10px">（★離職證明由地方主管機關出具者請填本欄）</span></td>
+        <td colspan="3" style="border:1px solid #111;padding:7px;line-height:1.7;height:34px">主管機關名稱：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿（請蓋印信或章戳）</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #111;padding:7px;vertical-align:top">申請人自行釋明欄<br><span style="font-size:10px">（＊離職證明向投保單位及勞工行政機關申請無法取得者請填本欄）</span></td>
+        <td colspan="3" style="border:1px solid #111;padding:7px;line-height:1.7;height:46px">＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿，如有不實願負一切法律責任。<br>申請人＿＿＿＿＿＿＿＿＿＿＿＿（簽章）</td>
+      </tr>
+    </table>
+    <div style="font-size:9.5px;line-height:1.5;margin-top:8px">
+      <div>● 就業保險法第 36 條規定：以詐欺或其他不正當行為領取保險給付者，除按其領取之保險給付處以 2 倍罰鍰外，並應依民法請求損害賠償；其涉及刑責者，移送司法機關辦理。</div>
+      <div>● 因定期契約屆滿離職，逾 1 個月未能就業，且離職前 1 年內契約期間合計滿 6 個月以上者，視為非自願離職；此離職原因者，需檢附契約證明文件。</div>
     </div>
   </div>`;
-  printDoc(pdfHtml);
+  const filename=(emp.companyName||'公司名稱')+'＿非自願離職證明_'+(emp.nameZh||'員工姓名')+'＿'+today.getFullYear()+String(today.getMonth()+1).padStart(2,'0')+String(today.getDate()).padStart(2,'0');
+  printDoc(pdfHtml, filename);
 }
 
 // ============================================================
