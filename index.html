@@ -1207,13 +1207,12 @@ Dear ${emp.nameZh} 您好：
 【第一階段：事先備齊文件】
 1. 身分證正反面電子檔
 2. 最高學歷證件電子檔
-3. 員工履歷表 104電子檔
-4. 人事資料卡（有附件；請附上相片）
-5. 年薪資受領人申報表（有附件）
+3. 人事資料卡（有附件；請附上相片）
+4. 年薪資受領人申報表（有附件）
 
 【第二階段：應備文件】
-1. 中國信託銀行帳戶存摺封面電子檔
-2. 良民證電子檔
+5. 中國信託銀行帳戶存摺封面電子檔
+6. 良民證電子檔
 
 我們在收到您的簽回確認後，將會隨即為您寄發「第二階段：報到須知 Mail」，內含確定的報到時間、地點以及相關資訊。
 
@@ -1232,14 +1231,16 @@ Sharon Tseng
       <button class="btn" onclick="copyEl('oe')">📋 複製內容</button>
     </div>
     <div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.08)">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 第一階段應備文件確認（員工回傳後勾選）</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 應備文件確認（員工回傳後勾選）</div>
       <div class="checklist">
-        ${ci('doc1','身分證正反面影印本')}
-        ${ci('doc2','最高學歷證件影本')}
-        ${ci('doc3','員工履歷表 104版本')}
-        ${ci('doc4','人事資料卡')}
-        ${ci('doc5','年薪資受領人申報表')}
-        ${ci('doc6','錄用通知書（已簽名回傳）')}
+        <div style="font-size:12px;font-weight:700;color:#4a3f35;margin:2px 0 6px">【第一階段：事先備齊文件】</div>
+        ${ci('doc1','1. 身分證正反面電子檔')}
+        ${ci('doc2','2. 最高學歷證件電子檔')}
+        ${ci('doc4','3. 人事資料卡（有附件；請附上相片）')}
+        ${ci('doc5','4. 年薪資受領人申報表（有附件）')}
+        <div style="font-size:12px;font-weight:700;color:#4a3f35;margin:14px 0 6px">【第二階段：應備文件】</div>
+        ${ci('doc7','5. 中國信託銀行帳戶存摺封面電子檔')}
+        ${ci('doc8','6. 良民證電子檔')}
       </div>
     </div>
     ${obNav()}
