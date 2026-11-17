@@ -1615,7 +1615,7 @@ Sharon Tseng</div>
           <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
-      <div style="font-size:11px;color:#9a9894;margin-top:4px">💡 每次點擊按鈕都會產生新連結，舊連結自動失效</div>
+      <div style="font-size:11px;color:#9a9894;margin-top:4px">重按同一表單按鈕即另出新連結，舊連結與紀錄保留；要再次複製本次連結，請按下方「複製」。</div>
       <div class="ilink-url" id="self-url-1" style="display:none">
         <input id="self-url-input-1" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
         <button class="btn-sm" onclick="copyLinkById('self-url-input-1')">📋 複製</button>
@@ -1644,7 +1644,7 @@ Sharon Tseng</div>
           <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
-      <div style="font-size:11px;color:#9a9894;margin-top:4px">💡 每次點擊按鈕都會產生新連結，舊連結自動失效</div>
+      <div style="font-size:11px;color:#9a9894;margin-top:4px">重按同一表單按鈕即另出新連結，舊連結與紀錄保留；要再次複製本次連結，請按下方「複製」。</div>
       <div class="ilink-url" id="self-url-2" style="display:none">
         <input id="self-url-input-2" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
         <button class="btn-sm" onclick="copyLinkById('self-url-input-2')">📋 複製</button>
@@ -1672,7 +1672,7 @@ Sharon Tseng</div>
           <button class="btn-sm" onclick="refreshInterviewStatus()">🔄 更新狀態</button>
         </div>
       </div>
-      <div style="font-size:11px;color:#9a9894;margin-top:4px">💡 第三次僅主管評核，每次點擊都會產生新連結，舊連結自動失效</div>
+      <div style="font-size:11px;color:#9a9894;margin-top:4px">第三次僅主管評核；重按即另出新連結，原紀錄保留。本次連結請使用下方「複製」。</div>
       <div class="ilink-url" id="self-url-3" style="display:none">
         <input id="self-url-input-3" type="text" readonly style="flex:1;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:11px;background:#f8f7f3">
         <button class="btn-sm" onclick="copyLinkById('self-url-input-3')">📋 複製</button>
@@ -3888,6 +3888,195 @@ const INTERVIEW_BASE_URL = (function(){
   return dir;
 })();
 
+// ── 所有員工面談重發：原 round1/2/3 與每次提交獨立保留 ──
+let probationExtensionCreating = false;
+
+function supportsInterviewReissue(data) {
+  return !!(data && String(data.nameZh || '').trim());
+}
+
+function buildProbationExtensionUrl(key, id, entry, type) {
+  const params = new URLSearchParams({
+    mode: type === 'self' ? 'self-eval' : 'manager-eval',
+    key: key, round: String(entry.baseRound), extension: id,
+    ts: String(type === 'self' ? entry.selfLinkTs : entry.mgrLinkTs),
+    fbUrl: FIREBASE_CONFIG.databaseURL, fbKey: FIREBASE_CONFIG.apiKey
+  });
+  return window.location.href.split(/[?#]/)[0] + '?' + params.toString();
+}
+
+function validateProbationExtension(record, key, id, round, type, ts) {
+  if (!supportsInterviewReissue(record && record.emp) || !/^[A-Za-z0-9_-]{1,120}$/.test(id || '')) return null;
+  const entry = record.interviews && record.interviews.extensions && record.interviews.extensions[id];
+  if (!entry || entry.employeeKey !== key || !String(entry.employeeName || '').trim() || ![1,2,3].includes(entry.baseRound) || entry.baseRound !== round) return null;
+  if (type === 'self' && round === 3) return null;
+  const expected = type === 'self' ? entry.selfLinkTs : entry.mgrLinkTs;
+  return expected && String(expected) === String(ts) ? entry : null;
+}
+
+function extensionRecordHtml(entry) {
+  const esc = escapeHtml, mgr = entry.manager || {}, self = entry.selfEval || {};
+  let html = '<div style="line-height:1.8">';
+  html += '<h3>試用期面談紀錄</h3><p>員工：' + esc(entry.employeeName) + '<br>面談日期：' + esc(entry.interviewDate) + '<br>沿用第 ' + esc(entry.baseRound) + ' 輪格式</p>';
+  const jobKey = formMatchJobTitle(emp.title);
+  const hardSkills = (jobKey && FORM_HARD_SKILLS[jobKey]) || [];
+  const sections = [
+    ['員工自評', self.scores || {}, self.type === 'hard' ? hardSkills : FORM_SOFT_SKILLS, {}],
+    ['主管軟性技能', mgr.softScores || {}, FORM_SOFT_SKILLS, mgr.softNotes || {}],
+    ['主管職位職能', mgr.hardScores || {}, hardSkills, mgr.hardNotes || {}]
+  ];
+  html += '<p>員工自評：' + (self.submitted ? '已提交（' + esc(self.submittedAt || '') + '）' : (entry.baseRound === 3 ? '不需自評' : '尚未提交')) + '<br>主管評核：' + (mgr.submitted ? '已提交（' + esc(mgr.submittedAt || '') + '）' : '尚未提交') + '</p>';
+  sections.forEach(([title, scores, skills, notes]) => {
+    if (!Object.keys(scores).length) return;
+    html += '<h4>' + title + '</h4><table style="width:100%;border-collapse:collapse" border="1"><tr><th>項目</th><th>評分</th><th>評語</th></tr>';
+    Object.entries(scores).forEach(([id, score]) => {
+      const skill = skills.find(item => item.id === id);
+      html += '<tr><td>' + esc(skill ? skill.title : id) + '</td><td>' + esc(score) + ' / 5</td><td style="white-space:pre-wrap">' + esc(notes[id] || '') + '</td></tr>';
+    });
+    html += '</table>';
+  });
+  const labels = {overallScore:'試用期整體評分',softReview:'軟性技能總評',hardReview:'職位職能總評',highlights:'具體貢獻與亮點',areasToImprove:'待改善事項',softOverallNote:'軟性技能整體備註',hardOverallNote:'職能整體備註',interviewSummary:'面談摘要',improvementTarget:'改善目標',conclusion:'試用期結論',conclusionNote:'結論說明'};
+  const conclusions = {pass:'通過試用期',extend:'延長試用期',fail:'試用期未通過'};
+  Object.entries(labels).forEach(([field, label]) => {
+    if (mgr[field] == null || mgr[field] === '') return;
+    const value = field === 'conclusion' ? (conclusions[mgr[field]] || mgr[field]) : mgr[field];
+    html += '<h4>' + label + '</h4><div style="white-space:pre-wrap">' + esc(value) + '</div>';
+  });
+  return html + '</div>';
+}
+
+async function saveProbationExtensionEvaluation(conn, key, id, round, type, ts, payload) {
+  const record = (await conn.ref('hr_ob/' + key).once('value')).val();
+  const entry = validateProbationExtension(record, key, id, round, type, ts);
+  if (!entry) throw new Error('延長面談連結驗證失敗，未寫入任何原面談資料。請聯絡 HR。');
+  const field = type === 'self' ? 'selfEval' : 'manager';
+  const result = await conn.ref('hr_ob/' + key + '/interviews/extensions/' + id + '/' + field).transaction(current => {
+    if (current && current.submitted) return;
+    return {...payload, extensionId:id, baseRound:round, interviewDate:entry.interviewDate};
+  });
+  if (!result.committed) throw new Error('本次延長面談已提交，已保存內容不會覆寫。');
+  await backupInterviewsForKey(key, 'probation-extension-' + type + '-submitted', true, conn);
+}
+
+// 原有面談按鈕重發：所有員工適用，新舊紀錄分開保存。
+function getProbationExtensionRows(record, key) {
+  if (!supportsInterviewReissue(record && record.emp)) return [];
+  const entries = (record.interviews && record.interviews.extensions) || {};
+  return Object.entries(entries).filter(([id, entry]) => entry && validateProbationExtension(record, key, id, entry.baseRound, 'manager', entry.mgrLinkTs))
+    .sort((a,b) => String(b[1].createdAt).localeCompare(String(a[1].createdAt)) || b[0].localeCompare(a[0]));
+}
+
+function latestProbationExtension(record, key, round) {
+  return getProbationExtensionRows(record, key).find(([id, entry]) => entry.baseRound === round) || null;
+}
+
+function probationInterviewDate(round) {
+  const input = document.getElementById('idate-input-' + round);
+  const raw = (input && input.value) || ((emp._interviewDates || {})['r' + round]);
+  if (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw) && !isNaN(new Date(raw + 'T00:00:00').getTime())) return raw;
+  const start = new Date(emp.startDate);
+  if (isNaN(start.getTime())) throw new Error('請先確認到職日或面談日期。');
+  return fmtDate(nextWorkdayFrom(addDays(start, round * 30)));
+}
+
+function showProbationReissueSessionLinks(key, id, entry) {
+  if (currentKey !== key) return;
+  const round = entry.baseRound;
+  (round === 3 ? ['manager'] : ['self','manager']).forEach(type => {
+    const field = type === 'self' ? 'selfIssuedAt' : 'managerIssuedAt';
+    if (entry.origin !== 'original-button-reissue' || entry[field]) {
+      showLinkBox(round, type, buildProbationExtensionUrl(key, id, entry, type));
+    } else {
+      const boxId = (type === 'self' ? 'self-url-' : 'mgr-url-') + round;
+      const box = document.getElementById(boxId), input = document.getElementById(boxId.replace('url-','url-input-'));
+      if (box) box.style.display = 'none';
+      if (input) input.value = '';
+      sessionStorage.removeItem(linkStorageKey(boxId));
+    }
+  });
+}
+
+async function reissueProbationInterviewLink(round, type) {
+  if (probationExtensionCreating) return;
+  if (!db || !currentKey || !supportsInterviewReissue(emp)) {
+    alert('請先開啟員工資料並確認 Firebase 已連線。'); return;
+  }
+  if (![1,2,3].includes(round) || !['self','manager'].includes(type) || (round === 3 && type === 'self')) return;
+  const key = currentKey, conn = db;
+  const field = type === 'self' ? 'selfEval' : 'manager';
+  const issuedField = type === 'self' ? 'selfIssuedAt' : 'managerIssuedAt';
+  probationExtensionCreating = true;
+  let date;
+  try {
+    date = probationInterviewDate(round);
+    const record = (await conn.ref('hr_ob/' + key).once('value')).val();
+    if (!supportsInterviewReissue(record && record.emp) || currentKey !== key || !supportsInterviewReissue(emp)) throw new Error('員工案件已切換，未重發任何表單。');
+    let pair = latestProbationExtension(record, key, round);
+    let reuse = pair && pair[1].origin === 'original-button-reissue' && pair[1].interviewDate === date && !pair[1][issuedField] && !(pair[1][field] && pair[1][field].submitted);
+    if (reuse) {
+      // 自評／主管首次相繼按下時配對為同一次；若同一類別重按，則建立新紀錄。
+      const result = await conn.ref('hr_ob/' + key + '/interviews/extensions/' + pair[0]).transaction(current => {
+        if (!current || current.employeeKey !== key || current.baseRound !== round || current.interviewDate !== date || current[issuedField] || (current[field] && current[field].submitted)) return;
+        return {...current, [issuedField]:new Date().toISOString()};
+      });
+      if (result.committed) pair = [pair[0], result.snapshot.val()];
+      else reuse = false;
+    }
+    if (!reuse) {
+      const ref = conn.ref('hr_ob/' + key + '/interviews/extensions').push();
+      const entry = {
+        employeeKey:key, employeeName:String(record.emp.nameZh || '').trim(),
+        baseRound:round, interviewDate:date, reason:'延長試用期／重新發出面談表單',
+        origin:'original-button-reissue', createdAt:new Date().toISOString(),
+        mgrLinkTs:String(Date.now()), [issuedField]:new Date().toISOString()
+      };
+      if (round !== 3) entry.selfLinkTs = entry.mgrLinkTs;
+      const result = await ref.transaction(current => current === null ? entry : undefined);
+      if (!result.committed) throw new Error('識別碼衝突，未覆寫任何紀錄。');
+      pair = [ref.key, result.snapshot.val()];
+    }
+    await backupInterviewsForKey(key, 'interview-original-button-reissue', true, conn);
+    if (currentKey !== key || !supportsInterviewReissue(emp)) return;
+    const url = buildProbationExtensionUrl(key, pair[0], pair[1], type);
+    showProbationReissueSessionLinks(key, pair[0], pair[1]);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { navigator.clipboard.writeText(url).catch(() => {}); } catch(e) { /* 仍可使用原複製按鈕；不等待剪貼簿權限 */ }
+    }
+    refreshInterviewStatus();
+  } catch(e) {
+    alert('面談連結重發失敗：' + e.message + '\n原面談紀錄未清除。請先按原「更新狀態」確認，再決定是否重試。');
+  } finally { probationExtensionCreating = false; }
+}
+
+function probationReissueHistoryHtml(record, key) {
+  const rows = getProbationExtensionRows(record, key);
+  if (!rows.length) return '';
+  let html = '<details style="margin-top:10px"><summary style="cursor:pointer">原三輪及重發／延長面談歷史（全部保留）</summary>';
+  [1,2,3].forEach(round => {
+    const original = (record.interviews || {})['round' + round];
+    if (!original) return;
+    const entry = {...original, employeeName:record.emp.nameZh, baseRound:round, interviewDate:((record.emp._interviewDates || {})['r' + round] || '原三輪紀錄')};
+    html += '<details style="margin:8px 0;padding:8px;background:#fff;border-radius:6px"><summary style="cursor:pointer">原第 ' + round + ' 輪紀錄 · 自評：' + (original.selfEval && original.selfEval.submitted ? '已提交' : (round === 3 ? '不需填寫' : '尚未提交')) + ' · 主管：' + (original.manager && original.manager.submitted ? '已提交' : '尚未提交') + '</summary>' + extensionRecordHtml(entry) + '</details>';
+  });
+  html += rows.map(([id,entry]) => '<details style="margin:8px 0;padding:8px;background:#fff;border-radius:6px"><summary style="cursor:pointer">重發第 ' + entry.baseRound + ' 輪 · ' + escapeHtml(entry.interviewDate) + ' · 建立於 ' + escapeHtml(entry.createdAt) + '</summary>' + extensionRecordHtml(entry) + '</details>').join('');
+  return html + '</details>';
+}
+
+async function restoreProbationReissueLinks() {
+  if (!db || !currentKey || !supportsInterviewReissue(emp) || !document.getElementById('mgr-url-input-3')) return;
+  const key = currentKey;
+  try {
+    const record = (await db.ref('hr_ob/' + key).once('value')).val();
+    if (currentKey !== key || !supportsInterviewReissue(emp) || !supportsInterviewReissue(record && record.emp)) return;
+    for (const round of [1,2,3]) {
+      const pair = latestProbationExtension(record, key, round);
+      if (!pair) continue;
+      showProbationReissueSessionLinks(key, pair[0], pair[1]);
+    }
+    refreshInterviewStatus();
+  } catch(e) { console.warn('重發面談連結還原失敗：', e); }
+}
+
 function buildInterviewUrl(formFile, round, fixedTs) {
   if (!currentKey) return null;
   const modeMap = { 'self-eval.html': 'self-eval', 'manager-eval.html': 'manager-eval' };
@@ -3907,70 +4096,10 @@ function buildInterviewUrl(formFile, round, fixedTs) {
 }
 
 async function genInterviewLink(round, type) {
-  if (!currentKey || !emp.nameZh) {
-    alert('⚠️ 請先填寫員工資料（步驟 1）並同步完成。');
-    return;
+  if (!currentKey || !supportsInterviewReissue(emp)) {
+    alert('請先填寫員工資料（步驟 1）並同步完成。'); return;
   }
-  const formFile = type === 'self' ? 'self-eval.html' : 'manager-eval.html';
-  const urlBoxId = (type === 'self' ? 'self-url-' : 'mgr-url-') + round;
-  const tsPath = 'hr_ob/' + currentKey + '/interviews/round' + round + '/' + (type === 'self' ? 'selfLinkTs' : 'mgrLinkTs');
-  const fixedRound = round === 2 || round === 3;
-  let fixedTs = null;
-  let existingRoundData = {};
-
-  try {
-    if (db && fixedRound) {
-      const roundSnap = await db.ref('hr_ob/' + currentKey + '/interviews/round' + round).once('value');
-      existingRoundData = roundSnap.val() || {};
-      const snap = await db.ref(tsPath).once('value');
-      fixedTs = snap.val() ? String(snap.val()) : null;
-      // 若舊版只把網址留在本機工作階段，先沿用其中的 ts，避免改變已發出的網址。
-      if (!fixedTs) {
-        const cachedUrl = sessionStorage.getItem(linkStorageKey(urlBoxId)) || sessionStorage.getItem('ilink_' + urlBoxId);
-        if (cachedUrl) {
-          try { fixedTs = new URL(cachedUrl).searchParams.get('ts'); } catch(e) {}
-        }
-      }
-      if (!fixedTs) {
-        const hasSubmittedData = !!((existingRoundData.selfEval && existingRoundData.selfEval.submitted) || (existingRoundData.manager && existingRoundData.manager.submitted));
-        if (hasSubmittedData) {
-          alert('⚠️ 此輪已有員工或主管提交資料，但系統找不到原固定連結識別碼。為避免改變已發送網址，系統不會自動產生新連結；請貼上原連結或聯絡系統管理者處理。');
-          return;
-        }
-        fixedTs = String(Date.now());
-        await db.ref(tsPath).set(fixedTs);
-      }
-    }
-    if (fixedRound && !fixedTs && !db) {
-      const cachedUrl = sessionStorage.getItem(linkStorageKey(urlBoxId)) || sessionStorage.getItem('ilink_' + urlBoxId);
-      if (cachedUrl) {
-        showLinkBox(round, type, cachedUrl);
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cachedUrl).catch(() => {});
-        refreshInterviewStatus();
-        return;
-      }
-      alert('⚠️ 無法確認第二次／第三次固定連結，為避免改變已發送網址，請先恢復 Firebase 連線。');
-      return;
-    }
-    const url = buildInterviewUrl(formFile, round, fixedRound ? fixedTs : null);
-    if (!url) return;
-
-    // 第一次可重新產生；第二、三次只沿用第一次建立的固定 ts。
-    if (db && !fixedRound) {
-      const tsMatch = url.match(/[?&]ts=([^&]+)/);
-      if (tsMatch) await db.ref(tsPath).set(tsMatch[1]);
-    }
-    if (db) await backupInterviewsForKey(currentKey, 'interview-link-issued', true, db);
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => showLinkBox(round, type, url)).catch(() => showLinkBox(round, type, url));
-    } else {
-      showLinkBox(round, type, url);
-    }
-    refreshInterviewStatus();
-  } catch(e) {
-    alert('❌ 面談連結儲存失敗：' + e.message + '\n請勿重複產生，先重新整理後再試。');
-  }
+  return reissueProbationInterviewLink(round, type);
 }
 function linkStorageKey(id) {
   return 'ilink_' + (currentKey || 'unknown') + '_' + id;
@@ -4004,6 +4133,7 @@ function restoreInterviewLinks() {
       }
     }
   });
+  if (supportsInterviewReissue(emp)) restoreProbationReissueLinks();
 }
 
 function copyLinkById(inputId) {
@@ -4212,6 +4342,13 @@ async function exportInterviewPDF() {
     }
   }
 
+  if (supportsInterviewReissue(emp)) {
+    const rows = getProbationExtensionRows({emp:emp,interviews:interviews}, currentKey);
+    if (rows.length) {
+      html += '<h2>重發／延長面談紀錄（原三輪紀錄完整保留）</h2>';
+      rows.forEach(([id,entry]) => { html += '<div style="margin:16px 0;border-top:1px solid #ddd;padding-top:8px">' + extensionRecordHtml(entry) + '</div>'; });
+    }
+  }
   html += `<p style="margin-top:30px;font-size:11px;color:#9a9894;border-top:0.5px solid #ddd;padding-top:8px">本報告由 HR 系統自動產生，僅供內部使用。列印日期：${new Date().toLocaleDateString('zh-TW')}</p>`;
   html += `</body></html>`;
 
@@ -4224,15 +4361,19 @@ async function exportInterviewPDF() {
 
 async function refreshInterviewStatus() {
   if (!currentKey || !db) return;
+  const key = currentKey;
   try {
-    const snap = await db.ref('hr_ob/' + currentKey + '/interviews').once('value');
+    const snap = await db.ref('hr_ob/' + key + '/interviews').once('value');
+    if (currentKey !== key) return;
     const interviews = snap.val() || {};
+    const reissueRecord = {emp:emp,interviews:interviews};
     const overviewEl = document.getElementById('interview-overview-content');
     let overviewHtml = '';
     for (let r = 1; r <= 3; r++) {
       const rKey = 'round' + r;
       const rNames = { 1: '第一次（30天）', 2: '第二次（60天）', 3: '第三次（試用期評核）' };
-      const rData = interviews[rKey] || {};
+      const reissued = latestProbationExtension(reissueRecord, key, r);
+      const rData = reissued ? reissued[1] : (interviews[rKey] || {});
       const selfDone = rData.selfEval && rData.selfEval.submitted;
       const mgrDone  = rData.manager  && rData.manager.submitted;
       const selfIcon = selfDone ? '✅' : '⏳';
@@ -4243,6 +4384,7 @@ async function refreshInterviewStatus() {
         if (selfDone) statusHtml += '<span class="ilink-status-ok">✅ 員工自評已提交（資料已保留）</span>&nbsp;&nbsp;';
         if (mgrDone)  statusHtml += '<span class="ilink-status-ok">✅ 主管評核已提交（資料已保留）</span>';
         if (!selfDone && !mgrDone) statusHtml = '<span class="ilink-status-pending">⏳ 尚未提交</span>';
+        if (reissued) statusHtml += '<br><span style="color:#6b6966">本次為重發表單；原面談紀錄保留，未覆蓋。</span>';
         statusEl.innerHTML = statusHtml;
       }
       const mgrData = rData.manager || {};
@@ -4257,6 +4399,7 @@ async function refreshInterviewStatus() {
         ${conclusionStr ? '&nbsp;&nbsp;' + conclusionStr : ''}
       </div>`;
     }
+    if (supportsInterviewReissue(emp)) overviewHtml += probationReissueHistoryHtml(reissueRecord, key);
     if (overviewEl) overviewEl.innerHTML = overviewHtml || '尚無面談紀錄。';
   } catch(e) {
     console.warn('refreshInterviewStatus error:', e);
@@ -4270,7 +4413,7 @@ async function clearInterviewRecord(empKey, round, type) {
   // 已發送的第二、三次連結與已提交資料均不可清除，避免破壞歷史紀錄。
   if (round === 2 || round === 3) {
     await backupInterviewsForKey(empKey, 'fixed-round-clear-blocked', true, db);
-    alert('第二次與第三次面談連結及已提交資料皆為固定留存，不能清除或重新產生。');
+    alert('原面談紀錄已保留，不可清除。如需重新填寫，請直接按原「員工自評」或「主管評核」按鈕重發，新舊紀錄會分開保存。');
     return;
   }
   try {
@@ -4453,12 +4596,16 @@ function formInitFirebase(config) {
 
 // ── 員工自評模組 ──
 let seDb = null, seEmpKey = null, seRound = null, seEmpData = {}, seSelfScores = {}, seHardScores = {}, seHardSkills = [];
+let seExtensionId = null, seExtensionTs = null, seExtensionData = null;
 
 function initSelfEvalForm(params) {
   seEmpKey = params.get('key');
   seRound = parseInt(params.get('round') || '1');
+  seExtensionId = params.has('extension') ? params.get('extension') : null;
+  seExtensionTs = params.get('ts');
+  seExtensionData = null;
   const seLinkTs = parseInt(params.get('ts') || '0'); // 連結產生時的時間戳記
-  if (!seEmpKey || !seRound) { seShowError('連結無效，請聯繫 HR 重新產生連結。'); return; }
+  if (!seEmpKey || !seRound || (seExtensionId !== null && !/^[123]$/.test(params.get('round') || ''))) { seShowError('連結無效，請聯繫 HR 重新產生連結。'); return; }
   const config = { ...FIREBASE_CONFIG, databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL, apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey };
   seDb = formInitFirebase(config);
   if (!seDb) { seShowError('系統初始化失敗，請重新整理頁面。'); return; }
@@ -4468,14 +4615,24 @@ function initSelfEvalForm(params) {
     seEmpData = val.emp;
     const interviews = val.interviews || {};
     const roundKey = 'round' + seRound;
-    const existingSelf = (interviews[roundKey] || {}).selfEval;
+    let roundData = interviews[roundKey] || {};
+    if (seExtensionId !== null) {
+      seExtensionData = validateProbationExtension(val, seEmpKey, seExtensionId, seRound, 'self', seExtensionTs);
+      if (!seExtensionData) { seShowError('延長試用期面談連結無效或員工不符，請向 HR 索取正確新連結。原面談紀錄未變更。'); return; }
+      roundData = seExtensionData;
+    }
+    const existingSelf = roundData.selfEval;
     if (existingSelf && existingSelf.submitted) {
       document.getElementById('se-loading').style.display = 'none';
       document.getElementById('se-success').style.display = 'block';
-      document.getElementById('se-success-desc').innerHTML = '您已完成本次自評，感謝您的配合！<br>如需重新填寫，請聯絡 HR 清除本次紀錄後重新發送連結。';
+      document.getElementById('se-success-desc').innerHTML = seExtensionData ? '您已完成本次延長試用期自評，紀錄已保留，感謝您的配合！<br>如需再填寫，請 HR 使用原面談按鈕重新發出新表單，不需清除本次或原面談紀錄。' : '您已完成本次自評，感謝您的配合！<br>如需重新填寫，請聯絡 HR 清除本次紀錄後重新發送連結。';
       return;
     }
     seRenderForm();
+    if (seExtensionData) {
+      document.getElementById('se-round-title').textContent = '試用期面談自評（重新發出，第 ' + seRound + ' 輪格式）';
+      document.getElementById('se-emp-info').innerHTML += '<div><strong>本次面談日期：</strong>' + formEscHtml(seExtensionData.interviewDate) + '</div>';
+    }
   }).catch(function(e) { seShowError('讀取資料失敗：' + e.message); });
 }
 
@@ -4548,6 +4705,9 @@ function seSelectScore(skillId, score, prefix) {
 }
 
 function submitSelfEval() {
+  if (seExtensionId !== null && seRound === 2 && !seHardSkills.length) {
+    alert('延長面談的職位職能尚未設定，無法空白提交。請聯絡 HR 確認員工職稱。'); return;
+  }
   let payload = {};
   if (seRound === 1) {
     // 第一次：驗證軟性技能
@@ -4572,8 +4732,11 @@ function submitSelfEval() {
   const btn = document.getElementById('se-submit-btn');
   btn.disabled = true; btn.textContent = '提交中...';
   const roundKey = 'round' + seRound;
-  seDb.ref(`hr_ob/${seEmpKey}/interviews/${roundKey}/selfEval`).set(payload).then(() => {
-    return backupInterviewsForKey(seEmpKey, 'self-eval-submitted', true, seDb);
+  const savePromise = seExtensionId !== null
+    ? saveProbationExtensionEvaluation(seDb, seEmpKey, seExtensionId, seRound, 'self', seExtensionTs, payload)
+    : seDb.ref(`hr_ob/${seEmpKey}/interviews/${roundKey}/selfEval`).set(payload);
+  savePromise.then(() => {
+    return seExtensionId !== null ? true : backupInterviewsForKey(seEmpKey, 'self-eval-submitted', true, seDb);
   }).then(() => {
     document.getElementById('se-form').style.display = 'none';
     document.getElementById('se-success').style.display = 'block';
@@ -4585,13 +4748,17 @@ function submitSelfEval() {
 
 // ── 主管評核模組 ──
 let meDb = null, meEmpKey = null, meRound = null, meEmpData = {}, meAllInterviews = {};
+let meExtensionId = null, meExtensionTs = null, meExtensionData = null;
 let meScores = { soft: {}, hard: {} }, meNotes = { soft: {}, hard: {} }, meConclusionVal = null;
 
 function initManagerEvalForm(params) {
   meEmpKey = params.get('key');
   meRound = parseInt(params.get('round') || '1');
+  meExtensionId = params.has('extension') ? params.get('extension') : null;
+  meExtensionTs = params.get('ts');
+  meExtensionData = null;
   const meLinkTs = parseInt(params.get('ts') || '0'); // 連結產生時的時間戳記
-  if (!meEmpKey || !meRound) { meShowError('連結無效，請聯繫 HR 重新產生連結。'); return; }
+  if (!meEmpKey || !meRound || (meExtensionId !== null && !/^[123]$/.test(params.get('round') || ''))) { meShowError('連結無效，請聯繫 HR 重新產生連結。'); return; }
   const config = { ...FIREBASE_CONFIG, databaseURL: params.get('fbUrl') || FIREBASE_CONFIG.databaseURL, apiKey: params.get('fbKey') || FIREBASE_CONFIG.apiKey };
   meDb = formInitFirebase(config);
   if (!meDb) { meShowError('系統初始化失敗，請重新整理頁面。'); return; }
@@ -4601,14 +4768,24 @@ function initManagerEvalForm(params) {
     meEmpData = val.emp;
     meAllInterviews = val.interviews || {};
     const roundKey = 'round' + meRound;
+    if (meExtensionId !== null) {
+      meExtensionData = validateProbationExtension(val, meEmpKey, meExtensionId, meRound, 'manager', meExtensionTs);
+      if (!meExtensionData) { meShowError('延長試用期面談連結無效或員工不符，請向 HR 索取正確新連結。原面談紀錄未變更。'); return; }
+      // 僅供畫面使用的副本；保留前兩輪歷史參考，不寫回原輪次。
+      meAllInterviews = {...meAllInterviews, [roundKey]:meExtensionData};
+    }
     const existingMgr = (meAllInterviews[roundKey] || {}).manager;
     if (existingMgr && existingMgr.submitted) {
       document.getElementById('me-loading').style.display = 'none';
       document.getElementById('me-success').style.display = 'block';
-      document.getElementById('me-success-desc').innerHTML = '此次面談評核已提交完畢，感謝您的配合！<br>如需重新填寫，請聯絡 HR 清除本次紀錄後重新發送連結。';
+      document.getElementById('me-success-desc').innerHTML = meExtensionData ? '本次延長試用期評核已提交，紀錄已保留，感謝您的配合！<br>如需再評核，請 HR 使用原面談按鈕重新發出新表單，不需清除本次或原面談紀錄。' : '此次面談評核已提交完畢，感謝您的配合！<br>如需重新填寫，請聯絡 HR 清除本次紀錄後重新發送連結。';
       return;
     }
     meRenderForm();
+    if (meExtensionData) {
+      document.getElementById('me-round-title').textContent = '試用期面談評核（重新發出，第 ' + meRound + ' 輪格式）';
+      document.getElementById('me-emp-info').innerHTML += '<div><strong>本次面談日期：</strong>' + formEscHtml(meExtensionData.interviewDate) + '</div>';
+    }
   }).catch(function(e) { meShowError('讀取資料失敗：' + e.message); });
 }
 
@@ -4906,6 +5083,12 @@ function meR3SelectScore(score) {
 }
 
 function submitManagerEval() {
+  if (meExtensionId !== null && meRound === 2) {
+    const extensionJob = formMatchJobTitle(meEmpData.title);
+    if (!extensionJob || !FORM_HARD_SKILLS[extensionJob] || !FORM_HARD_SKILLS[extensionJob].length) {
+      alert('延長面談的職位職能尚未設定，無法空白提交。請聯絡 HR 確認員工職稱，或另選綜合評核格式。'); return;
+    }
+  }
   if (meRound === 3) {
     // 第三次：驗證綜合評核欄位
     if (!meR3OverallScore) { alert('⚠️ 請選擇試用期整體表現評分。'); return; }
@@ -4986,8 +5169,11 @@ function submitManagerEval() {
     };
   }
   const roundKey = 'round' + meRound;
-  meDb.ref(`hr_ob/${meEmpKey}/interviews/${roundKey}/manager`).set(payload).then(() => {
-    return backupInterviewsForKey(meEmpKey, 'manager-eval-submitted', true, meDb);
+  const savePromise = meExtensionId !== null
+    ? saveProbationExtensionEvaluation(meDb, meEmpKey, meExtensionId, meRound, 'manager', meExtensionTs, payload)
+    : meDb.ref(`hr_ob/${meEmpKey}/interviews/${roundKey}/manager`).set(payload);
+  savePromise.then(() => {
+    return meExtensionId !== null ? true : backupInterviewsForKey(meEmpKey, 'manager-eval-submitted', true, meDb);
   }).then(() => {
     document.getElementById('me-form').style.display = 'none';
     document.getElementById('me-success').style.display = 'block';
