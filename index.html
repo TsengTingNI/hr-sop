@@ -1210,7 +1210,7 @@ const OB_RENDER = [    // 0: Employee data (no empId, add personalEmail)
 
 Dear ${emp.nameZh} 您好：
 
-我是艾爾斯的人資 Sharon。
+我是艾爾斯的人資 Abby。
 
 非常高興通知您，經過團隊的審慎評估，我們誠摯地邀請您加入${['stanley','joyce_e'].includes(emp.cid)?'史丹利':'艾爾斯'}，擔任 ${emp.title} 一職！在面試過程中，您的專業能力與特質給我們留下了深刻的印象。
 
@@ -1236,7 +1236,7 @@ Dear ${emp.nameZh} 您好：
 
 祝 順心，
 
-Sharon Tseng
+Abby Wu
 艾爾斯人資部`;
     return `<div class="section-card">
     <div class="section-title">📧 發出錄取通知 Email</div>
@@ -1363,7 +1363,7 @@ Sharon Tseng
 
 Dear ${emp.nameZh},
 
-您好！我是艾爾斯負責人事與出納的 Sharon，非常歡迎你加入艾爾斯/史丹利的大家庭。期待接下來與你的合作！
+您好！我是艾爾斯負責人事的 Abby，非常歡迎你加入艾爾斯/史丹利的大家庭。期待接下來與你的合作！
 
 📅 報到日期：${emp.startDate}
 ⏰ 報到時間：9:30
@@ -1387,6 +1387,7 @@ Dear ${emp.nameZh},
 E-mail：${emp.email}
 密碼：${gmailPwd}
 簽名檔設定教學：https://drive.google.com/file/d/11zHk-uvZEz3yTHilNAQ0ZsWOSjYZJMsD/view?usp=sharing
+請點選此處下載您的簽名檔
 
 4. LINE WORK 帳號
 帳號：${emp.email.replace('.com.tw','')}
@@ -1428,8 +1429,7 @@ ${(emp.consultUrl||emp.sopUrl)?(
 如有任何問題，歡迎隨時回信聯繫，謝謝！
 
 祝 順心,
-
-Sharon Tseng
+Abby Wu
 艾爾斯人資部`;
     return `<div class="section-card">
     <div class="section-title">📬 發出報到須知 Email ＋ 詢問團險</div>
